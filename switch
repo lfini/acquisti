@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Procedura per commutare versione corrente
+#
+# La procedura deve essere lanciata dalla home directory
+# del programma acquisti, e si limita a modificare i link
+# di nome "bin" e "files" per puntare alla versione richiesta
+
+# NOTA: occorre prima interrompere i servizi
+#
+#     systemctl stop acquisti
+#     systemctl stop housekeeping
+#     systemctl stop manageldap
+#
+
+VERSION=$1
+
+bin_target=bin-$VERSION
+files_target=files-$VERSION
+
+if [ ! \( -d $bin_target -a -d $files_target \) ]; then
+   echo
+   echo "Cannot found release: $VERSION"
+   exit 1
+fi
+
+#   1. stop dei processi (da eseguire come root)
+#      systemctl stop acquisti
+#      systemctl stop manageldap
+#      systemctl stop housekeeping
+
+rm -f bin
+ln -s $bin_target bin
+rm -f files
+ln -s $files_target files
+
+echo
+echo "Enabled version:  $VERSION"

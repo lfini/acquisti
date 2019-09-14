@@ -1,0 +1,116 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+\usepackage{graphicx}
+
+\oddsidemargin -5mm  % Dimensione pagina 
+\evensidemargin -5mm % Adatte per pagina A4
+\topmargin -30mm     % ...
+\textheight 25.5cm   % ...
+\textwidth 17cm      % ...
+
+%% template: ordine_italiano.tex. Vers. 1.5
+
+\begin{document}
+\vspace{-2.5cm}
+\begin{center}
+\small \bf
+((( sede.sede_it ))) \\
+((( sede.indirizzo )))  \\
+((( sede.website )))
+\end{center}
+\thispagestyle{empty}
+\vspace{1cm}
+{\small Pratica N. ((( pratica.numero_pratica ))) }
+\vspace{.4cm}
+
+\begin{flushright}
+\begin{minipage}{10cm}
+Spett.le:\\
+\hspace*{0.5cm}{\bf ((( pratica.nome_fornitore ))) \\
+\hspace*{0.5cm}((( pratica.ind_fornitore ))) }
+\end{minipage}
+\end{flushright}
+\vspace{5mm}
+
+CIG: ((( pratica.cig ))) 
+
+CUP: ((( pratica.cup )))
+
+Codice Univoco Ufficio (CUU): 14CVDG
+
+BUONO D'ORDINE N. ~~ ((( pratica.numero_ordine ))) ~~ DEL ~~ ((( pratica.data_ordine )))
+
+La sottoscritta ((( pratica.nome_direttore ))), 
+nella veste di Direttore dell'INAF - Osservatorio Astrofisico di Arcetri,
+con il presente atto affida ai sensi dell'art. 36 del D.Lgs. 50/2016 e s.m.i.
+la fornitura~/~il servizio~/~il lavoro di seguito specificata/o:
+
+\begin{quote}
+((( pratica.descrizione_ordine )))
+\end{quote}
+
+da effettuarsi al prezzo di ((( pratica.str_costo_ord_it ))),
+a carico del/dei fondo/i ((( pratica.stringa_codf ))), ((* if pratica.cup *)) CUP ((( pratica.cup ))), ((* endif *)) Cap. ((( pratica.capitolo ))); 
+
+((* if pratica.note_ordine *))
+{\bf Note:} ((( pratica.note_ordine )))
+((* endif *))
+\vspace{1cm}
+
+{\tiny\bf NB.: \\
+1) Questo Ente \`e sottoposto alla disciplina dello split payement. \\
+2) \`E necessario riportare in fattura sia il CIG che il CUP, se presenti,
+nonch\`e il ns. Codice Fiscale 97220210583, e la Partita IVA 06895721006.
+
+Si informa che, in ottemperanza alle disposizioni contenute nell'art.~3, Legge 13 agosto 2010, n.~136,
+``Piano straordinario contro le mafie, nonch\'e delega al Governo in materia di normativa antimafia''
+e s.m.i., qualora codesta Spett.le Ditta non utilizzasse il conto corrente dedicato 
+(anche in via non esclusiva) alle commesse pubbliche per i movimenti finanziari 
+relativi al presente contratto, lo stesso sar\`a risolto di diritto secondo quanto 
+disposto dall'art.~3, comma~8 della legge n.~136/2010 e s.m.i..
+
+Pagamento Bonifico Bancario: 30 gg. data acquisizione DURC.
+
+Ai fini di un sollecito pagamento, si prega di
+indicare in fattura il numero dell'ordinazione e non cumulare in un'unica fattura 
+ordinazioni diverse;
+indicare nella fattura il codice IBAN per il pagamento su C/C postale o bancario 
+che dovr\`a coincidere con uno di quelli gi\`a comunicati quali conti dedicati alle commesse pubbliche.
+
+Per chiarimenti interpellare: ((( pratica.nome_richiedente ))).
+}
+
+((* if pratica.dettaglio_ordine *))
+\vspace{0.5cm}
+\flushright
+Segue allegato ...
+%%% --ALLEGATI-- 
+\newpage
+\vspace{2cm}
+\quad
+((* endif *))
+
+\vspace{1cm}
+
+\begin{minipage}{\textwidth}
+\begin{minipage}[t]{8cm}
+\begin{center}
+L'assegnatario dei fondi \\
+~~ (((( pratica.nome_responsabile )))) ~~ \\
+\end{center}
+\end{minipage}\hfill\begin{minipage}[t]{8cm}
+\begin{center}
+Il Direttore \\
+({}((( pratica.titolo_direttore ))) ((( pratica.nome_direttore )))) \\
+\end{center}
+\vspace*{25mm}
+\end{minipage}
+\begin{minipage}{\textwidth}
+\begin{center}
+{\bf Cod. Fisc. 97220210583 \hspace{1.5cm} Partita IVA 06895721006} \\
+Consegna merce e fatture in Largo E. Fermi, 5 50125 Firenze
+\end{center}
+\end{minipage}
+\end{minipage}
+\end{document}

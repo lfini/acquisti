@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>help istruzioni generali</title>
+</head>
+<body>
+<h1>Istruzioni per l'acquisto di beni e servizi</h1>
+<table border=1 width=100%><tr>
+<td align=center width=25% bgcolor=#ffcccc><a href=#precisazioni>Precisazioni</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#richacquisto>Richiesta di acquisto</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#approvazionerichiesta>Approvazione</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#modifiche>Modifiche</a></td>
+</tr></table>
+<p>
+Gli acquisti di beni e servizi per conto dell'Istituto possono avvenire
+per diversi canali a seconda delle condizioni. Le modalit&agrave; di acquisto da 
+utilizzare sono riassunte nella seguente tabella:
+<blockquote>
+<table border=1 cellpadding=5>
+<tr><th bgcolor=#0020a0><font color=#ffffff>Importo</th><th bgcolor=#0020a0><font color=#ffffff>MeP.A. varie ditte</th><th bgcolor=#0020a0><font color=#ffffff>MEPA 1 sola ditta</th><th bgcolor=#0020a0><font color=#ffffff> No MEPA </th></tr>
+<tr><td bgcolor=#99ffff> 0 - 1 K&euro; </td><td colspan=2 align=center bgcolor=#99ffff> Ordine diretto </td><td align=center bgcolor=#99ffff>1 offerta<br>rotazione</td></tr>
+<tr><td bgcolor=#99ccff> 1 - 4 K&euro; </td><td align=center bgcolor=#99ccff>Ordine diretto<br>Allega offerte</td><td align=center bgcolor=#99ccff> RDO<br>Almeno 3 ditte</td><td align=center bgcolor=#99ccff>Almeno 2 offerte<br>Rotazione</tr></tr>
+<tr><td bgcolor=#99ffff> 4 - 15 K&euro;</td><td colspan=2 align=center bgcolor=#99ffff>RDO, almeno 5 ditte </td><td align=center bgcolor=#99ffff>Almeno 3 offerte<br>rotazione</td></tr>
+<tr><td bgcolor=#99ccff> 15-40 K&euro;</td><td colspan=2 align=center bgcolor=#99ccff> RDO, almeno 5 ditte </td><td align=center bgcolor=#99ccff>Menifestazione di<br>interesse</td></tr>
+<tr><td bgcolor=#99ffff> &gt; 40 K&euro;</td><td colspan=3 align=center bgcolor=#99ffff> Sentire l'amministrazione</td></tr>
+</table>
+</blockquote>
+<b>Nota:</b> Gli importi si intendono al netto di I.V.A.
+<a name=precisazioni>
+<h3>Precisazioni</h3>
+</a>
+L'acquisto di beni e servizi deve essere effettuato preferibilmente tramite
+il sito MEPA: AcquistinretePA (raggiungibile dal pannello principale)
+
+<ul>
+<li> <b>Importi minori di 1000 &euro;</b>: Si pu&ograve; procedere con la procedura di ordine su MEPA oppure direttamente chiedendo offerta ad una ditta.
+In questo secondo caso occorre effettuare una rotazione fra le ditte per eventuali acquisti successivi.
+<p>
+<li><b>Importi fra 1 e 4 K&euro;</b>: Se pi&ugrave; ditte propongono lo stesso oggetto, occorre giustificare la scelta, ad esempio allegando copia della
+pagina del sito MEPA che dimostri che l'offerta scelta &egrave; quella di importo minore. Se una sola ditta propone l'oggetto richiesto, occorre seguire
+con la procedura R.d.O. (Richiesta di offerta) sul sito MEPA, invitando almeno tre ditte. Se invece il bene non &egrave; presente sul MEPA,
+&egrave; possibile rivolgersi direttamente ad una ditta, ma occorre presentare offerte di almeno due ditte diverse.
+
+<p><li><b>Importi fra 4 e 15 K&euro;</b>: Occorre seguire
+la procedura R.d.O. (Richiesta di offerta) sul sito MEPA, invitando almeno cinque ditte.
+Se la procedura non ha risultato, si pu&ograve; procedere richiedendo offerta ad almeno tre ditte, effettuando la rotazione fra ditte diverse in caso di acquisti successivi.
+
+<p><li><b>Importi fra 15 e 40 K&euro;</b>: Occorre seguire
+la procedura R.d.O. (Richiesta di offerta) sul sito MEPA, invitando almeno cinque ditte.
+Se la procedura non ha risultato, si pu&ograve; utilizare la procedura "Manifestazione di interesse".
+
+<p><li><b>Importi superiori a 40 K&euro;</b>: La procedura deve essere concordata con l'amministrazione.
+
+</ul>
+
+
+<h2>Come procedere</h2>
+
+
+</ol>
+
+<a name=richacquisto>
+<h3>Richiesta di acquisto</h3>
+</a>
+
+In generale occorre effettuare i seguenti passi:
+
+<ol>
+	<li> Se si utilizza il canale MEPA occorre seguire la procedura sul sito
+	<a href=http://www.acquistinretepa.it>www.acquistinretepa.it</a> fino a generare la "bozza d'ordine"
+(vedere la <a href=/files/istruzioni_mepa.html>documentazione specifica</a>). In caso contrario occorre 
+procurarsi le offerte dalle ditte selezionate.
+
+<p><li>Si deve quindi procedere a compilare la richiesta di acquisto seguendo la procedura on-line.
+</ol>
+
+</h3>Procedura per la richiesta di acquisto</h3>
+
+La richiesta di acquisto viene presentata da un richiedente, che pu&ograve;
+essere diverso dal responsabile dei fondi che risulter&agrave;
+firmatario, secondo la seguente procedura:
+
+<ul>
+<li> Per inziare una nuova richiesta di acquisto, si sceglie "Nuova
+richiesta di acquisto": la procedura propone
+un modulo da compilare con le informazioni relative all'acquisto che
+saranno utilizzate per la richiesta di acquisto, la relativa determina
+del Direttore e il buono d'ordine da inviare al fornitore.
+
+<p> <li> I campi sono tutti obbligatori, tranne "Trasporto" e
+"Note". Quest'ultimo pu&ograve;/deve essere utilizzato
+per dare qualsiasi altra informazione essenziale (Es. gruppo stelle,
+gruppo alte energie, gruppo Sole, OA 92,  Giano con cup ecc. ecc. ecc.) o
+solo utile.
+
+<p> <li> Per agevolare la scelta del codice del fondo, sopra alla casella con solo i
+codici, c’è un link dove si possono trovare tutti i codici completi della
+descrizione inserita in bilancio, con i relativi responsabili locali.
+
+<p> <li> L’importo &egrave; seguito da un casella relativa all'IVA
+dove &egrave; necessario specificare se, nell'importo scritto prima,
+l'IVA è "inclusa" o "esclusa" ed il relativo importo.
+
+<p> <li> Una volta completata la compilazione, cliccando su
+"Avanti" viene assegnato un numero di pratica e viene generato 
+il testo della richiesta in un file di nome:
+<em>richiesta.pdf</em>.
+<p>
+<b>Nota:</b>
+In caso di necessit&agrave; di modifica il link [<font
+color=blue>modifica</font>] ripresenta il modulo per la compilazione
+della richiesta e rigenera il file <i>richiesta.pdf</i>.
+
+<p><li> Alla richiesta occorre allegare la bozza d'ordine generata sul sito
+AcqustinretePA, oppure l'offerta negoziata con il fornitore, in formato
+PDF. Per fare ci&ograve;, si utilizza l'apposita sezione del form premendo in successione
+i pulsanti: "Sfoglia" (Browse), per selezionare il file da allegare, 
+il segno di spunta per selezionare il tipo di allegato,
+e infine  "Allega", per inviare il file selezionato. 
+
+<p><li> Quando la richiesta &egrave; pronta,
+&egrave; necessario utilizzare il link [<font color=blue>invia</font>] per segnalare
+al responsabile dei fondi la presenza della nuova richiesta da approvare.
+<p><b>Nota:</b> La richiesta deve essere approvata anche nel caso in cui il richiedente 
+sia anche il responsabile dei fondi.
+</ul>
+
+<a name=approvazionerichiesta>
+<h3>Approvazione della richiesta di acquisto</h3>
+</a>
+Quando il richiedente segnala la presenza di una nuova richiesta di acquisto
+al responsabile dei fondi, quest'ultimo riceve un messaggio e-mail con la segnalazione.
+<p>
+Il responsabile pu&ograve; dare l'approvazione semplicemente con un
+"reply" al messaggio stesso (facendo attenzione a non modificare l'oggetto
+del messaggio).
+<p>
+In alternativa il responsabile dei fondi su cui viene richiesto
+l'acquisto, pu&ograve; accedere alle pagine della procedura e
+trover&agrave; la richiesta di acquisto nell'elenco delle richieste
+ancora da approvare. Da tale elenco potr&agrave; dare l'approvazione
+usando l'apposito link [<font color=blue>Approva</font>].
+
+<p>
+In entrambi i casi (approvazione per e-mail o direttamente dalla pagina
+web) viene generato un messaggio di avviso per gli uffici amministrativi
+e viene inviato un e-mail di conferma al responsabile.
+
+<p>
+L'approvazione della richiesta genera una sorta di "firma" elettronica
+relativa al file <i>richiesta.pdf</i>, se detto file viene successivamente
+modificato (&egrave; previsto che gli uffici amministrativi possano
+apportare modifiche alle richieste di acquisto per correggere errori
+materiali), sar&agrave; chiaramente indicata la mancata corrispondenza
+della nuova versione della richiesta con la versione approvata. In
+tal caso gli addetti degli uffici amministrativi possono reinviare la
+richiesta al responsabile dei fondi per  una ulteriore approvazione.
+
+<a name=modifiche>
+<h3>Modifiche</h3>
+</a>
+Nel caso in cui una richiesta di acquisto non vada a buon fine, per qualunque motivo,
+e sia necessario ripeterla, ad esempio per un cambiamento di fornitore, si precisa
+che non &egrave; necessario inziarne una nuova, ma &egrave; sempre possibile
+modificarla in ogni sua parte per adattarla alle nuove esigenze.
+
+</body>

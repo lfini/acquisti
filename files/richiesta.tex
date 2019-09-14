@@ -1,0 +1,184 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+\oddsidemargin -5mm  % Dimensione pagina 
+\evensidemargin -5mm % Adatte per pagina A4
+\topmargin -30mm     % ...
+\textheight 25.5cm   % ...
+\textwidth 17cm      % ...
+
+%% Template: richiesta.tex. Version 1.5
+
+\begin{document}
+\vspace{-2.5cm}
+\begin{center}
+\small \bf
+((( sede.sede_it ))) \\
+((( sede.indirizzo )))
+\end{center}
+\thispagestyle{empty}
+\vspace{1cm}
+
+{\small Pratica N. ((( pratica.numero_pratica ))) }
+\vspace{1cm}
+
+\begin{flushright}
+((( pratica.citta ))), li ((( pratica.data_richiesta ))) 
+\end{flushright}
+\vspace{1cm}
+
+Al Direttore \\
+((( sede.sede_it ))).
+\vspace{0.5cm}
+	 
+{\bf Oggetto:} Richiesta Motivata di Affidamento ed esecuzione ai sensi del D.Lgs. 50/2016 e s.m.i.
+per lavori, forniture e servizi sotto soglia.
+
+\vspace{0.5cm}
+
+Il sottoscritto ((( pratica.nome_responsabile ))) in qualit\`a di 
+responsabile dei fondi, chiede l'affidamento e l'esecuzione della/e
+seguente/i fornitura/e, lavoro/i, servizio/i:
+
+\begin{quote}
+
+((( pratica.descrizione_acquisto )))
+\end{quote}
+
+per i seguenti motivi:
+
+\begin{quote}
+((( pratica.motivazione_acquisto )))
+\end{quote}
+
+%%% Varianti per modalità di acquisto %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'infer.5000' *))
+Il sottoscritto, considerando che l'importo dell'ordine
+\`e inferiore a 5000.00 Euro,
+chiede al direttore di procedere con l'affidamento diretto,
+come previsto dall'Art. 36 del D.Lgs. 50/2016 e s.m.i., alla Ditta: 
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+
+di cui si allega offerta.
+
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'mepa' *))
+Il sottoscritto, dopo aver consultato il sito {\tt www.acquistinretepa.it},
+dichiara quanto segue:
+\begin{quote}
+l'oggetto della richiesta \`e presente sul MEPA;
+\end{quote}
+
+Il sottoscritto chiede quindi al Direttore di procedere all'acquisto mediante ordine sul MEPA,
+come da allegata bozza d'ordine, presso la ditta:
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'consip' *))
+Il sottoscritto, dopo aver consultato il sito {\tt www.acquistinretepa.it},
+dichiara quanto segue:
+\begin{quote}
+l'oggetto della richiesta \`e presente nella Vetrina delle convenzioni Consip;
+\end{quote}
+
+Il sottoscritto chiede quindi al Direttore di procedere all'acquisto
+tramite adesione alla Convenzione Consip, come da allegata bozza d'ordine,
+presso la ditta:
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'super.5000' *))
+Il sottoscritto, dopo aver consultato il sito {\tt www.acquistinretepa.it},
+dichiara quanto segue:
+
+\begin{itemize}
+\item[-] l'oggetto della richiesta non \`e acquistabile n\'e sul MEPA n\'e
+	 nella Vetrina delle convenzioni Consip;
+\item[-] ((( pratica.giustificazione )))
+\end{itemize}
+Il sottoscritto chiede quindi al direttore di procedere con l'affidamento diretto,
+come previsto dall'Art. 36 del D.Lgs. 50/2016 e s.m.i., alla Ditta: 
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+
+di cui si allega offerta.
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'proc.neg.acq' *))
+
+Il sottoscritto, dopo aver consultato il sito {\tt www.acquistinretepa.it},
+dichiara quanto segue:
+
+\begin{itemize}
+\item[-] ((( pratica.giustificazione )))
+\end{itemize}
+
+Il sottoscritto chiede quindi al Direttore di attivare una procedura negoziata
+sotto soglia invitando almeno cinque ditte a presentare offerta come previsto
+dall'Art. 36 del D.Lgs. 50/2016 e s.m.i..
+
+L'assegnazione sar\`a basata sul criterio %
+   ((* if pratica.criterio_assegnazione == 'prezzo.piu.basso' *)) %
+del prezzo pi\`u basso.
+   ((* else *)) %
+dell'offerta pi\`u vantaggiosa.
+   ((* endif *))
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'rdo.mepa' *))
+Il sottoscritto, dopo aver consultato il sito {\tt www.acquistinretepa.it},
+dichiara quanto segue:
+
+\begin{itemize}
+\item[-] l'oggetto della richiesta \`e presente sul MEPA ma ha caratteristiche difformi
+da quanto necessario.
+\end{itemize}
+
+Il sottoscritto chiede quindi al Direttore di procedere ad una Richiesta di Offerta
+tramite MEPA, basata sul criterio %
+   ((* if pratica.criterio_assegnazione == 'prezzo.piu.basso' *)) %
+del prezzo pi\`u basso.
+   ((* else *)) %
+dell'offerta pi\`u vantaggiosa.
+   ((* endif *))
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+((* if pratica.modalita_acquisto == 'manif.interesse' *))
+Il sottoscritto chiede di individuare i soggetti da invitare a presentare offerta
+attraverso la pubblicazione di un avviso per manifestazione di interesse.
+((* endif *))
+%%%% Fine varianti per modalità acquisto
+
+Il costo presunto ammonta a ((( pratica.str_costo_it ))).
+
+Il sottoscritto dichiara che la spesa dovr\`a gravare sul/sui fondo/i:
+((( pratica.stringa_codf ))). 
+
+((* if pratica.note_richiesta *))
+{\bf Note:} ((( pratica.note_richiesta )))
+((* endif *))
+
+\vspace{0.5cm}
+
+\begin{flushright}
+\begin{minipage}[c]{6cm}
+Il responsabile dei Fondi
+
+((( pratica.nome_responsabile )))
+
+\end{minipage}
+\end{flushright}
+\end{document}

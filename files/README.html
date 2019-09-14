@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>README</title>
+</head>
+<body>
+<center>
+<h1>Procedure Web-based per la gestione degli acquisti</h1>
+
+<h4>  Luca Fini <br>    INAF - Osservatorio di Arcetri<br>
+Ottobre 2016 - Giugno 2018 </h4>
+</center>
+<a name=top>
+<table border=1>
+<tr>
+<td width=18% align=center><a href=#inst>Installazione</a></td>
+<td width=18% align=center><a href=#run>Attivazione del server</a></td>
+<td width=18% align=center><a href=#funz>Funzionamento</a></td>
+<td width=18% align=center><a href=#struc>Struttura archivio</a></td>
+<td width=18% align=center><a href=#email>Risponditore e-mail</a></td>
+<td width=18% align=center><a href=#varie>Note varie</a></td>
+</tr></table>
+
+<p> Nelle pagine che seguono sono raccolti i dettagli tecnici relativi
+all'implementazione delle procedure Web-based per la gestione delle
+pratiche per gli acquisti.
+
+
+<br>
+<br>
+<a name=inst>
+<h2>1. Installazione</h2>
+</a>
+
+Le procedure sono implementate su Ubuntu Linux 16.04 e 18.04 e vengono
+usate in produzione su una macchina con CentOS 7.x; Quindi &egrave; assicurata
+la compatibilit&agrave; con queste due distribuzioni. Le procedure
+dovrebbero essere compatibili con tutte le principali distribuzioni di
+Linux che supportino i packages utilizzati. Non è mai stato tentato il porting su 
+altri ambienti (Windows o MacOS)
+<p>
+&Egrave; richiesto python 3.4 o superiore
+<p>
+
+
+Sono richiesti i packages python sotto indicati, normalmente non installati, ma
+disponibili sulle distribuzioni testate e che devono quindi essere
+installati utilizzando i comandi previsti dalla distribuzione, prima di
+poter utilizzare le procedure:
+
+<blockquote>
+python3-flask, python3-jinja2, python3-werkzeug, python3-wtforms 
+python3-pam (Ubuntu: python3-pampy), python3-pypdf2.
+</blockquote>
+<em><b>Nota 1:</b> I nomi dei package possono cambiare a seconda della distribuzione di linux.
+	Ad esempio per CentOS 7.5 i nomi hanno prefisso <tt>python34</tt>, anziché <tt>python3</tt>
+</em>
+<br>
+<em><b>Nota 2:</b>I packages possono anche essere installati con la procedura standard di python: <b>pip3</b>
+</em>
+<em><b>Nota 3:</b>La procedura acquisti non funziona correttamente con la
+versione 2.2 di <tt>wtforms</tt>. &Egrave; ststa testata con successo con
+le versioni 2.1 e 2.2.1:
+</em>
+<p>
+La procedura utilizza il programma <tt>pdflatex</tt> per la generazione dei documenti. Anche questo,
+se non disponibile, deve essere installato insieme al supporto per la lingua italiana.
+<p>
+Inoltre &egrave; fortemente consigliato l'utilizzo di un web server dedicato:
+<blockquote>
+python3-gunicorn
+</blockquote>
+<em><b>Nota:</b> In base alla documentazione il sistema &egrave; previsto essere utilizzabile anche mediante
+server http standard (es: apache) ma non &egrave; stato testato in questa
+modalit&agrave;, dato che l'uso di "gunicorn" sembra pi&ugrave; semplice.
+</em>
+
+<h3>Account dedicato</h3>
+
+L'installazione corrente viene fatta sulla home directory di un account
+dedicato. Negli esempi l'account ha nome <tt><b>acquisti</b></tt>, e si
+consiglia di mantenere lo stesso nome, a meno che non sia in conflitto
+con utilizzi diversi.
+
+<p> L'account deve essere attivo sul server che ospita le
+procedure, che negli esempi che seguono sar&agrave; indicato con:
+<tt><b>polluce.arcetri.inaf.it</b></tt>.
+
+<p> L'account non necessita di particolari privilegi perch&eacute; il server
+web (gunicorn) viene lanciato con la UID dell'account.
+
+<p> Tutti i files necessari, sia di codice che di dati sono installati
+sulla HOME directory dell'account <tt>acquisti</tt> e sono di
+propriet&agrave; del relativo utente.  L'installazione e le operazioni
+di manutenzione vengono fatte mediante login su detto account.
+
+<h3>Installazione dei files</h3>
+
+Per procedere all'installazione, dopo aver fatto login sull'account
+<tt>acquisti</tt> &egrave; sufficiente estrarre i files della
+distribuzione dal <i>tarball</i> <tt><b>acquisti-n.n.n.tgz</b></tt>:
+
+<blockquote>
+<tt>[acquisti@polluce ~]$ tar xvfz acquisti-4.0.8.tgz</tt>
+</blockquote>
+
+Vengono estratti i seguenti files e directory:
+<ul>
+<li> <tt>README</tt>, <tt>config-esempio.json</tt>, <tt>test-table.json</tt>: esempi e documentazione
+<p>
+<li> <tt>acquisti.service</tt>, <tt>housekeeping.service</tt>, <tt>manageldap.service</tt>: Procedure per start/stop del server Web con <tt>systemctl</tt>.
+<p>
+<li><tt>bin</tt>: directory per procedure python.
+<li><tt>files</tt>: directory per files di supporto (incluso questo file).
+</ul>
+
+<b>NOTA:</b> la procedura <tt>manageldap</tt> è specifica per Arcetri a non deve essere utilizzata
+in altre sedi.
+
+<a name=config>
+<h3>Configurazione</h3>
+</a>
+
+Al momento della prima installazione, occorre creare le sottodirectory
+di lavoro ed alcuni file di supporto, utilizzando la procedura
+<tt>ftools.py</tt> che fa parte della distribuzione come nel seguente
+esempio:
+
+<blockquote>
+<tt>[acquisti@polluce ~]$ <b>python3 bin/ftools.py init</b></tt>
+</blockquote>
+
+Vengono create le seguenti directory:
+
+<blockquote>
+<table>
+<tr><td><tt>./data</tt> </td><td> &nbsp;&nbsp;Destinata ai file di dati</td></tr>
+<tr><td><tt>./data/approv</tt> </td><td> &nbsp;&nbsp;Dedicata ai file relativi ai codici di approvazione</td></tr>
+<tr><td><tt>./work</tt> </td><td> &nbsp;&nbsp;Destinata ai file di log e temporanei</td></tr>
+</table>
+</blockquote>
+
+&Egrave; poi necessario creare il file di configurazione contenente i dati specifici per
+la sede.
+<p>
+Il file viene creato con apposita procedura:
+
+<blockquote>
+<tt>[acquisti@polluce ~]$ <b>python3 bin/configure.py</b></tt>
+</blockquote>
+
+La procedura fornisce estese informazioni sui dati da immettere e in base alle risposte, genera il
+file:
+
+<blockquote>
+<tt>./data/config.json</tt>
+</blockquote>
+
+Dopo aver terminato la configurazione è possibile riesaminarla con il comando:
+
+<blockquote>
+<tt>[acquisti@polluce ~]$ <b>python3 bin/ftools.py conf</b></tt>
+</blockquote>
+
+<p> Il contenuto del file di configurazione &egrave; il seguente:
+
+<dl>
+<dt><tt>approval_hosts</tt></dt>
+<dd>Indirizzo IP autorizzato a inviare le richieste HTTP
+generate dal risponditore e-mail (vedi: <a href=#email>risponditore
+e-mail</a>)</dd>
+
+<dt><tt>email_direttore</tt></dt>
+<dd>Indirizzo e-mail del direttore</dd>
+
+<dt><tt>email_responder</tt></dt>
+<dd>Indirizzo e-mail per l'approvazione delle richieste (vedi: <a
+href=#email>risponditore e-mail</a>)</dd>
+
+<dt><tt>email_ufficio</tt></dt>
+<dd>Indirizzo e-mail a cui vengono inviati i messaggi destinati
+all'ufficio acquisti</dd>
+
+<dt><tt>email_webmaster</tt></dt>
+<dd>Indirizzo e-mail del responsabile di sistema a cui vengono inviati
+i messaggi di errore</dd>
+
+<dt><tt>flask_key</tt></dt>
+<dd>Chiave di sicurezza (generata automaticamente)</dd>
+
+<dt><tt>ldap_host</tt></dt>
+<dd>Indirizzo IP del server LDAP per autenticazione utenti (se omesso
+l'autenticazione avviene solo per utenti con login abilitato sul server).</dd>
+
+<dt><tt>ldap_port</tt></dt>
+<dd>Port IP del server LDAP per autenticazione utenti (solitamente 389).</dd>
+
+<dt><tt>nome_direttore</tt></dt>
+<dd>Nome del Direttore come compare nei documenti generati</dd>
+
+<dt><tt>nome_webmaster</tt></dt>
+<dd>Nome del responsabile di sistema</dd>
+
+<dt><tt>pop3_host</tt></dt>
+<dd>Indirizzo IP del server POP3. Necessario per supportare
+l'autorizzazione all'acquisto per e-mail (vedi: <a href=#email>risponditore
+e-mail</a>)</dd>
+
+<dt><tt>pop3_pw</tt></dt>
+<dd>Password per l'accesso  POP3 (vedi: <a href=#email>risponditore
+e-mail</a>)</dd>
+
+<dt><tt>pop3_user</tt></dt>
+<dd>Nome utente utilizzato per l'accesso  POP3 (vedi: <a
+href=#email>risponditore e-mail</a>)</dd>
+
+<dt><tt>sede</tt></dt>
+<dd>Dati relativi alla sede. <br>
+<b>Nota</b>: per <tt>website</tt> si intende la URL della pagina web ufficiale della sede.</dd>
+
+<dt><tt>smtp_host</tt></dt>
+<dd>Indirizzo IP del server SMTP (vedi: <a href=#email>risponditore
+e-mail</a>)</dd>
+
+<dt><tt>titolo_direttore</tt></dt>
+<dd>Titolo del direttore che compare nei documenti generati (es.:
+Dott.Ing.)</dd>
+
+<dt><tt>web_host</tt></dt>
+<dd>Indirizzo IP del server che ospita le procedure; in questo esempio
+sarebbe: <tt>polluce.arcetri.inaf.it</tt>. </dd>
+
+<dt><tt>web_port</tt></dt>
+<dd>Port IP utilizzato dal server che ospita le procedure. Si consiglia
+di mantenere invariato il numero 4000, a meno che non sia in conflitto
+con altri servizi di rete. Se &egrave; necessario cambiarlo per motivi
+di conflitto, occorre verificare che il cambiamento sia fatto anche nelle
+procedure di attivazione (vedi sotto).</tt></dd> 
+
+</dl>
+
+<h3>Creazione della tabella utenti</h3>
+Per poter effettuare operazioni sul sistema, occorre registrare gli
+utenti abilitati nella corrispondente tabella. Il package include
+le procedure per la gestione delle tabelle, ma &egrave; necessario
+che il primo degli utenti sia creato manualmente come specificato al <a
+href=#utenti> paragrafo relativo</a>.
+
+<h3>Sicurezza</h3>
+
+Tutte le procedure hanno l'accesso protetto dalla verifica del login
+con username e password, tuttavia per annullare il pericolo di accessi
+non autorizzati che potrebbero sfruttare la presenza di <i>backdoor</i>
+dovute a debolezze non note delle procedure standard
+usate, &egrave; consigliabile limitare l'accesso alle procedure ai soli
+utenti della LAN, filtrando le porte 4000 e 4100 mediante il firewall
+principale della LAN (se esiste). La scelta delle porte (4000 e 4100)
+che non sono normalmente utilizzate da servizi standard, rende agevole
+la definizione di filtri che non entrino in conflitto con le esigenze
+di accesso dall'esterno ad altri servizi.
+
+<p> Dato che la necessit&agrave; di accedere alle procedure per gli
+acquisti da siti esterni &egrave; principalmente connessa con l'operazione
+di approvazione di una richiesta di acquisto da parte del responsabile dei
+fondi, &egrave; prevista la possibilit&agrave; di approvazione mediante
+e-mail (vedi: <a href=#email>risponditore e-mail</a>).
+
+<br>
+<br>
+<a name=run>
+<h2>2. Attivazione / disattivazione del server (<a href=#top>^</a>)</h2>
+</a>
+
+Le procedure vengono supportate da due (tre per Arcetri) istanze del server web, che
+utilizzano tre port IP diversi:
+<ul>
+<p><li> <tt><b>acquisti.py</b></tt> (port 4000): &Egrave; la procedura principale.
+Per l'accesso iniziale si utilizza sempre questa procedura, la cui URL risulta:
+
+<blockquote>
+<tt>http://polluce.arcetri.inaf.it:4000</tt>
+</blockquote>
+
+Le altre procedure sono accessibili a partire dal pannello principale di questa.
+
+<p><li> <tt><b>housekeeping.py</b></tt> (port 4100): &Egrave; necessaria per
+la gestione delle tabelle (utenti e Codici fondi).
+
+<p><li> <tt><b>manageldap.py</b></tt> (port 4010): Consente la gestione della
+tabella generale utenti dalla quale vengono
+generate le pagine web e la mailing list allusers (Valida solo per Arcetri!).
+</ul>
+
+Solo la prima procedura &egrave; destinata a tutti gli utenti, le altre
+due vengono utilizzate solo dal personale dell'amministrazione.
+
+<p> L'attivazione delle procedure viene effettuata utilizzando
+il meccanismo <b>systemd</b>, standard nelle versioni correnti di
+Linux. Nella home directory di <tt>acquisti</tt> si trovano esempi dei
+files di configurazione relativi facilmente modificabili per adattarli
+alla configurazione della sede.
+
+<ul>
+    <li><tt> acquisti.service</tt>
+    <li><tt>  housekeeping.service </tt>
+    <li><tt>manageldap.service</tt>
+</ul>
+
+<h3>NOTE</h3> 
+<li> Per verificare che i processi siano correttamente attivi:
+<blockquote>
+     <tt>ps -ef | grep gunicorn</tt>
+</blockquote>
+Il risultato dovrebbe essere come nel seguente esempio:
+<blockquote>
+<pre>
+{polluce}-root-82: ps -ef | grep unicorn
+acquisti  3888     1  0 feb24 ?        00:03:25 gunicorn: master [manageldap:app]
+acquisti  3893  3888  0 feb24 ?        00:00:26 gunicorn: worker [manageldap:app]
+acquisti  3922     1  0 feb20 ?        00:04:11 gunicorn: master [housekeeping:app]
+acquisti  4300     1  0 feb22 ?        00:03:54 gunicorn: master [acquisti:app]
+acquisti  8397  3922  0 mar07 ?        00:00:09 gunicorn: worker [housekeeping:app]
+acquisti 19293  3922  0 mar13 ?        00:00:03 gunicorn: worker [housekeeping:app]
+acquisti 23864  4300  0 mar13 ?        00:00:08 gunicorn: worker [acquisti:app]
+acquisti 23865  4300  0 mar13 ?        00:00:07 gunicorn: worker [acquisti:app]
+root     25261 17701  0 11:23 pts/0    00:00:00 grep --color=auto unicorn
+</pre>
+</blockquote>
+
+Il differente numero di processi per ciascuna procedura risulta dalla configurazione nei files <tt>systemd</tt>.
+<p>
+Per ogni server <tt>gunicorn</tt> occorre un processo principale pi&ugrave; un numero variabile
+di processi secondari che forniscono l'effettivo servizio; aumentando il numero di processi secondari
+si aumenta la "responsivit&agrave;" del server. Quindi sono stati previsti
+due processi server per <tt>acquisti</tt> ed uno solo per <tt>housekeeping</tt> e <tt>manageldap</tt>.
+
+<h3>Files di log e notifiche di errore</h3>
+
+I files di log sono registrati nella directory:
+<blockquote>
+<tt>~/work</tt>
+</blockquote>
+Attualmente la directory contiene i seguenti files:
+<p>
+<table cellpadding=3>
+<tr><td><tt>acquisti.log</tt></td><td> Log della procedura acquisti</td></tr>
+<tr><td><tt>acquisti.pid</tt></td><td> PID del WEB server per la procedura acquisti</td></tr>
+<tr><td><tt>email_fetcher.log</tt></td><td> Log della procedura email_fetcher</td></tr>
+<tr><td><tt>housekeeping.log</tt></td><td> Log della procedura housekeeping</td></tr>
+<tr><td><tt>housekeeping.pid</tt></td><td> PID del WEB server per la procedura housekeeping</td></tr>
+<tr><td><tt>httpd-acquisti.log</tt></td><td> Log del WEB server procedura acquisti</td></tr>
+<tr><td><tt>httpd-housekeeping.log</tt></td><td> Log del WEB server procedura housekeeping</td></tr>
+<tr><td><tt>httpd-manageldap.log</tt></td><td> Log del WEB server procedura manageldap</td></tr>
+<tr><td><tt>ldap.log</tt></td><td> Log della procedura manageldap</td></tr>
+</table>
+
+<p>
+Il sistema di log prevede anche l'invio dei messaggi (limitatamente alle
+condizioni di errore) all'indirizzo e-mail dell'amministratore del sistema
+(vedi: <a href=#config>Configurazione</a>).
+
+<br>
+<br>
+<a name=funz>
+<h2>3. Funzionamento (<a href=#top>^</a>)</h2>
+</a>
+
+
+<a name=utenti>
+<h3>Registrazione utenti</h3>
+</name>
+
+Gli utenti abilitati all'uso della procedura acquisti, devono essere registrati in un'apposita tabella,
+gestita mediante la procedura <tt><b>housekeeping</b></tt> (sezione
+utenti). L'autenticazione viene fatta con le credenziali per l'accesso
+al sistema utilizzando il package PAM, quindi ciascun utente deve prima
+essere normalmente registrato come utente generale dei servizi dell'osservatorio
+(poste elettronica, ecc.) e lo <i>username</i>
+indicato nella tabella dovr&agrave; essere quello utilizzato per l'accesso
+al server.
+
+<p> La tabella degli utenti pu&ograve; essere modificata da un utente
+con privilegi di amministratore mediante l'accesso alla procedura
+<tt>housekeeping</tt>, ma il primo utente deve essere creato manualmente
+utilizzando la procedura <tt>ftools.py</tt>:
+
+<blockquote>
+<tt>[acquisti@server ~]$ <b>python3 bin/ftools.py user</b></tt>
+</blockquote>
+
+E naturalmente detto utente dovr&agrave; avere il privilegio di
+amministratore in modo da poter utilizzare le procedure WEB per la
+registrazione di altri utenti.
+
+<p><b>Nota:</b> La procedura housekeeping consente solo la creazione di utenti "normali".
+Alcuni utenti, ad esempio gli addetti all'ufficio acquisti, dovranno
+essere abilitati all'uso delle procedure di gestione mediante l'apposito
+privilegio. L'assegnazione di privilegi pu&ograve; essere effettuata solo
+manualmente utilizzando la procedura <tt>ftools.py</tt> come indicato sopra per la creazione
+del primo utente. I privilegi assegnabili sono:
+<ul>
+<li> <b>A</b> (admin)  Accesso come ufficio amministrazione.
+<li> <b>L</b> (LDAP)  Accesso per modifica ai dati di utente su LDAP
+<li> <b>D</b> (developer)  Fornisce alcuni privilegi utili per lo sviluppatore
+</ul>
+
+
+<h3>Accesso utenti</h3>
+
+L'accesso alle procedure richiede una autenticazione mediante <i>login</i>
+con UserID/Password.  L'autenticazione utilizza tre canali:
+
+<ol>
+<li> UserID/Password validi sul server che ospita le procedure
+<li> Userid/Password validi su un server LDAP specificato durante la configurazione.
+<li> UserID/Password validi solo per la procedura acquisti. In tal caso l'utente
+     deve essere creato manualmente con la procedura <b>ftools.py</b> che
+     consente la specifica opzionale di una password.
+</ol>
+
+
+<p> Gli utenti dichiarati "admin" (Amministratori) hanno i privilegi
+per la gestione delle pratiche e accedono tramite pagine dotate di
+maggiori funzioni.
+
+<p> Gli utenti che hanno questo attributo, sono in grado di utilizzare
+anche alcune ulteriori funzioni essenzialmente di tipo informativo che non 
+compaiono nel pannello mostrato agli utenti normali.
+
+<h3>Tabella codici dei fondi di finanziamento</h3>
+La procedura richiede che sia compilata e mantenuta aggiornata la tabella
+dei codici dei fondi di finanziamento. Tale tabella viene creata ed aggiornata
+utilizzando la procedura <tt>housekeeping</tt> da parte del
+personale amministrativo autorizzato.
+
+<h3>Informazioni sulle procedure</h3>
+Gli utenti con privilegio di amministratori, trovano nella pagina iniziale
+alcuni link per accedere a varie informazioni. In particolare oltre
+che un link a questa pagina di documentazione, &egrave; disponibile
+un link per la visualizzazione dello stato delle procedure. Vedi: <a
+href=/about>Informazioni su procedura acquisti</a>.
+
+<br>
+<br>
+<a name=struc>
+<h2>4. Struttura dell'archivio  (<a href=#top>^</a>)</h2>
+</a>
+I dati generati nel corso dell'uso delle procedure vengono registrati
+sotto forma di files in formato JSON sotto la directory <tt>~/data</tt>,
+come nel seguente esempio:
+
+<blockquote>
+<pre>
+<font color=blue>data</font>
++-- <font color=blue>2014</font>
+|   +-- <font color=blue>2014_000002</font>
+|   |   +-- ORDINE_1612763.pdf
+|   |   +-- pratica.json
+|   |   +-- richiesta.pdf
+|   +-- <font color=blue>2014_000009</font>
+|   |   +-- determina.pdf
+|   |   +-- ORDINE_1462630.pdf
+|   |   +-- ordine.pdf
+|   |   +-- pratica.json
+</pre>
+</blockquote>
+
+La struttura &egrave; organizzata con una directory per anno al di sotto
+delle quali vengono create sottodirectory corrispondenti a ciascuna
+pratica. In sostanza i files relativi alla pratica 5 del 2014 stanno
+nella directory <tt>.../data/2014/2014_000005</tt>.
+
+<h3>Files per le tabelle</h3>
+Oltre al già citato file <tt>config.json</tt>,
+le procedure utilizzano dati ricavati da due tabelle (Codici fondi e utenti)
+I files relativi sono contenuti nella directory
+</tt>.../data</tt>:
+
+<p>
+<blockquote>
+<table border=1>
+<tr><td> Dati di configurazione </td><td> file: <b>config.json</b> </td></tr>
+<tr><td> Tabella Codici fondi </td><td> file: <b>codf.json</b> </td></tr>
+<tr><td> Tabella utenti </td><td> file: <b>userlist.json</b> </td></tr>
+</table>
+</blockquote>
+
+La gestione delle tabelle viene effettuata dagli utenti autorizzati
+mediate apposite sezioni della procedura <tt>housekeeping.py</tt>.
+
+<h3>File per i dati della pratica</h3>
+Le informazioni relative a ciascuna pratica, utilizzate per la generazione
+dei files PDF sono contenute in un file in formato JSON:
+
+<blockquote>
+<tt>pratica.json</tt>
+</blockquote>
+
+I file di tipo PDF vengono generati nelle varie fasi della procedura ed
+hanno nome:
+
+<ul>
+<li><tt>richiesta.pdf</tt>
+<li><tt>determina.pdf</tt>
+<li><tt>ordine.pdf</tt>
+</ul>
+
+<p> In ogni directory possono comparire altri files di tipo <tt>pdf</tt>
+corrispondenti agli allegati.
+
+<br>
+<br>
+<a name=email>
+<h2>5. Risponditore e-mail  (<a href=#top>^</a>)</h2>
+
+<b>Nota:</b> L'attivazione del risponditore e-mail è opzionale. Nel caso in cui questo non
+sia attivato l'approvazione delle richieste può comunque
+essere effettuata tramite la procedura Web.
+<p>
+Allo scopo di consentire ai responsabili di fondi di effettuare una
+approvazione anche quando si trovano fuori dall'istituto, senza che si
+renda necessario consentire l'accesso al server Web dedicato da siti
+esterni alla rete LAN, &egrave; stata predisposta la possibilit&agrave;
+di effettuare l'approvazione mendiante la risposta al messaggio e-mail
+di notifica.
+
+<P> A tale scopo il messaggio di notifica viene inviato con l'indirizzo
+mittente: <tt>acquisti@arcetri.inaf.it</tt> (per la precisione, l'indirizzo
+utilizzato viene ricavato dal file di configrazione alla voce:
+<tt><b>email_responder</b></tt>) e nel "Subject" (o "Oggetto") del
+messaggio di notifica viene introdotto un codice casuale associato
+all'approvazione.
+
+<p> Il responsabile dei fondi che riceve il messaggio potr&agrave;
+notificare l'approvazione semplicemente rispondendo al messaggio (senza
+alterare il campo "Oggetto").
+
+<p> Nei seguenti paragrafi viene dettagliato il processo di ricezione
+dei messaggi e di registrazione dell'approvazione.
+
+<h3>Account per la ricezione dei messaggi</h3>
+Per consentire la gestione dei messaggi di autorizzazione &egrave;
+necessario creare un account di tipo e-mail su un qualunque server
+(normalmente potr&agrave; trattarsi del server che gestisce la
+posta dell'Istituto, ma ci&ograve; non &egrave; indispensabile) e che
+dovr&agrave; corrispondere all'indirizzo e-mail dichiarato nel file di
+configurazione alla voce <tt>email_responder</tt> (per i nostri esempi:
+<tt>acquisti@arcetri.inaf.it</tt>).
+
+<h3> Procedura per la gestione dei messaggi</h3>
+La gestione dei messaggi viene effettuata dalla procedura
+<tt><b>email_fetcher.py</b></tt> che utilizza il protocollo POP3 per
+recuperare i messaggi dal server e per generare i comandi relativi alla
+registrazione dell'approvazione.
+
+<p> L'accesso POP3 al server e-mail utilizza le credenziali
+specificate nel file di configurazione alle voci: <tt>pop3_host</tt>,
+<tt>pop3_user</tt>, <tt>pop3_pw</tt>.
+
+
+<p> La procedura esegue le seguenti operazioni (per ogni messaggio
+presente nella mailbox):
+
+<ul>
+<li>Estrae il messaggio dal server e-mail
+<li>Analizza il campo Subject del messaggio ed estrae il codice
+<li>Genera una chiamata <tt>http</tt> al server WEB della procedura
+acquisti inviando i dati estratti dal messaggio. La chiamata corrisponde ad una URL:
+<blockquote>
+<tt><b>http://polluce.arcetri.inaf.it:4000/email_approv/&lt;code&gt;</b></tt>
+</blockquote>
+Dove &lt;code&gt; rappresenta il codice casuale associato all'approvazione.
+La transazione <tt>http</tt> &egrave; ulteriormente caratterizzata da
+alcune informazioni contenute nell'header che hanno lo scopo di consentire
+la facile individuazione di transazioni irregolari.
+</ul>
+
+Tutte le operazioni effettuate sono registrate nel relativo file di log.
+
+<p> La procedura <b><tt>email_fetcher.py</tt></b> dovr&agrave; essere
+lanciata periodicamente (tipicamente ogni 5-10 minuti), ad esempio
+utilizzando il meccanismo <tt>crontab</tt>, con il comando:
+
+<blockquote>
+<tt>python3 email_fetcher.py filter</tt>
+</blockquote>
+
+<p> <b>Nota</b>: la procedura <b><tt>email_fetcher.py</tt></b> pu&ograve;
+essere lanciata anche manualmente dall'account <tt>acquisti</tt> e, se
+lanciata senza argomenti, indica il numero di messaggi presenti nella
+mailbox, senza effettuarne l'estrazione.
+
+<h3> Registrazione delle approvazioni ricevute per e-mail</h3>
+La procedura <tt>acquisti.py</tt> alla ricezione della transazione
+<tt>http</tt> per la verifica e la registrazione dell'approvazione,
+effettua controlli di merito sui dati ricevuti nella transazione e se
+la verifica &egrave; positiva, estrae il codice ed effettua una ricerca
+nella lista dei codici registrati. Se il codice &egrave; presente,
+l'approvazione viene registrata, esattamente come se fosse stata
+effettuata attraverso la relativa interfaccia WEB.
+
+<p> <b>Attenzione</b>: La verifica di validt&agrave; include un test sulla
+provenienza della transazione HTTP. Le transazioni provenienti da server
+non autorizzati vengono respinte. l'indirizzo IP autorizzato
+&egrave; contentuto nel file di coinfigurazione alla voce <tt><b>approval_host</b></tt>, che
+che deve corrispondere all'indirizzo IP della macchina sulla quale 
+viene lanciata la procedura <b><tt>email_fetcher.py</tt></b>, che
+naturalmente può coincidere con il server che ospita la procedura <b>acquisti</b>
+
+<p> Se nel corso dell'esecuzione della procedura l'indirizzo non viene
+riconosciuto, il messaggio di errore generato contiene l'indirizzo
+effettivo di provenienza mediante il quale &egrave; possibile ricavare
+l'indirizzo che deve essere introdotto nella lista.
+
+<p> <b>Nota</b>: Le informazioni utilizzate per la verifica della
+validit&agrave; dei codici di approvazione sono memorizzate sotto forma
+di file JSON nella directory:
+
+<blockquote>
+<tt>./data/approv</tt>
+</blockquote>
+
+Il nome del file corrisponde al codice di autorizzazione. 
+
+<p> Una procedura automatica provvede a cancellare i file di verifica
+pi&ugrave; vecchi di cinque giorni; in altre parole il messaggio di
+approvazione dovr&agrave; pervenire entro cinque giorni dalla richiesta.
+
+
+<br>
+<br>
+<a name=varie>
+<h2>6. Note Varie  (<a href=#top>^</a>)</h2>
+<h3>6.1 Personalizzazione </h3>
+La directory <b><tt>files</tt></b> Contiene files HTML "statici" corrispondenti
+alle varie pagine di help. &Egrave; ovviamente possibile modificare i files 
+per aggiornare le informazioni o renderle pi&ugrave; aderenti alle pratiche
+correnti.
+
+<p> In particolare tutti i files con nome della forma:
+<tt>help_*.html</tt> vengono automaticamente associati al
+corrispondente elemento nei pannelli per la definizione di richieste,
+determine ed ordini. In altre parole, se esiste un file di nome:
+<tt>help_descrizione_acquisto.html</tt> nel campo corrispondente del
+pannello per la redazione della richiesta di acquisto compare un punto
+interrogativo che consente di aprire la finestra di aiuto.
+
+<p>Per aggiungere una finestra di aiuto relativa ad un particolare campo,
+&egrave; quindi sufficiente creare il file con il nome corrispondente
+nella directory <tt>files</tt>.  Per determinare il nome interno
+di ogni particolare campo &egrave; possibile esaminare uno dei files
+<tt>pratica.json</tt> nei quali i campi corrispondenti a elementi
+dei pannelli hanno il nome cercato. In alternativa gli stessi nomi
+compaiono come TAG <tt?id</tt> e <tt>name</tt> dei campi <i>input</i>
+nel codice HTML. Ad esempio visualizzando il codice HTML della pagina
+per la definizione della richiesta di acquisto, il secondo dei campi
+del form, corrispondente alla descrizione dell'acquisto, risulta:
+
+<blockquote>
+<tt> &lt;input id="descrizione_acquisto" name="descrizione_acquisto" size="50" type="text" value=""&gt;</tt>
+</blockquote>
+
+<h3>6.2 Programma di utilit&agrave; <tt>ftools.py</tt> </h3>
+Il file <tt><b>ftools.py</b></tt> contiene varie classi
+e funzioni utilizzate dalle procedure <tt>acquisti.py</tt>,
+<tt>housekeeping.py</tt> e <tt>manageldap.py</tt>, il file pu&ograve; per&ograve; essere usato in
+modo interattivo per effettuare alcune operazioni, come &egrave; stato
+gi&agrave; mostrato nei paragrafi precedenti. Le operazioni interattive
+sono elencate nella pagina di help che si ottiene lanciando la procedura
+senza argomenti e ripetute qui:
+
+<p>
+<blockquote><pre>
+ftools.py. Versione 4.0 - Luca Fini, 30/4/2018
+
+Tools per la procedura acqusti.py
+
+Uso da linea di comando:
+    python ftools.py access - test username/password
+    python ftools.py adm    - Assegna privilegi di amministratore a utente
+    python ftools.py config - Verifica file configurazione
+    python ftools.py crea   - Crea directory di lavoro
+    python ftools.py ndet   - Visualizza ultimo num. determina
+    python ftools.py nprat  - Visualizza ultimo num. pratica
+    python ftools.py plist  - Visualizza elenco pratiche
+    python ftools.py ulist  - Visualizza lista utenti
+    python ftools.py user   - Mostra/crea/modifica utente
+
+    python ftools.py more   - Mostra ulteriori comandi (supporto allo
+                              sviluppo o specifici per Arcetri)
+</pre></blockquote>
+</body>

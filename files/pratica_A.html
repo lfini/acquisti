@@ -1,0 +1,82 @@
+<table width=100%>
+<tr><td valign=top width=50% bgcolor=#f0f0f0>
+<b>Richiesta:</b>
+{% if info.pdf_richiesta %}
+   [<a href=/vedifile/richiesta.pdf>Vedi</a>]
+   {% if info.richiesta_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificarichiesta>Modifica</a>]
+   {% endif %}
+   {% if info.richiesta_inviabile == 1 %}
+      &nbsp;&nbsp;[<a href=/inviarichiesta>Richiedi approvazione</a>]
+   {% endif %}
+   {% if info.richiesta_approvabile %}
+      &nbsp;&nbsp;[<a href=/approvarichiesta>Approva</a>]
+   {% endif %}
+   {% if pratica.pratica_aperta == 1 %}
+      &nbsp;&nbsp;[<a href=/verificaallegati/A>Verifica allegati</a>]
+   {% endif %}
+{% else %}
+   {% if info.richiesta_modificabile %}
+      [<a href=/modificarichiesta>Genera</a>]
+   {% endif %}
+{% endif %}
+<p>
+<b>Determina </b>[{{ pratica.numero_determina }}]<b>:</b>
+{% if info.pdf_determina %}
+   [<a href=/vedifile/determina.pdf>Vedi</a>]
+   {% if info.det_a_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificadetermina/A>Modifica</a>]
+   {% endif %}
+   {% if info.det_a_cancellabile %}
+      &nbsp;&nbsp;[<a href=/cancelladetermina/A>Cancella</a>]
+   {% endif %}
+{% else %}
+   {% if info.det_a_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificadetermina/A>Genera</a>]
+   {% endif %}
+{% endif %}
+<p>
+{% if info.ordine == 1 %}
+<b>Ordine:</b>
+   {% if info.pdf_ordine %}
+      [<a href=/vedifile/ordine.pdf>Vedi</a>]
+      {% if info.ord_a_modificabile %}
+          &nbsp;&nbsp;[<a href=/modificaordine/A>Modifica</a>]
+      {% endif %}
+   {% else %}
+      {% if info.ord_a_modificabile %}
+          [<a href=/modificaordine/A>Genera</a>]
+      {% endif %}
+   {% endif %}
+{% endif %}
+<p>
+
+<b>Allegati:</b>
+{% if info.attachA %}
+<ul>
+{% for a in info.attachA %}
+<li> <a href=/vedifile/{{ a[0] }}>{{ a [1]}}</a> 
+{% if info.allegati_cancellabili %}
+&nbsp;&nbsp;[<a href=/cancella/{{ a[0] }}>Cancella</a>]
+{% endif %}
+{% endfor %}
+{% endif %}
+
+<p>
+{% if pratica.pratica_aperta==1 %}
+</td><td valign=top width=50% bgcolor=#ffddaa>
+<form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
+<b> Allega documenti</b>
+<p>
+{{ uploadA.upload_file }} <a href="/files/help_upload.html"  onclick="window.open('/files/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files/qm-16.png></sup></a><br> 
+
+<blockquote>
+{{ uploadA.tipo_allegato }}
+</blockquote>
+</form>
+{% else %}
+</td><td valign=top width=50% bgcolor=#f0f0f0>
+&nbsp;
+{% endif %}
+</td></tr>
+</table>

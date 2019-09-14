@@ -1,0 +1,113 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% Template: determina_sup5000.tex - vers. 1.0 
+
+\oddsidemargin -5mm  % Dimensione pagina 
+\evensidemargin -5mm % Adatte per pagina A4
+\topmargin -30mm     % ...
+\textheight 25.5cm   % ...
+\textwidth 17cm      % ...
+
+\begin{document}
+\vspace{-2.5cm}
+\begin{center}
+\small \bf
+((( sede.sede_it ))) \\
+((( sede.indirizzo )))
+\end{center}
+
+\thispagestyle{empty}
+\vspace{1cm}
+
+{\small Pratica N. ((( pratica.numero_pratica ))) }
+\vspace{1cm}
+
+\begin{flushright}
+
+Determina n. ((( pratica.numero_determina )))
+\end{flushright}
+
+Determina a contrattare del ((( pratica.data_determina ))) - Fornitura/Servizio/Lavoro di: ((( pratica.descrizione_acquisto ))).
+
+Motivazione: ((( pratica.motivazione_acquisto )))
+\vspace{0.5cm}
+
+\begin{center}
+Il Direttore
+\end{center}
+
+\vspace{0.5 cm}
+
+\begin{list}{VALUTATA}{}
+\item[VISTO] il Decreto Legislativo 4 giugno 2003, n. 138 di riordino dell'INAF;
+\item[VISTO] il Decreto Legislativo 25 novembre 2016 n. 218 ed in particolare l'Art. 10;
+\item[VISTA] la L. 244 del 24 dicembre 2007 recante ``Disposizioni per la formazione 
+        del bilancio annuale e pluriennale dello Stato (legge finanziaria 2008)''; 
+\item[VISTO]  il Decreto Legislativo n. 50/2016 del 18 aprile 2016 ed in particolare
+      l'Art. 36;
+\item[VISTO] il D.P.R. n. 207 del 5 ottobre 2010 recante ``Regolamento di esecuzione 
+        ed attuazione del D.Lgs. 163/2006'' nelle parti ancora in vigore; 
+\item[PRESO ATTO] delle linee guida dell'ANAC;
+\item[VISTA] la L. 241/1990 che stabilisce che: ``L'attivit\`a amministrativa persegue i 
+        fini determinati dalla legge ed \`e retta da criteri di economicit\`a, di 
+        efficacia, di pubblicit\`a e di trasparenza''
+\item[VISTO] il D.L. n. 52 del 7 maggio 2012, trasformato in Legge n. 94 del 6 luglio 2012 
+        recante "Disposizioni urgenti per la razionalizzazione della spesa pubblica 
+        e la successiva Legge 135 del 7 agosto 2012 "Disposizioni urgenti per la 
+        revisione della spesa pubblica"; 
+\item[VISTO] il Disciplinare di Organizzazione e Funzionamento dell'INAF, approvato
+        con delibera del C.D.A. n. 44/2012 del 21/06/2012;
+\item[VISTO] il Regolamento sull'Amministrazione, sulla Contabilit\`a e sull'Attivit\`a 
+        Contrattuale dell'INAF, pubblicato sul S.O. n. 185 alla G.U. Serie Generale 
+        n. 300 del 23 dicembre 2004;   
+\item[VISTA] la richiesta da parte di ((( pratica.nome_responsabile ))) di  acquisire:
+         ((( pratica.descrizione_acquisto ))) \\
+\item[VISTA] la Legge 136 Art. 3 del 13/8/10 e il D.L. n. 187/2010 convertito nella Legge 
+        n. 217 del 17.12.2010, che introducono l'obbligo di tracciabilit\`a dei flussi 
+        finanziari relativi alle commesse pubbliche; 
+\item[VISTA] la disponibilit\`a sul/sui fondo/i ((( pratica.stringa_codf ))); 
+\item[RITENUTO] quindi che vi siano i presupposti normativi e di fatto per acquisire  
+         quanto indicato in oggetto ai sensi dell'Art. 36 co. 2 lett. A del D.Lgs. 50/2016 e s.m.i.;
+\item[VALUTATA] la necessit\`a di provvedere all'acquisizione di quanto richiesto; 
+\end{list}
+
+\begin{center}
+DETERMINA
+\end{center}
+
+\begin{list}{VALUTATA}{}
+\item[Art.~1:] di nominare, quale responsabile unico del procedimento, in base 
+           all'Art. 31 del D.Lgs 50/2016 e s.m.i. il Dr./Sig. ((( pratica.rup ))),
+           il quale possiede le competenze necessarie a svolgere tale ruolo; 
+\item[Art.~2:] di acquistare il bene/servizio ovvero la realizzazione di lavori
+        avente le caratteristiche descritte sotto:
+\begin{quote}
+            ((( pratica.descrizione_acquisto )))
+\end{quote}
+
+procedendo all' acquisto tramite affidamento diretto alla Ditta: 
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+
+\item[Art.~3:] che l'importo presunto del lavoro/fornitura/servizio \`e di 
+((( pratica.str_costo_it ))),
+a carico del/dei fondo/i ((( pratica.stringa_codf ))), ((* if pratica.cup *)) CUP ((( pratica.cup ))), ((* endif *)) Cap. ((( pratica.capitolo ))); 
+
+\item[Art.~4:] di prenotare l'impegno di spesa. 
+\end{list}
+
+\vspace{0.5cm}
+
+\begin{flushright}
+\begin{minipage}[t]{6cm}
+\begin{center}
+Il Direttore \\
+((( pratica.titolo_direttore ))) ((( pratica.nome_direttore )))
+\end{center}
+\end{minipage}
+\end{flushright}
+\end{document}

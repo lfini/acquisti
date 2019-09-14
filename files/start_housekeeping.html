@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Gestione tabelle</title>
+<link rel="stylesheet" type="text/css" href="/files/overlay.css">
+<script src="/files/overlay.js"></script>
+</head>
+<body>
+<!-- template: start_housekeeping.html -->
+{% from "_common.html" import start_page, end_page %}
+{{ start_page("",sede.sede_it,"Gestione tabelle") }}
+<tr><td>
+<b>Utente: <i> {{ user.name }} {{ user.surname }} </i> </b> &nbsp;&nbsp;&rightarrow; [<a href="/clearsession">Logout</a>]</td><tr> 
+
+<tr><td>
+<ul>
+<h4><li> <a href=/codf>Gestione tabella Codici fondi</a></h4>
+<h4><li> <a href=/utenti>Gestione tabella Utenti (acquisti)</a></h4>
+{% if is_arcetri %}
+<h4><li> <a href={{ status.host }}:4010>Gestione tabella generale utenti</a></h4>
+{% endif %}
+<br>
+<li> <a href=/about>Informazioni su procedura <tt>housekeeping.py</tt></a>
+<li> <a href=/files/README.html>Informazioni tecniche</a>
+<p>
+<li> <a href={{ status.host }}:4000>Torna a procedura acquisti</a>
+</ul>
+</td></tr>
+{{ end_page() }}
+<font size=-2>{{ status.footer }}</font>
+</body>

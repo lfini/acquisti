@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Accesso</title>
+<link rel="stylesheet" type="text/css" href="/files/overlay.css">
+<script src="/files/overlay.js"></script>
+</head>
+<body>
+<!-- template: nouser.html - vers. 1.0 -->
+{% from "_common.html" import start_page, end_page %}
+{{ start_page("",sede.sede_it,"Procedura acquisti","Accesso negato") }}
+<tr><td>
+L'utente con UserID: <b>{{ userid }}</b> non 
+&egrave; stato abilitato a gestire richieste di acquisto.
+<p>
+Rivolgiti all'amministrazione per chiarimenti.
+</td></tr>
+{{ end_page() }}
+</body>

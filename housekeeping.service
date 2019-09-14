@@ -1,0 +1,17 @@
+[Unit]
+Description=Procedura Housekeeping per Acquisti
+After=network.target
+RequiresMountsFor=/home/public
+
+[Service]
+Type=forking
+WorkingDirectory=/home/public/acquisti
+PIDFile=/home/public/acquisti/work/housekeeping.pid
+User=acquisti
+ExecStart=/usr/local/bin/gunicorn -w 2 -b 0.0.0.0:4100 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-housekeeping.log --pid=/home/public/acquisti/work/housekeeping.pid --user=acquisti housekeeping:HSK
+ExecStop=/bin/kill -s TERM $MAINPID
+ExecReload=/bin/kill -s HUP $MAINPID
+
+
+[Install]
+WantedBy=multi-user.target

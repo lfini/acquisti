@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Lista people</title>
+<link rel="stylesheet" type="text/css" href="/files/overlay.css">
+<script src="/files/overlay.js"></script>
+</head>
+<body>
+{% from "_common.html" import start_page, end_page, flash_messages %}
+<!-- template: lista_people.html -->
+{{ start_page("","",title,subtitle) }}
+<tr><td>
+<h4>
+&rightarrow; <a href=/>Torna a lista utenti</a>
+</h3>
+<hr>
+Per modificare un record, cliccare sul nome dell'utente.
+<p><blockquote>
+<ul>
+{% for a in data: %}
+<li> <a href=/modificaldap/{{ a[0] }}>{{ a[1] }} ({{ a[0] }})</a> - {{ a[2] }} 
+{% endfor %}
+
+</td></tr>
+{{ end_page() }}
+&rightarrow; <a href=/>Torna</a>
+</body>

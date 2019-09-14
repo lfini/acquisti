@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Reload</title>
+<link rel="stylesheet" type="text/css" href="/files/overlay.css">
+<script src="/files/overlay.js"></script>
+</head>
+<!-- template: reload.html -->
+{% from "_common.html" import start_page, end_page %}
+{% if error %}
+{{ start_page("",sede.sede_it,"Errore operazione reload",error) }}
+{% else %}
+{{ start_page("Operazione reload effettuata") }}
+{% endif %}
+{{ end_page() }}
+&rightarrow; <a href=/>Torna</a>

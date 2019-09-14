@@ -1,0 +1,8 @@
+Procedure per la gestione degli acquisti.
+
+Vedere documentazione ed istruzioni di installazione nel file:
+
+     ./files/README.html
+
+NOTA: la procedura manageldap.py viene utilizzata per la gestione
+dell'archivio utenti di Arcetri e non è applicabile ad altre sedi

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pratica</title>
+<link rel="stylesheet" type="text/css" href="/files/overlay.css">
+<script src="/files/overlay.js"></script>
+</head>
+<body>
+<!-- template: pratica.html. Vers. 1.0 -->
+{% from "_common.html" import start_page, end_page %}
+{% macro getval(value) %}
+Pratica N. {{ value }}
+{% endmacro %}
+{{ start_page("",sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
+<tr><td>
+{% if info.debug %}
+   <h4> <font color=red>Modo debug</font>: invia email a webmaster </h4>
+{% endif %}
+{% if info.developer %}
+   <h4><font color=red>Modo developer</font>: &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a></h4>
+   <b>Info:</b> {{ info }}
+   <hr>
+{% endif %}
+
+<table cellspacing=3>
+<tr><td><b>Richiesta del:</b></td><td> {{ pratica.data_richiesta }} </td></tr>
+<tr><td><b>Richiedente:</b></td><td> {{ pratica.nome_richiedente }} </td></tr>
+<tr><td><b>Resp. fondi:</b></td><td> {{ pratica.nome_responsabile }} </td></tr>
+<tr><td><b>Mod. acquisto:</b></td><td> {{ info.mod_acq_str }} </td></tr>
+<tr><td><b>Stato:</b></td><td>  
+{% if info.alarm %}
+   <font color=red>{{ pratica.stato_pratica }}</font>
+{% else %}
+   {{ pratica.stato_pratica }}
+{% endif %}
+<tr><td valign=top align=left><b>Storia:</b></td>
+    <td align=left>
+{% if pratica._vedi_storia==1 %}
+   [<a href=/togglestoria>Nascondi storia</a>]<br>
+   {% for s in pratica.storia_pratica %}
+      {{ s }}<br>
+   {% endfor %}
+{% else %}
+   [<a href=/togglestoria>Vedi storia</a>]
+{% endif %}
+</td></tr></table>
+
+</td></tr><tr><td width=100%>
+<table cellpadding=20 width=100%>
+{% include "pratica_A.html" %}
+{% if info.faseB %}
+<hr>
+{% include "pratica_B.html" %}
+{% endif %}
+</table>
+
+</td></tr><tr><td>
+[<a href=/>Torna</a>] &nbsp;&nbsp;&nbsp;
+{% if info.pratica_chiudibile %}
+[<a href=/chiudipratica>Chiudi pratica</a>] &nbsp;&nbsp;&nbsp;
+{% endif %}
+{% if info.pratica_apribile %}
+[<a href=/apripratica>Riapri pratica</a>] &nbsp;&nbsp;&nbsp;
+{% endif %}
+{% if info.pratica_annullabile %}
+[<a href=/annullapratica>Annulla pratica</a>] &nbsp;&nbsp;&nbsp;
+{% endif %}
+</tr></td>
+{{ end_page() }}
+

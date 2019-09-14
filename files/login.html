@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Accesso</title>
+<link rel="stylesheet" type="text/css" href="/files/overlay.css">
+<script src="/files/overlay.js"></script>
+</head>
+<body>
+<!-- template: login.html -->
+{% from "_common.html" import start_page, end_page, render_field %}
+{{ start_page("",sede.sede_it,title,"Controllo accesso","how-to-login.html","no") }}
+<tr><td>
+<form method="POST" action="/login">
+<dl>
+{{ render_field(form.userid) }}
+{{ render_field(form.password) }}
+</dl>
+<div align=right><input type="submit" value="Avanti" /></div>
+</form>
+</td></tr>
+{{ end_page() }}
+</body>

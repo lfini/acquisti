@@ -1,0 +1,65 @@
+<!-- inizio Sezione B -->
+<table width=100%>
+<tr><td valign=top width=50% bgcolor=#f0f0f0>
+<b> Allegati: </b>
+{% if info.attachB %}
+<ul>
+{% for l in info.attachB %}
+<li> <a href=/vedifile/{{ l[0] }}>{{ l[1]}}</a> 
+{% if info.allegati_cancellabili %}
+&nbsp;&nbsp;[<a href=/cancella/{{ l[0] }}>Cancella</a>]
+{% endif %}
+{% endfor %}
+</ul>
+{% else %}
+<p>
+{% endif %}
+<p>
+<b>Determina agg.</b> [{{ pratica.numero_determina_b }}]<b>: </b>
+{% if info.pdf_determina_b %}
+   [<a href=/vedifile/determinaB.pdf>Vedi</a>]
+   {% if info.det_b_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificadetermina/B>Modifica</a>]
+   {% endif %}
+   {% if info.det_b_cancellabile %}
+      &nbsp;&nbsp;[<a href=/cancelladetermina/B>Cancella</a>]
+   {% endif %}
+{% else %}
+   {% if info.det_b_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificadetermina/B>Genera</a>]
+   {% endif %}
+{% endif %}
+<p>
+{% if info.ordine_b == 1 %}
+<b>Ordine:</b>
+   {% if info.pdf_ordine_b %}
+      [<a href=/vedifile/ordine.pdf>Vedi</a>]
+      {% if info.ord_b_modificabile %}
+          &nbsp;&nbsp;[<a href=/modificaordine/B>Modifica</a>]
+      {% endif %}
+   {% else %}
+      {% if info.ord_b_modificabile %}
+          [<a href=/modificaordine/B>Genera</a>]
+      {% endif %}
+   {% endif %}
+{% endif %}
+
+{% if pratica.pratica_aperta==1 %}
+</td><td valign=top width=50% bgcolor=#ffddaa>
+<form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
+<b>Allega documenti</b>
+<p>
+{{ uploadB.upload_file }} <a href="/files/help_upload.html"  onclick="window.open('/files/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files/qm-16.png></sup></a><br> 
+<blockquote>
+{{ uploadB.tipo_allegato }}
+</blockquote>
+</form>
+</td></tr>
+{% else %}
+</td><td valign=top width=50% bgcolor=#f0f0f0>
+&nbsp;
+</td></tr>
+{% endif %}
+</table>
+
+<!-- fine Sezione B -->

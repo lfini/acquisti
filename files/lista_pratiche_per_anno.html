@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Lista pratiche</title>
+</head>
+<body>
+<!-- template: lista_pratiche_per_anno.html -->
+<style>
+/* Tooltip container */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    bottom: 80%;
+    left: 50%;
+    margin-left: -20px;
+    font-size: 12px;
+    background-color: gray;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+ 
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
+</style>
+
+
+
+{% from "_common.html" import start_page, end_page %}
+{{ start_page("",sede.sede_it,title,subtitle) }}
+<tr><td>
+{% if years %}
+Seleziona: 
+{% for yy in years %}
+[<a href=/pratiche/{{ stato }}/{{ yy }}/0>{{ yy }}</a>&nbsp;<div class="tooltip"><a href=/pratiche/{{ stato }}/{{ yy }}/1><img src=/files/up-16.png><span class="tooltiptext">in ordine crescente</span></a></div>]&nbsp;&nbsp;
+{% endfor %}
+<hr>
+{% endif %}
+<b>Anno: {{ year }}</b>
+
+<ul>
+{% for d in dlist %}
+<p>   <li> <em> {{ d.numero_pratica }}</em>. Richiesta del {{ d.data_richiesta }}. 
+       Resp.fondi: {{ d.nome_responsabile }}. Richiedente: {{ d.nome_richiedente }}.<br>
+       <b> {{ d.descrizione_acquisto }}.</b><br>Stato: {{ d.stato_pratica }}.&nbsp;&nbsp;&nbsp;&rightarrow; <a href=/pratica0/{{ d.numero_pratica }}>Vedi</a> </li>
+{% endfor %}
+</ul>
+</td></tr>
+{{ end_page() }}
+&rightarrow; <a href=/>Torna</a>
+</body>

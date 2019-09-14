@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Error page </title>
+</head>
+<body>
+<!-- template: error.html -->
+{% from "_common.html" import start_page, end_page %}
+{{ start_page("","","Errore procedura acquisti") }}
+<tr><td> <h3><font color=red>{{ title }}</font></h3>
+{{ message }}
+</td></tr>
+{{ end_page() }}
+</body>
