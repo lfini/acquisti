@@ -8,7 +8,7 @@
 \textheight 25.5cm   % ...
 \textwidth 17cm      % ...
 
-%% Template: richiesta.tex. Version 1.5
+%% Template: richiesta.tex. Version 1.6
 
 \begin{document}
 \vspace{-2.5cm}
@@ -52,7 +52,21 @@ per i seguenti motivi:
 ((( pratica.motivazione_acquisto )))
 \end{quote}
 
-%%% Varianti per modalità di acquisto %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Varianti per modalità di acquisto
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -- Mantenuto per compatibilità con versione 3.0
+((* if pratica.modalita_acquisto == 'infer.1000' *))
+Il sottoscritto, considerando che l'importo dell'ordine \`e inferiore a 1000.00 Euro,
+chiede al direttore di procedere con l'affidamento diretto,
+come previsto dall'Art. 36 del D.Lgs. 50/2016, alla Ditta: 
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+
+di cui si allega offerta.
+
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ((* if pratica.modalita_acquisto == 'infer.5000' *))
 Il sottoscritto, considerando che l'importo dell'ordine
 \`e inferiore a 5000.00 Euro,
@@ -96,6 +110,24 @@ presso la ditta:
 ((( pratica.nome_fornitore )))\\
 ((( pratica.ind_fornitore )))
 \end{quote}
+((* endif *))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -- Mantenuto per compatibilità con versione 3.0
+((* if pratica.modalita_acquisto == 'super.1000' *)) 
+Il sottoscritto, dopo aver consultato il sito {\tt www.acquistinretepa.it},
+dichiara quanto segue:
+
+\begin{itemize}
+\item[-] l'oggetto della richiesta non \`e presente n\'e sul MePA n\'e nella Vetrina delle convenzioni Consip;
+\item[-] ((( pratica.giustificazione )))
+\end{itemize}
+Il sottoscritto chiede quindi al direttore di procedere con l'affidamento diretto,
+come previsto dall'Art. 36 del D.Lgs. 50/2016, alla Ditta: 
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+
+di cui si allega offerta.
 ((* endif *))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ((* if pratica.modalita_acquisto == 'super.5000' *))
