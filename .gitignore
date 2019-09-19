@@ -1,0 +1,9 @@
+*.swp
+sync_data
+sync_lfini
+test
+work
+data
+HISTORY
+deploy-lfini
+__pycache__

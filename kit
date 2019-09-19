@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Generazione tarball delle procedure acquisti
+
+VERSION=`python3 ./bin/acquisti.py vx`
+
+# ripulisci directory
+rm -f ./bin/*.pyc
+rm -rf ./bin/__pycache__
+rm -rf ./bin/tmp
+
+tar cvfz ../acquisti-$VERSION.tgz switch bin files README *.service

@@ -1,0 +1,16 @@
+{ 
+  "approval_hosts": ["localhost","127.0.0.1","193.206.155.7"],
+  "email_direttore": "prossi@oss.inaf.it",
+  "email_responder": "acquisti@oss.inaf.it",
+  "email_ufficio": "amministrazione@oss.inaf.it",
+  "email_webmaster": "cbianchi@oss.inaf.it",
+  "nome_direttore": "Paolo Rossi",
+  "nome_webmaster": "Carlo Bianchi",
+  "pop3_host": "pop.oss.inaf.it",
+  "pop3_pw": "2343071",
+  "pop3_user": "acquisti",
+  "smtp_host": "mail.oss.inaf.it",
+  "titolo_direttore": "Dott.",
+  "web_host": "server.oss.inaf.it",
+  "web_port": 4000
+}
