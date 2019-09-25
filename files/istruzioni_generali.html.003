@@ -6,18 +6,11 @@
 <body>
 <h1>Istruzioni per l'acquisto di beni e servizi</h1>
 <table border=1 width=100%><tr>
-<td align=center width=20% bgcolor=#ffcccc><a href=#premessa>Premessa</a></td>
-<td align=center width=20% bgcolor=#ffcccc><a href=#precisazioni>Precisazioni</a></td>
-<td align=center width=20% bgcolor=#ffcccc><a href=#richacquisto>Richiesta di acquisto</a></td>
-<td align=center width=20% bgcolor=#ffcccc><a href=#approvazionerichiesta>Approvazione</a></td>
-<td align=center width=20% bgcolor=#ffcccc><a href=#modifiche>Modifiche</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#precisazioni>Precisazioni</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#richacquisto>Richiesta di acquisto</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#approvazionerichiesta>Approvazione</a></td>
+<td align=center width=25% bgcolor=#ffcccc><a href=#modifiche>Modifiche</a></td>
 </tr></table>
-<a name=premessa>
-<h3>Premessa</h3>
-</a>
-In seguito alle modifiche della normativa del Lugio 2019, in attesa dell'adegumento
-delle presenti istruzioni, occorre fare riferimento alle 
-<a href=/files/istruzioni_201908.pdf>nuove istruzioni</a>
 <p>
 Gli acquisti di beni e servizi per conto dell'Istituto possono avvenire
 per diversi canali a seconda delle condizioni. Le modalit&agrave; di acquisto da 
