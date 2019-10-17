@@ -12,12 +12,15 @@ from jinja2 import FileSystemLoader
 from PyPDF2 import PdfFileReader, PdfFileWriter
 
 # VERSION 3.0    05/01/2018  - Versione python3
+# VERSION 3.1    17/10/2019  - path pdflatex configurabile
 
 __author__ = 'Luca Fini'
 __version__ = '3.1'
 __date__ = '20/5/2019'
 
-PDFLATEX = '/usr/bin/pdflatex'
+class PDFLATEX:pass
+
+PDFLATEX.cmd = '/usr/bin/pdflatex'
 
 _NOTA = 'Il prezzo '+chr(232)+' specificato in Euro ('+chr(8364)+ \
         ')  *** '+chr(192)+chr(233)+chr(197)+' ***'
@@ -82,6 +85,10 @@ CHLIST = {35: "\\#",
           249: "\\`u",
           250: "\\'u",
           8364: "\\euro{}"}
+
+def set_path(dirpath):
+    "Imposta path per pdflatex"
+    PDFLATEX.cmd = os.path.join(dirpath, "pdflatex")
 
 def tempnam(destdir='./', prefix='', suffix=''):
     "Genera un nome file temporaneo"
@@ -230,7 +237,7 @@ def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):
         fpt.write(tex)
     if atcs:
         do_attachments(tmplatex, atcs)
-    cmd = [PDFLATEX]
+    cmd = [PDFLATEX.cmd]
     if BATCHMODE:
         cmd.extend(['-interaction', 'batchmode'])
     cmd.extend(['-output-directory', tpath, tmplatex])
