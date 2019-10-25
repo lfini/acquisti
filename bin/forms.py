@@ -8,8 +8,8 @@ import flask as fk
 import ftools as ft
 from constants import *
 
-__version__ = "1.3"
-__date__ = "6/4/2019"
+__version__ = "1.4"
+__date__ = "20/10/2019"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -31,9 +31,16 @@ def _has(hspec):
         return 'help_'+hspec+'.html'
     return ''
 
-def popup(url, text, size=(700, 500)):
+def popup(url, text, args=None, size=(700, 500)):
     "Genera codice HTML per popup"
-    return '<a href="%s"  onclick="window.open(\'%s\', \'newwindow\', \'width=%d, height=%d, scrollbars=yes\'); return false;">%s</a>'%(url, url, size[0], size[1], text)
+    full_url = url.copy()
+    if args:
+        aux = []
+        for item in args.items():
+            aux.append("%s=%s"%tuple(item))
+        full_url += "?"+"&".join(args)
+    return '<a href="%s"  onclick="window.open(\'%s\', \'newwindow\', \'width=%d, height=%d, '\
+           'scrollbars=yes\'); return false;">%s</a>'%(full_url, full_url, size[0], size[1], text)
 
 def render_field(field, **kw):
     "Rendering di un campo"
@@ -103,8 +110,8 @@ class MySelectField(wt.SelectField):
         self.is_required = required
         self.a_label = label
 
-#ATTACH_BUTTON = '<td>%s</td><td><input type="image" name="%s" src="/files/attach.png" border="0" alt="Allega" style="width: 20px;" /></td><td> %s </td></tr>\n'
-ATTACH_BUTTON = '<td><input type="image" name="%s" src="/files/attach.png" border="0" alt="Allega" style="width: 20px;" /></td><td> %s %s</td></tr>\n'
+ATTACH_BUTTON = '<td><input type="image" name="%s" src="/files/attach.png" border="0" '\
+                'alt="Allega" style="width: 20px;" /></td><td> %s %s</td></tr>\n'
 
 class MyAttachField(wt.Field):
     "Field per attachments"
@@ -139,6 +146,19 @@ class MyFormField(wt.FormField):
         if not self.form.validate():
             self.errlist.extend(self.form.errlist)
         return len(self.errlist) == 0
+
+class MyFieldList(wt.FieldList):
+    "FieldList, versione mia"
+    def __init__(self, fclass, label, required, *f, **kw):
+        super().__init__(fclass, *f, **kw)
+        self.errlist = []
+        self.help_spec = None
+        self.is_required = required
+        self.a_label = label
+
+    def __call__(self, **kw):
+        for item in self:
+            return render_field(item, **kw)
 
 class MyForm(wt.Form):
     "Ridefinizione form per supporto help"
@@ -248,10 +268,13 @@ class RichiestaAcquisto(ModifiedForm):
     "Form per richiesta acquisto"
     data_richiesta = MyTextField('Data richiesta (g/m/aaaa)', True)
     descrizione_acquisto = MyTextField('Descrizione', True)
-    descrizione_ordine = MyTextAreaField('Descrizione per ordine (Solo se diversa dalla precedente)', False)
+    descrizione_ordine = MyTextAreaField('Descrizione per ordine '\
+                                         '(Solo se diversa dalla precedente)', False)
     motivazione_acquisto = MyTextAreaField('Motivazione acquisto', True)
-    lista_codf = MySelectMultipleField('Codice Fondo', True, [wt.validators.InputRequired("Manca codice fondo")])
-    email_responsabile = MySelectField('Responsabile', True, [wt.validators.InputRequired("Manca responsabile acquisto")])
+    lista_codf = MySelectMultipleField('Codice Fondo', True,
+                                       [wt.validators.InputRequired("Manca codice fondo")])
+    email_responsabile = MySelectField('Responsabile', True,
+                                       [wt.validators.InputRequired("Manca responsabile acquisto")])
     modalita_acquisto = MyRadioField('Modalit&agrave; di acquisto', True,
                                      choices=MENU_MOD_ACQ,
                                      widget=radio_widget)
@@ -266,11 +289,11 @@ class RichiestaAcquisto(ModifiedForm):
     newform = wt.HiddenField()
 
     note_richiesta = MyTextAreaField('Note', False, [wt.validators.Optional()])
-    avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
-    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def validate(self):
-        if not ft.is_a_date(self.data_richiesta.data):
+        if not ft.date_to_time(self.data_richiesta.data):
             self.errlist.append("Errore specifica data")
         if not self.descrizione_acquisto.data:
             self.errlist.append("Manca descrizione acquisto")
@@ -283,9 +306,11 @@ class RichiestaAcquisto(ModifiedForm):
         if not self.modalita_acquisto.data:
             self.errlist.append("Specificare modalit&agrave; di acquisto")
         if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_5000:
-            self.errlist.append('Manca giustificazione per affidamento diretto ed importo sup. a 5000 €')
+            self.errlist.append('Manca giustificazione per '\
+                                'affidamento diretto ed importo sup. a 5000 €')
         if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_1000:
-            self.errlist.append('Manca giustificazione per affidamento diretto ed importo sup. a 1000 €')
+            self.errlist.append('Manca giustificazione per '\
+                                'affidamento diretto ed importo sup. a 1000 €')
         if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
             if not (self.nome_fornitore.data and self.ind_fornitore.data):
                 self.errlist.append("Dati fornitore incompleti")
@@ -308,12 +333,18 @@ class RichiestaAcquisto(ModifiedForm):
         if self.modalita_acquisto.data != 'None':
             html.append('<tr><td>'+render_field(self.descrizione_acquisto,
                                                 size=50)+'</td></tr>')
-            if self.modalita_acquisto.data in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000, PROC_NEG):
-                html.append('<tr><td>'+render_field(self.descrizione_ordine, rows=3, cols=80)+'</td></tr>')
+            if self.modalita_acquisto.data in (INFER_5000, SUPER_5000,
+                                               INFER_1000, SUPER_1000, PROC_NEG):
+                html.append('<tr><td>'+render_field(self.descrizione_ordine,
+                                                    rows=3, cols=80)+'</td></tr>')
             if self.modalita_acquisto.data in (SUPER_5000, SUPER_1000, PROC_NEG):
-                html.append('<tr><td>'+render_field(self.giustificazione, rows=3, cols=80)+'</td></tr>')
-            html.append('<tr><td>'+render_field(self.motivazione_acquisto, rows=10, cols=80)+'</td></tr>')
-            html.append('<tr><td>'+'<div align=right> &rightarrow; %s</div>'%popup(fk.url_for('vedicodf'), 'Vedi lista Codici fondi e responsabili', size=(1100, 900)))
+                html.append('<tr><td>'+render_field(self.giustificazione,
+                                                    rows=3, cols=80)+'</td></tr>')
+            html.append('<tr><td>'+render_field(self.motivazione_acquisto,
+                                                rows=10, cols=80)+'</td></tr>')
+            html.append('<tr><td>'+'<div align=right> &rightarrow; %s</div>'% \
+                        popup(fk.url_for('vedicodf'),
+                              'Vedi lista Codici fondi e responsabili', size=(1100, 900)))
             html.append(render_field(self.email_responsabile))
             html.append('<br>'+render_field(self.lista_codf)+'</td></tr>')
 
@@ -328,21 +359,25 @@ class RichiestaAcquisto(ModifiedForm):
                 html.append('<tr><td>'+render_field(self.oneri_sicurezza))
                 html.append('</td></tr>')
             html.append('<tr><td>'+render_field(self.note_richiesta, rows=10, cols=80)+'</td></tr>')
-        html.append('<tr><td>' + self.annulla() + ' &nbsp; ' + self.avanti() +'</td></tr>')
+        html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</td></tr>')
         html.append(self.newform())
         return '\n'.join(html)
 
 class DeterminaA(ModifiedForm):
     "form per definizione determina fase A"
-    numero_determina = MyTextField('Numero determina', True, [wt.validators.InputRequired("Manca numero determina")])
-    data_determina = MyTextField('Data (g/m/aaaa)', True, [wt.validators.Optional("Manca data determina")])
-    nome_direttore = MyTextField('Direttore', True, [wt.validators.Optional("Manca nome direttore")])
-    capitolo = MyTextField('Capitolo', True, [wt.validators.InputRequired("Manca indicazione capitolo")])
+    numero_determina = MyTextField('Numero determina', True,
+                                   [wt.validators.InputRequired("Manca numero determina")])
+    data_determina = MyTextField('Data (g/m/aaaa)', True,
+                                 [wt.validators.Optional("Manca data determina")])
+    nome_direttore = MyTextField('Direttore', True,
+                                 [wt.validators.Optional("Manca nome direttore")])
+    capitolo = MyTextField('Capitolo', True,
+                           [wt.validators.InputRequired("Manca indicazione capitolo")])
     cup = MyTextField('CUP', False, [wt.validators.Optional()])
-#   rup = MyTextField('RUP', True, [wt.validators.InputRequired("Manca indicazione RUP")])
-    email_rup = MySelectField('RUP', True, [wt.validators.InputRequired("Manca indicazione RUP")])
-    avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
-    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    email_rup = MySelectField('RUP', True,
+                              [wt.validators.InputRequired("Manca indicazione RUP")])
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def validate(self):
         "Validazione specifica per il form"
@@ -360,35 +395,35 @@ class DeterminaA(ModifiedForm):
 
     def renderme(self, dati_pratica):
         "rendering del form"
-        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: %(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
+        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi:'\
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
         html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % dati_pratica)
         html.append('<tr><td>'+render_field(self.numero_determina)+'<br>')
         html.append(render_field(self.data_determina)+'<br>')
         html.append(render_field(self.nome_direttore)+'</td></tr><tr><td>')
-        html.append("Codici Fondi: %s<p>" % dati_pratica[STRINGA_CODF])
+        html.append("Codici Fondi: %s<p>" % dati_pratica[STR_CODF])
         html.append(render_field(self.capitolo)+'<br>')
         html.append(render_field(self.cup)+'<br>')
         html.append(render_field(self.email_rup)+'</td></tr><tr><td>')
-        html.append('<tr><td>'+self.annulla()+' &nbsp; '+self.avanti() +'</td></tr>')
+        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() +'</td></tr>')
         return '\n'.join(html)
 
 class DeterminaB(ModifiedForm):
     "form per definizione determina fase B"
-    numero_determina_b = MyTextField('Numero determina', True, [wt.validators.InputRequired("Manca numero determina")])
-    data_determina_b = MyTextField('Data (g/m/aaaa)', True, [wt.validators.Optional("Manca data determina")])
-    nome_direttore_b = MyTextField('Direttore', True, [wt.validators.Optional("Manca nome direttore")])
-    modalita_acquisto_b = MyRadioField('Modalit&agrave; di acquisto', True,
-                                       choices=MENU_MOD_ACQ_B,
-                                       widget=radio_widget)
-    criterio_assegnazione = MyRadioField("Criterio di assegnazione", True,
-                                         choices=MENU_CRIT_ASS,
-                                         widget=radio_widget)
-#   capitolo = MyTextField('Capitolo', True, [wt.validators.InputRequired("Manca indicazione capitolo")])
-#   cup = MyTextField('CUP', False, [wt.validators.Optional()])
-#   rup = MyTextField('RUP', True, [wt.validators.InputRequired("Manca indicazione RUP")])
-#   email_rup = MySelectField('RUP', True, [wt.validators.InputRequired("Manca indicazione RUP")])
-    avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
-    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    numero_determina_b = MyTextField('Numero determina', True,
+                                     [wt.validators.InputRequired("Manca numero determina")])
+    data_determina_b = MyTextField('Data (g/m/aaaa)', True,
+                                   [wt.validators.Optional("Manca data determina")])
+    nome_direttore_b = MyTextField('Direttore', True,
+                                   [wt.validators.Optional("Manca nome direttore")])
+#   modalita_acquisto_b = MyRadioField('Modalit&agrave; di acquisto', True,
+#                                      choices=MENU_MOD_ACQ_B,
+#                                      widget=radio_widget)
+#   criterio_assegnazione = MyRadioField("Criterio di assegnazione", True,
+#                                        choices=MENU_CRIT_ASS,
+#                                        widget=radio_widget)
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def validate(self):
         "Validazione specifica per il form"
@@ -398,42 +433,46 @@ class DeterminaB(ModifiedForm):
             self.errlist.append("Manca data determina")
         if not self.nome_direttore_b.data:
             self.errlist.append("Manca nome direttore")
-        if not self.modalita_acquisto_b.data:
-            self.errlist.append("Devi specificare la modalità di acquisto")
-        if not self.criterio_assegnazione.data:
-            self.errlist.append("Devi specificare il criterio di assegnazione")
+#       if not self.modalita_acquisto_b.data:
+#           self.errlist.append("Devi specificare la modalità di acquisto")
+#       if not self.criterio_assegnazione.data:
+#           self.errlist.append("Devi specificare il criterio di assegnazione")
         return len(self.errlist) == 0
 
     def renderme(self, dati_pratica):
         "rendering del form"
-        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: %(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
+        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: '\
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
         html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % dati_pratica)
         html.append('<tr><td>'+render_field(self.numero_determina_b)+'<br>')
         html.append(render_field(self.data_determina_b)+'<br>')
         html.append(render_field(self.nome_direttore_b)+'</td></tr><tr><td>')
-        html.append(render_field(self.modalita_acquisto_b)+'<br>')
-        html.append(render_field(self.criterio_assegnazione)+'</td></tr><tr><td>')
-        html.append("Codici Fondi: %s<br>" % dati_pratica[STRINGA_CODF])
-        html.append("Capitolo: %s<br>"%dati_pratica[CAPITOLO])
+        html.append("<b>Modalità acquisto:</b> %s<br>" % dati_pratica[STR_MOD_ACQ])
+        html.append("<b>Criterio di assegnazione:</b> %s<br>" % dati_pratica[STR_CRIT_ASS])
+        html.append("<b>Codici Fondi:</b> %s<br>" % dati_pratica[STR_CODF])
+        html.append("<b>Capitolo:</b> %s<br>"%dati_pratica[CAPITOLO])
         cup = dati_pratica.get(CUP).strip()
         if cup:
-            html.append("CUP: %s<br>"%cup)
-        html.append("RUP: %s"%dati_pratica[RUP]+'</td></tr><tr><td>')
-        html.append('<tr><td>'+self.annulla()+' &nbsp; '+self.avanti() +'</td></tr>')
+            html.append("<b>CUP:</b> %s<br>"%cup)
+        html.append("<b>RUP:</b> %s"%dati_pratica[RUP]+'</td></tr><tr><td>')
+        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() +'</td></tr>')
         return '\n'.join(html)
 
 class Ordine(ModifiedForm):
     "form per definizione ordine"
     lingua_ordine = MySelectField('', True, choices=(('IT', 'Italiano'), ('EN', 'Inglese')))
-    numero_ordine = MyTextField('Numero ordine', True, [wt.validators.InputRequired("Manca numero ordine")])
-    data_ordine = MyTextField('Data (g/m/aaaa)', True, [wt.validators.InputRequired("Manca data ordine")])
-    descrizione_ordine = MyTextAreaField('Descrizione', True, [wt.validators.InputRequired("Manca descrizione ordine")])
+    numero_ordine = MyTextField('Numero ordine', True,
+                                [wt.validators.InputRequired("Manca numero ordine")])
+    data_ordine = MyTextField('Data (g/m/aaaa)', True,
+                              [wt.validators.InputRequired("Manca data ordine")])
+    descrizione_ordine = MyTextAreaField('Descrizione', True,
+                                         [wt.validators.InputRequired("Manca descrizione ordine")])
     costo_ordine = MyFormField(CostoPiuTrasporto, "Costo per Ordine", True)
     cig = MyTextField('CIG', True, [wt.validators.InputRequired("Manca specifica CIG")])
     note_ordine = MyTextAreaField('Note', False, [wt.validators.Optional()])
 
-    avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
-    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def validate(self):
         "Validazione specifica per il form"
@@ -451,17 +490,20 @@ class Ordine(ModifiedForm):
 
     def renderme(self, dati_pratica):
         "rendering del form"
-        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: %(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
+        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: '\
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
         html.append('<p><b>%(descrizione_acquisto)s</b></p>' % dati_pratica)
-        html.append('<p>Presso la ditta:<blockquote>%(nome_fornitore)s<br>%(ind_fornitore)s</blockquote></td></tr>' % dati_pratica)
-        html.append('<tr><td><table width=100%><tr><td align=left>'+render_field(self.numero_ordine)+'</td>')
+        html.append('<p>Presso la ditta:<blockquote>%(nome_fornitore)s<br>'\
+                    '%(ind_fornitore)s</blockquote></td></tr>' % dati_pratica)
+        html.append('<tr><td><table width=100%><tr><td align=left>'+ \
+                    render_field(self.numero_ordine)+'</td>')
         html.append('<td align=right>'+render_field(self.lingua_ordine)+'</td></tr></table></br>')
         html.append(render_field(self.data_ordine)+'<br>')
         html.append(render_field(self.cig)+'</td></tr>')
         html.append('<tr><td>'+render_field(self.descrizione_ordine, rows=3, cols=80)+'</td></tr>')
         html.append('<tr><td>'+self.costo_ordine.renderme()+'</td></tr>')
         html.append('<tr><td>'+render_field(self.note_ordine, rows=10, cols=80)+'</td></tr>')
-        html.append('<tr><td>'+self.annulla()+' &nbsp; '+self.avanti() + '</td></tr>')
+        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() + '</td></tr>')
         return '\n'.join(html)
 
 class AggiornaFormato(ModifiedForm):
@@ -470,27 +512,30 @@ class AggiornaFormato(ModifiedForm):
     nuova_modalita_acquisto = MyRadioField('Modalit&agrave; di acquisto', True,
                                            choices=MENU_MOD_ACQ,
                                            widget=radio_widget)
-    avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
-    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def renderme(self, dati_pratica):
         "rendering del form"
-        html = ['<tr><td> Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>richiesta.pdf</a> </td></tr>']
-        html.append('<tr><td> Costo: '+dati_pratica.get("costo", "")+'<br>'+render_field(self.nuovo_costo)+'</td></tr>')
+        html = ['<tr><td> Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>'\
+                'richiesta.pdf</a> </td></tr>']
+        html.append('<tr><td> Costo: '+dati_pratica.get("costo", "")+'<br>'+ \
+                    render_field(self.nuovo_costo)+'</td></tr>')
         html.append('<tr><td>'+render_field(self.nuova_modalita_acquisto) +'</tr></td>')
-        html.append('<tr><td>'+self.annulla()+' &nbsp; '+self.avanti()+'</tr></td>')
+        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti()+'</tr></td>')
         return '\n'.join(html)
 
 class TrovaPratica(ModifiedForm):
     "form per ricerca pratiche"
-    trova_prat_aperta = MySelectField('Stato pratica', False, choices=((-1, 'Tutte'), (1, 'Aperta'), (0, 'Chiusa')))
+    trova_prat_aperta = MySelectField('Stato pratica', False,
+                                      choices=((-1, 'Tutte'), (1, 'Aperta'), (0, 'Chiusa')))
     trova_email_rich = MySelectField('Richiedente', False)
     trova_email_resp = MySelectField('Responsabile', False)
     trova_anno = MySelectField('Anno', False)
     trova_parola = MyTextField('Parola', False)
     elenco_ascendente = MyBooleanField('Ordine ascendente', False)
-    avanti = wt.SubmitField('Trova', [wt.validators.Optional()])
-    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    T_avanti = wt.SubmitField('Trova', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def renderme(self):
         "Rendering del form"
@@ -501,5 +546,84 @@ class TrovaPratica(ModifiedForm):
         html.append(render_field(self.trova_anno)+'<br>')
         html.append(render_field(self.trova_parola)+'<br>')
         html.append(render_field(self.elenco_ascendente)+'</td></tr>')
-        html.append('<tr><td>' + self.annulla() + ' &nbsp; ' + self.avanti() +'</tr></td>')
+        html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</tr></td>')
         return '\n'.join(html)
+
+class Ditta(ModifiedForm):
+    "form per singola ditta"
+    nome_ditta = MyTextField('', True)
+    sede_ditta = MyTextField('', True)
+    offerta = wt.BooleanField()
+    vincitore = wt.BooleanField()
+
+    def renderme(self, **kw):
+        "Rendering del form"
+        html = []
+        html.append("<td>"+render_field(self.nome_ditta)+"</td>")
+        html.append("<td>"+render_field(self.sede_ditta)+"</td>")
+        html.append("<td>"+self.offerta()+"</td>")
+        html.append("<td>"+self.vincitore()+"</td>")
+        return "".join(html)
+
+def newListaDitte(m_entries=5):
+    return MyFieldList(wt.FormField(Ditta), "Elenco ditte", True, min_entries=m_entries)
+
+class PraticaRDO(ModifiedForm):
+    "form per specifiche della pratica RDO"
+    inizio_gara = MyTextField('Data inizio (g/m/aaaa)', True)
+    fine_gara = MyTextField('Data/ora fine (g/m/aaaa ora:min)', True)
+    lista_ditte = newListaDitte()
+    prezzo_gara = MyFormField(CostoPiuTrasporto, "Prezzo di gara", True)
+    oneri_sic_gara = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
+    T_more = wt.SubmitField("+Ditte")
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+
+    def __init__(self, *pw, **kw):
+        ModifiedForm.__init__(self, *pw, **kw)
+        self.min_entries = 2
+
+    def increment(self):
+        "Incrementa numero di ditte"
+        self.lista_ditte.append_entry()
+        self.lista_ditte.append_entry()
+
+    def renderme(self, **kw):
+        "Rendering del form"
+        html = ["<tr><td>"]
+        html.append(render_field(self.inizio_gara)+"<br>")
+        html.append(render_field(self.fine_gara))
+        html.append("</td></tr>")
+        html.append("<tr><td><b>Elenco ditte</b><br>")
+        html.append("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
+                    "<th>Indirizzo</th><th>Offerta</th><th>Vincitore</th></tr></td></tr>")
+        for idx, ditta in enumerate(self.lista_ditte):
+            html.append("<tr><td>%d</td>"%(idx+1)+ditta.renderme(**kw)+"</tr>")
+        html.append("</td></tr></table><br>")
+        html.append("<div align=right>"+self.T_more()+"</div></td></tr>")
+        html.append('<tr><td>'+render_field(self.prezzo_gara))
+        html.append('<br>'+render_field(self.oneri_sic_gara)+'</td></tr>')
+        html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</tr></td>')
+        return '\n'.join(html)
+
+    def validate(self):
+        "Validazione"
+        tt0 = ft.date_to_time(self.inizio_gara.data)
+        tt1 = ft.date_to_time(self.fine_gara.data)
+        if tt0 is None:
+            self.errlist.append("Errore data inzio (usa formato: g/m/a)")
+        if tt1 is None:
+            self.errlist.append("Errore data/ora fine (usa formato: g/m/a o:m)")
+        if tt0 and tt1:
+            if tt1-tt0 < 86400:
+                self.errlist.append("Date inizio e fine inconsistenti")
+        if len(self.lista_ditte.data) < 1:
+            self.errlist.append("Manca elenco ditte")
+        n_vinc = 0      # Conta numero di vincitori
+        for ditta in self.lista_ditte:
+            if ditta.vincitore.data:
+                n_vinc += 1
+        if n_vinc > 1:
+            self.errlist.append("E' ammesso un solo vincitore")
+        return not self.errlist
+

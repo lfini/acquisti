@@ -1,6 +1,39 @@
 <!-- inizio Sezione B -->
 <table width=100%>
-<tr><td valign=top width=50% bgcolor=#f0f0f0>
+<tr><td valign=top width=60% bgcolor=#f0f0f0>
+
+{% if info.rdo %}     <!-- Sezione per modalità acquisto RDO su MEPA -->
+<b> Procedura RDO: </b>
+  {% if pratica.inizio_gara %}
+    {% if info.rdo_modificabile %}
+[<a href=/procedura_rdo>Modifica</a>]
+    {% endif %}
+<blockquote>
+	<b>Data inizio:</b> {{ pratica.inizio_gara }}<br>
+	<b>Data/ora fine:</b> {{ pratica.fine_gara }}<br><br>
+	<b>Ditte partecipanti:</b> 
+	<blockquote>
+	<table cellpadding=3 border=1>
+		<tr><th>Nome</th><th>Sede</th><th>Offerta</th><th>Vincitore</th></tr>
+    {% for ditta in pratica.lista_ditte %}
+    <tr><td>{{ ditta.nome_ditta }}</td><td>{{ ditta.sede_ditta }}<td>{% if ditta.offerta %} <b>X</b> {% else %} &nbsp; {% endif %}</td>
+	             <td>{% if ditta.vincitore %} <b>X</b> {% else %} &nbsp; {% endif %}</td></tr>
+    {% endfor %}
+	</table>
+	</blockquote>
+	<b>Prezzo di gara:</b> {{ pratica.str_prezzo_gara }}<br>
+{% if pratica.str_oneri_sicurezza %}
+	<b>Oneri di gara:</b> {{ pratica.str_prezzo_gara }}<br>
+{% endif %}
+
+</blockquote>
+  {% else %}
+    {% if info.rdo_modificabile %}
+[<a href=/procedura_rdo>Genera</a>]
+    {% endif %}
+  {% endif %}
+<p>
+{% endif %}     <!-- Fine sezione per modalità acquisto RDO su MEPA -->
 <b> Allegati: </b>
 {% if info.attachB %}
 <ul>
@@ -45,7 +78,7 @@
 {% endif %}
 
 {% if pratica.pratica_aperta==1 %}
-</td><td valign=top width=50% bgcolor=#ffddaa>
+</td><td valign=top width=40% bgcolor=#ffddaa>
 <form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
 <b>Allega documenti</b>
 <p>
@@ -56,7 +89,7 @@
 </form>
 </td></tr>
 {% else %}
-</td><td valign=top width=50% bgcolor=#f0f0f0>
+</td><td valign=top width=35% bgcolor=#f0f0f0>
 &nbsp;
 </td></tr>
 {% endif %}

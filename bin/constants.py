@@ -15,8 +15,17 @@ ATTESA_APPROVAZIONE = 'In attesa di approvazione'
 CHIUSA = "Chiusa"
 NUOVA_PRATICA = 'Nuova pratica'
 
-# Costanti di tipo stringa
+#  Campi temporanei (da non registrare in dati pratica)
+AVANTI = "T_avanti"
+ANNULLA = "T_annulla"
+MORE = "T_more"
 
+TEMPORARY_KEY_PREFIX = "T_"
+
+NOME_DITTA = "nome_ditta"
+SEDE_DITTA = "sede_ditta"
+
+# Costanti di tipo stringa
 APPROVAL_HOSTS = 'approval_hosts'               # config
 CAPITOLO = 'capitolo'                           # dati_pratica
 CITTA = "citta"                                 # config, sede
@@ -26,7 +35,7 @@ CONF_CHIUSURA = '_conf_chiusura'                # dati_pratica
 CONSIP = "consip"                               # MENU_MOD_ACQ
 COSTO = 'costo'                                 # dati_pratica
 COSTO_ORDINE = 'costo_ordine'                   # dati_pratica
-CRITERIO_ASSEGNAZIONE = 'criterio_assegnazione' # dati_pratica
+CRIT_ASS = 'criterio_assegnazione'              # dati_pratica
 CUP = 'cup'                                     # dati_pratica
 DATA_DETERMINA_A = 'data_determina'             # dati_pratica
 DATA_DETERMINA_B = 'data_determina_b'           # dati_pratica
@@ -47,13 +56,18 @@ EMAIL_RUP = 'email_rup'                         # dati_pratica
 EMAIL_UFFICIO = 'email_ufficio'                 # config
 EMAIL_WEBMASTER = 'email_webmaster'             # config
 EURO = "euro"                                   # MENU_VALUTA
+FINE_GARA = "fine_gara"                         # dati pratica
+FINE_GARA_GIORNO = "fine_gara_giorno"           # dati pratica
+FINE_GARA_ORE = "fine_gara_ore"                 # dati pratica
 FIRMA_APPROVAZIONE = 'firma_approvazione'       # dati_pratica
+FLASK_KEY = 'flask_key'                         # config
 GIUSTIFICAZIONE = 'giustificazione'             # dati_pratica
 IMPORTO = 'importo'
 INDIRIZZO = "indirizzo"                         # config
 IND_FORNITORE = 'ind_fornitore'                 # dati_pratica
 INFER_1000 = "infer.1000"                       # Obsoleto. Mantenuto per compatibilità
 INFER_5000 = "infer.5000"                       # MENU_MOD_ACQ
+INIZIO_GARA = "inizio_gara"                     # dati pratica
 IVA = "iva"
 IVA10 = "iva_10"                                # MENU_IVA
 IVA22 = "iva_22"                                # MENU_IVA
@@ -68,11 +82,11 @@ LDAP_HOST = "ldap_host"                         # config
 LDAP_PORT = "ldap_port"                         # config
 LINGUA_ORDINE = 'lingua_ordine'                 # dati_pratica
 LISTA_CODF = 'lista_codf'                       # dati_pratica
+LISTA_DITTE = 'lista_ditte'                     # dati_pratica
 MANIF_INT = "manif.interesse"                   # MENU_MOD_ACQ
 MEPA = "mepa"                                   # MENU_MOD_ACQ
-MODALITA_ACQUISTO = 'modalita_acquisto'         # dati_pratica
-MODALITA_ACQUISTO_B = 'modalita_acquisto_b'     # dati_pratica
-MOD_ACQ_STR = "mod_acq_str"                     # info
+MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
+MOD_ACQUISTO_B = 'modalita_acquisto_b'          # dati_pratica
 MODO_TRASP = 'modo_trasp'
 MOTIVAZIONE_ACQUISTO = 'motivazione_acquisto'   # dati_pratica
 TRATT_MEPA = 'tratt.mepa'                       # MENU_MOD_ACQ
@@ -93,7 +107,7 @@ ORD_PDF_FILE = "ordine.pdf"
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
 PART_IVA = "part_iva"                           # config, sede
-PDF_DETERMINA_A = 'pdf_determina'                 # dati_pratica
+PDF_DETERMINA_A = 'pdf_determina'               # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
 PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
 PDF_RICHIESTA = 'pdf_richiesta'                 # dati_pratica
@@ -102,12 +116,13 @@ PRAT_JFILE = 'pratica.json'
 PRATICA_ANNULLATA = 'pratica_annullata'         # dati_pratica
 PRATICA_APERTA = 'pratica_aperta'               # dati_pratica
 PREZ_PIU_BASSO = 'prezzo.piu.basso'             # MENU_CRIT_ASS
+PREZZO_GARA = 'prezzo_gara'                     # dati_pratica
+ONERI_SIC_GARA = 'oneri_sic_gara'               # dati_pratica
 PROC_NEG = "proc.neg.acq"                       # MENU_MOD_ACQ, dati_pratica
 RDO_MEPA = "rdo.mepa"                           # MENU_MOD_ACQ, dati_pratica
 RIC_PDF_FILE = "richiesta.pdf"
 RICHIESTA_INVIATA = 'richiesta_inviata'         # dati_pratica
 RUP = 'rup'                                     # dati_pratica
-FLASK_KEY = 'flask_key'                         # config
 SAVED = '_saved'                                # dati_pratica
 SEDE = 'sede'                                   # config
 SEDE_IT = 'sede_it'                             # config.sede
@@ -119,12 +134,15 @@ SPECIFICARE = "spec"                            # MENU_TRASPORTO
 STATO_PRATICA = 'stato_pratica'                 # dati_pratica
 STORIA_PRATICA = 'storia_pratica'               # dati_pratica
 STR_COSTO_IT = 'str_costo_it'                   # dati_pratica
+STR_CODF = 'stringa_codf'                       # dati_pratica
 STR_COSTO_UK = 'str_costo_uk'                   # dati_pratica
 STR_COSTO_ORD_IT = 'str_costo_ord_it'           # dati_pratica
 STR_COSTO_ORD_UK = 'str_costo_ord_uk'           # dati_pratica
+STR_CRIT_ASS = 'str_crit_ass'                   # dati_pratica
+STR_MOD_ACQ =  'str_mod_acq'                    # dati_pratica
 STR_ONERI_IT = 'str_oneri_it'                   # dati_pratica
 STR_ONERI_UK = 'str_oneri_uk'                   # dati_pratica
-STRINGA_CODF = 'stringa_codf'                   # dati_pratica
+STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
 SUPER_1000 = "super.1000"                       # Obsoleto. Mantenuto per compatibilità
 SUPER_5000 = "super.5000"                       # MENU_MOD_ACQ
 TITOLO_DIRETTORE = 'titolo_direttore'           # dati_pratica, config
@@ -266,8 +284,8 @@ HEADER_NOTIFICA_RESPONSABILE_EMAIL = """
 L'approvazione della richiesta di acquisto N. {numero_pratica} è stata
 ricevuta per e-mail e registrata.
 """
-OBBLIGATORIO = '<font color=red><b>N.B.:</b> Tutti i campi sottolineati' \
-               'sono obbligatori e devono essere specificati</font>'
+OBBLIGATORIO = """<font color=red><b>N.B.:</b> Tutti i campi sottolineati
+sono obbligatori e devono essere specificati</font>"""
 
 OPER_SOLO_AMMINISTRAZIONE = "Operazione consentita solo all'Amministrazione"
 

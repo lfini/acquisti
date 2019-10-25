@@ -16,11 +16,10 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 
 __author__ = 'Luca Fini'
 __version__ = '3.1'
-__date__ = '20/5/2019'
+__date__ = '17/10/2019'
 
-class PDFLATEX:pass
-
-PDFLATEX.cmd = '/usr/bin/pdflatex'
+class PDFLATEX:
+    cmd = '/usr/bin/pdflatex'
 
 _NOTA = 'Il prezzo '+chr(232)+' specificato in Euro ('+chr(8364)+ \
         ')  *** '+chr(192)+chr(233)+chr(197)+' ***'
@@ -124,7 +123,8 @@ def sanitize(data):
         return newdata
     return data
 
-BATCHMODE = True
+class BATCHMODE:
+    on = True
 
 class SplittedAttachment:
     "Genera pagine PDF per allegato"
@@ -238,7 +238,7 @@ def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):
     if atcs:
         do_attachments(tmplatex, atcs)
     cmd = [PDFLATEX.cmd]
-    if BATCHMODE:
+    if BATCHMODE.on:
         cmd.extend(['-interaction', 'batchmode'])
     cmd.extend(['-output-directory', tpath, tmplatex])
     logging.info('LaTeX cmd: %s', ' '.join(cmd))
@@ -285,7 +285,6 @@ class PrintLogger:
 
 def test():
     "Procedura di test"
-    global BATCHMODE
 
     print()
     print("latex.py. %s - Version: %s, %s" % (__author__, __version__, __date__))
@@ -294,7 +293,7 @@ def test():
     templfile = '../files/ordine_italiano.tex'
     pdffile = 'test_document.pdf'
 
-    BATCHMODE = False
+    BATCHMODE.on = False
     ret = makepdf('.', pdffile, templfile, attach=["include.pdf"], debug=True,
                   pratica=TEST_ACQUISTO, user=TEST_USER, sede=TEST_SEDE,
                   indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)

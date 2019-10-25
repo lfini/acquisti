@@ -14,7 +14,7 @@ import readline
 
 import ftools
 
-__version__ = "1.0"
+__version__ = "1.1"
 
 SEDE = OrderedDict([("sede_it", "Identificazione sede INAF\n[es: INAF - Osservatorio Astrofisico di Arcetri]"),
                     ("sede_uk", "Identificazione della sede per documenti in inglese\n[es: INAF - Arcetri Astrophysical Observatory]"),
@@ -28,6 +28,7 @@ PARAMS = OrderedDict([("nome_webmaster", "Nome del web master\n[es: Luca Fini]")
                       ("email_direttore", "Indirizzo e-mail del direttore\n[es: luca.fini@inaf.it]"),
                       ("titolo_direttore", "Titolo del direttore\n[es: Dott.ssa]"),
                       ("email_ufficio", "Indirizzo EMail dell'ufficio ordini\nA questo indirizzo sono inviati i messaggi automatici\ngenerati dalla procedura [es: ordini@arcetri.inaf.it]"),
+                      ("latex_path", "Directory di installazione di pdflatex\n[es: /usr/local/bin]"),
                      ])
 
 TECH = OrderedDict([("web_host", "Indirizzo IP del server che ospita la procedura\n[es: www.arcetri.inaf.it]"),

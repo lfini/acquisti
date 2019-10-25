@@ -23,6 +23,7 @@ Uso da linea di comando:
 # VERSION 4.1    5/10/2018 Modificato termine "cram" in "codf"
 # VERSION 4.2    14/2/2019 Correzioni alla generazione dei costi
 # VERSION 4.3    1/3/2019 Ancora correzioni alla generazione dei costi
+# VERSION 4.4    1/3/2019 Migliorato parsing di data-ora
 
 import sys
 import os
@@ -53,8 +54,8 @@ from table import jload, jsave, jload_b64, jsave_b64, Table, getpath
 import latex
 
 __author__ = 'Luca Fini'
-__version__ = '4.3.2'
-__date__ = '15/5/2019'
+__version__ = '4.4.0'
+__date__ = '15/10/2019'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -535,16 +536,21 @@ def login_check(session):
 def today(fulltime=True):
     "Riporta data odierna"
     if fulltime:
-        return time.strftime('%d/%m/%Y - %H:%M')
+        return time.strftime('%d/%m/%Y %H:%M')
     return time.strftime('%d/%m/%Y')
 
-def is_a_date(date):
-    "Verifica che la stringa sia una data valida"
-    ret = True
+def date_to_time(date):
+    "Converts a date (g/m/a [h:m]) into epoch. Returns None if date invalid"
+    if ":" in date:
+        fmt = "%d/%m/%Y %H:%M"
+    else:
+        fmt = "%d/%m/%Y"
     try:
-        time.strptime(date, '%d/%m/%Y')
+        tstruc = time.strptime(date.strip(), fmt)
     except Exception:
-        ret = False
+        ret = None
+    else:
+        ret = time.mktime(tstruc)
     return ret
 
 NUMB_RE = re.compile("\\d+(,\\d+)?$")

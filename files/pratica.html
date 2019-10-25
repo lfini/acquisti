@@ -17,7 +17,7 @@ Pratica N. {{ value }}
    <h4> <font color=red>Modo debug</font>: invia email a webmaster </h4>
 {% endif %}
 {% if info.developer %}
-   <h4><font color=red>Modo developer</font>: &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a></h4>
+<h4><font color=red>Modo developer</font>: &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a></h4> 
    <b>Info:</b> {{ info }}
    <hr>
 {% endif %}
@@ -26,7 +26,7 @@ Pratica N. {{ value }}
 <tr><td><b>Richiesta del:</b></td><td> {{ pratica.data_richiesta }} </td></tr>
 <tr><td><b>Richiedente:</b></td><td> {{ pratica.nome_richiedente }} </td></tr>
 <tr><td><b>Resp. fondi:</b></td><td> {{ pratica.nome_responsabile }} </td></tr>
-<tr><td><b>Mod. acquisto:</b></td><td> {{ info.mod_acq_str }} </td></tr>
+<tr><td><b>Mod. acquisto:</b></td><td> {{ pratica.str_mod_acq }} </td></tr>
 <tr><td><b>Stato:</b></td><td>  
 {% if info.alarm %}
    <font color=red>{{ pratica.stato_pratica }}</font>
