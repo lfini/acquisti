@@ -21,8 +21,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.3.0'
-__date__ = '25/10/2019'
+__version__ = '3.3.1'
+__date__ = '26/10/2019'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -511,10 +511,9 @@ def _check_access(user_only=False):
         except TableException:
             err_msg = _errore_accesso(basedir)
         else:
-            # Aggiorna nome campi per versiobne 1 del file pratica
+            # Aggiorna nome campi per versione 1 del file pratica
             for o_key, n_key in KEYS_TO_UPDATE:
                 _convert_key(d_prat, o_key, n_key)
-
     else:
         err_msg = _errore_basedir(user)
     if not err_msg or user_only:
@@ -684,15 +683,14 @@ def _clean_name(name):
     cleaned = os.path.splitext(cleaned)[0]
     return cleaned.replace("_", " ")
 
-def _select(alist, sel_func):
-    "Riporta il primo elemento della lista per cui sel_funv is True"
-    ret = None
-    for item in alist:
-        if sel_func(item):
-            ret = item
+def _select(menu, key):
+    "estrae dal menu la descrizione relativa a key"
+    ret = ""
+    for item in menu:
+        if item[0] == key:
+            ret = item[1]
             break
     return ret
-
 
 ALL_A_MATCH = re.compile(r"A\d\d_")
 ALL_B_MATCH = re.compile(r"B\d\d_")
@@ -702,12 +700,10 @@ def pratica_common(user, basedir, d_prat):
     info = check_all(user, basedir, d_prat)
     upla = MyUpload(menu_allegati_fasea(d_prat))
     uplb = MyUpload(menu_allegati_faseb(d_prat))
-                                    # Workaround per aggiornare il formato dati pratica vers. 2
-    if STR_MOD_ACQ not in d_prat or STR_CRIT_ASS not in d_prat:
-        d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, \
-                                      lambda x: x[0] == d_prat.get(MOD_ACQUISTO, ('', '')))[1]
-        d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, \
-                                       lambda x: x[0] == d_prat.get(CRIT_ASS, ('', '')))[1]
+    # Workaround per aggiornare il formato dati pratica vers. 2
+    if not d_prat.get(STR_MOD_ACQ) or STR_CRIT_ASS not in d_prat:
+        d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, d_prat.get(MOD_ACQUISTO))
+        d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, d_prat.get(CRIT_ASS))
         ft.jsave((basedir, PRAT_JFILE), d_prat)
     if info.get(PDF_RICHIESTA):
         firma = d_prat.get(FIRMA_APPROVAZIONE)
@@ -1188,10 +1184,8 @@ def modificarichiesta():
             d_prat[STR_COSTO_UK] = ft.stringa_costo(d_prat.get(COSTO), "uk")
             d_prat[STR_ONERI_IT] = ft.stringa_valore(d_prat.get(ONERI_SICUREZZA), "it")
             d_prat[STR_ONERI_UK] = ft.stringa_valore(d_prat.get(ONERI_SICUREZZA), "uk")
-            d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, \
-                                          lambda x: x[0] == d_prat.get(MOD_ACQUISTO, ('', '')))[1]
-            d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, \
-                                           lambda x: x[0] == d_prat.get(CRIT_ASS, ('', '')))[1]
+            d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, d_prat.get(MOD_ACQUISTO))
+            d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, d_prat.get(CRIT_ASS))
             d_prat[NOME_RESPONSABILE] = _nome_da_email(d_prat[EMAIL_RESPONSABILE], True)
             d_prat[SEDE] = CONFIG[SEDE]
             d_prat[CITTA] = CONFIG[SEDE][CITTA]
