@@ -8,8 +8,8 @@ import flask as fk
 import ftools as ft
 from constants import *
 
-__version__ = "1.4"
-__date__ = "20/10/2019"
+__version__ = "1.5"
+__date__ = "28/10/2019"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -31,16 +31,10 @@ def _has(hspec):
         return 'help_'+hspec+'.html'
     return ''
 
-def popup(url, text, args=None, size=(700, 500)):
+def popup(url, text, size=(700, 500)):
     "Genera codice HTML per popup"
-    full_url = url.copy()
-    if args:
-        aux = []
-        for item in args.items():
-            aux.append("%s=%s"%tuple(item))
-        full_url += "?"+"&".join(args)
     return '<a href="%s"  onclick="window.open(\'%s\', \'newwindow\', \'width=%d, height=%d, '\
-           'scrollbars=yes\'); return false;">%s</a>'%(full_url, full_url, size[0], size[1], text)
+           'scrollbars=yes\'); return false;">%s</a>'%(url, url, size[0], size[1], text)
 
 def render_field(field, **kw):
     "Rendering di un campo"
@@ -556,7 +550,7 @@ class Ditta(ModifiedForm):
     offerta = wt.BooleanField()
     vincitore = wt.BooleanField()
 
-    def renderme(self, **kw):
+    def renderme(self, **_unused):
         "Rendering del form"
         html = []
         html.append("<td>"+render_field(self.nome_ditta)+"</td>")
@@ -565,14 +559,15 @@ class Ditta(ModifiedForm):
         html.append("<td>"+self.vincitore()+"</td>")
         return "".join(html)
 
-def newListaDitte(m_entries=5):
+def new_lista_ditte(m_entries=5):
+    "Instanzia una lista ditte con dato numero di campi"
     return MyFieldList(wt.FormField(Ditta), "Elenco ditte", True, min_entries=m_entries)
 
 class PraticaRDO(ModifiedForm):
     "form per specifiche della pratica RDO"
     inizio_gara = MyTextField('Data inizio (g/m/aaaa)', True)
     fine_gara = MyTextField('Data/ora fine (g/m/aaaa ora:min)', True)
-    lista_ditte = newListaDitte()
+    lista_ditte = new_lista_ditte()
     prezzo_gara = MyFormField(CostoPiuTrasporto, "Prezzo di gara", True)
     oneri_sic_gara = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
     T_more = wt.SubmitField("+Ditte")
@@ -626,4 +621,3 @@ class PraticaRDO(ModifiedForm):
         if n_vinc > 1:
             self.errlist.append("E' ammesso un solo vincitore")
         return not self.errlist
-

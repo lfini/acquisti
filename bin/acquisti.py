@@ -16,7 +16,7 @@ from werkzeug import secure_filename
 from constants import *
 import forms   # Mantenere!!!
 from forms import MyLoginForm, RichiestaAcquisto, DeterminaA, DeterminaB, Ordine
-from forms import AggiornaFormato, TrovaPratica, MyUpload, PraticaRDO, newListaDitte
+from forms import AggiornaFormato, TrovaPratica, MyUpload, PraticaRDO, new_lista_ditte
 import ftools as ft
 from table import TableException
 
@@ -1833,7 +1833,7 @@ def procedura_rdo():
                 m_entries = len(rdo.data[LISTA_DITTE])+2
 # Trucco per rendere variabile la dimensione del form per lista ditte
                 class LocalForm(PraticaRDO): pass
-                LocalForm.lista_ditte = newListaDitte(m_entries)
+                LocalForm.lista_ditte = new_lista_ditte(m_entries)
 # Fine trucco
                 logging.debug("Richiesto incremento numero ditte: %d", m_entries)
                 rdo = LocalForm(fk.request.form)
