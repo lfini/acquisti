@@ -180,12 +180,12 @@ da quanto necessario.
 \end{itemize}
 
 Il sottoscritto chiede quindi al Direttore di procedere ad una Trattativa Diretta
-tramite MEPA, basata sul criterio %
-   ((* if pratica.criterio_assegnazione == 'prezzo.piu.basso' *)) %
-del prezzo pi\`u basso.
-   ((* else *)) %
-dell'offerta pi\`u vantaggiosa.
-   ((* endif *))
+tramite MEPA, con la ditta:
+\begin{quote}
+((( pratica.nome_fornitore )))\\
+((( pratica.ind_fornitore )))
+\end{quote}
+
 ((* endif *))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ((* if pratica.modalita_acquisto == 'rdo.mepa' *))
