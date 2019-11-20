@@ -21,8 +21,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.3.1'
-__date__ = '26/10/2019'
+__version__ = '3.3.2'
+__date__ = '20/11/2019'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -1840,7 +1840,8 @@ def procedura_rdo():
             elif AVANTI in fk.request.form:
                 rdo = PraticaRDO(fk.request.form)
                 if rdo.validate():
-                    del d_prat[LISTA_DITTE]
+                    if LISTA_DITTE in d_prat:
+                        del d_prat[LISTA_DITTE]
                     rdo_data = rdo.data.copy()
                     clean_lista(rdo_data)
                     d_prat.update(clean_data(rdo_data))
