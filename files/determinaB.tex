@@ -1,4 +1,6 @@
 \documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
@@ -42,7 +44,7 @@ Il Direttore
 
 
 \item[VISTO] il Decreto Legislativo 4 giugno 2003, n. 138 di riordino dell'INAF;
-\item[VISTO] il nuovo Statuto dell'INAF che \`e stato definitivamente approvato dal
+\item[VISTO] il nuovo Statuto dell'INAF che è stato definitivamente approvato dal
              C.d.A. con delibera numero 42 del 25.05.2018, pubblicato sul sito web
              istituzionale in data 7 settembre 2018 ed entrato in vigore il 24 settembre 2018;
 \item[VISTO]  il Decreto Legislativo n. 50/2016 del 18/04/2016 e s.m.i., ed in particolare
@@ -50,9 +52,9 @@ Il Direttore
 \item[VISTO] il D.P.R. n. 207 del 5 ottobre 2010 recante “Regolamento di esecuzione
              ed attuazione del D.Lgs. 163/2006” nelle parti ancora in vigore;
 \item[VISTE] le linee guida ANAC;
-\item[VISTA]  la L. 241/1990 che stabilisce che: "L'attivit\`a amministrativa persegue
-             i fini determinati dalla legge ed \`e retta da criteri di economicit\`a, di
-             efficacia, di pubblicit\`a e di trasparenza";
+\item[VISTA]  la L. 241/1990 che stabilisce che: "L'attività amministrativa persegue
+             i fini determinati dalla legge ed è retta da criteri di economicità, di
+             efficacia, di pubblicità e di trasparenza";
 \item[VISTO]  il Decreto Legislativo 25 novembre 2016 n. 218 ed in particolare l'Art. 10;
 \item[VISTO]  il D.L. n. 52 del 7 maggio 2012, trasformato in Legge n. 94 del 6 luglio
              2012 recante Disposizioni urgenti per la razionalizzazione della spesa
@@ -60,14 +62,20 @@ Il Direttore
              la revisione della spesa pubblica;
 \item[VISTO] il Disciplinare di Organizzazione e Funzionamento INAF approvato con delibera
              del C.D.A n.44/2012 del 21/06/2012;
-\item[VISTO] il Regolamento sull'Amministrazione, sulla Contabilit\`a e sull'Attivit\`a
+\item[VISTO] il Regolamento sull'Amministrazione, sulla Contabilità e sull'Attività
              Contrattuale dell'INAF, pubblicato sul S.O. n. 185 alla G.U. Serie Generale
              n.~300 del 23 dicembre 2004;
 \item[VISTA] la determina N. ((( pratica.numero_determina ))) del ((( pratica.data_determina )))
-             con cui \`e stata avviata una procedura negoziata per Fornitura/Servizio/Lavoro di:
-             ((( pratica.descrizione_acquisto ))) e con la quale \`e stato nominato il R.U.P.;
-\item[CONSIDERATO]  che per la suddetta procedura \`e stato adottato quale criterio di
-              aggiudicazione, quello ((( pratica.str_crit_ass )));
+             con cui è stata avviata una procedura negoziata per Fornitura/Servizio/Lavoro di:
+             ((( pratica.descrizione_acquisto ))) e con la quale è stato nominato il R.U.P.;
+\item[CONSIDERATO]  che per la suddetta procedura è stato adottato quale criterio di
+              aggiudicazione, quello %
+((* if pratica.criterio_assegnazione == 'prezzo.piu.basso' *)) %
+  del prezzo più basso;
+((* else *)) %
+  dell'offerta più vantaggiosa;
+((* endif *))
+
 ((* if pratica.str_oneri_sicurezza *))
 \item[RILEVATO] che nel caso di specie gli oneri per la sicurezza sono valutati congrui
                 nell'importo di € ((( info.str_oneri_sicurezza )));
@@ -96,7 +104,7 @@ Il Direttore
                 prima nella graduatoria della gara;
 \item[CONSTATATO] che si sono conclusi con esito positivo i controlli di rito sul 
                   possesso dei requisiti di ordine generale dichiarati;
-\item[RISCONTRATA]  la regolarit\`a della procedura di gara fin qui seguita;
+\item[RISCONTRATA]  la regolarità della procedura di gara fin qui seguita;
 \item[CONFERMATA]  la copertura finanziaria sul/sui fondo/i ((( pratica.stringa_codf )));
 \item[RITENUTO]  che vi siano i presupposti normativi e di fatto per l'affidamento in oggetto;
 
@@ -111,20 +119,20 @@ Determina
 		della procedura negoziata per quanto
                 riportato nell'oggetto della determina iniziale;
 \item[Art. 2:] 	di stabilire nell'importo di ((( pratica.str_prezzo_gara )))((* if pratica.str_oneri_it *)),
-		pi\`u ((( pratica.str_oneri_it ))) per oneri di sicurezza, ((* endif *))
+		più ((( pratica.str_oneri_it ))) per oneri di sicurezza, ((* endif *))
                 il corrispettivo contrattuale alla
                 luce dell'offerta presentata in sede di gara da parte della ditta su indicata;
 \item[Art. 3:]	di impegnare l'importo complessivo a favore della ditta
                 ((( pratica.nome_fornitore )))  con sede legale in ((( pratica.ind_fornitore )))
                 imputando la spesa sui fondi ((( pratica.stringa_codf )));
-\item[Art. 4:] 	L'importo del contratto dovr\`a essere impegnato sulla competenza dell'esercizio
-                su cui graver\`a il costo dello stesso.
+\item[Art. 4:] 	L'importo del contratto dovrà essere impegnato sulla competenza dell'esercizio
+                su cui graverà il costo dello stesso.
 \end{list}
 
 \vspace{0.5cm}
 
 
-Firenze, l\`i ((( pratica.data_determina_b )))
+Firenze, lì ((( pratica.data_determina_b )))
 
 
 \begin{flushright}
