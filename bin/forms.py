@@ -8,8 +8,8 @@ import flask as fk
 import ftools as ft
 from constants import *
 
-__version__ = "1.5"
-__date__ = "28/10/2019"
+__version__ = "1.6"
+__date__ = "25/11/2019"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -604,9 +604,11 @@ class PraticaRDO(ModifiedForm):
     def validate(self):
         "Validazione"
         tt0 = ft.date_to_time(self.inizio_gara.data)
-        tt1 = ft.date_to_time(self.fine_gara.data)
         if tt0 is None:
             self.errlist.append("Errore data inzio (usa formato: g/m/a)")
+        tt1 = None
+        if len(self.fine_gara.data.split()) == 2:
+            tt1 = ft.date_to_time(self.fine_gara.data)
         if tt1 is None:
             self.errlist.append("Errore data/ora fine (usa formato: g/m/a o:m)")
         if tt0 and tt1:
