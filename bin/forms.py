@@ -409,7 +409,7 @@ class DeterminaB(ModifiedForm):
                                    [wt.validators.Optional("Manca data determina")])
     nome_direttore_b = MyTextField('Direttore', True,
                                    [wt.validators.Optional("Manca nome direttore")])
-    nota_finale = MyTextAreaField('Nota finale in caso di annullamento gara', False)
+    art_2 = MyTextAreaField('Testo per articolo 2', False)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -447,7 +447,7 @@ class DeterminaB(ModifiedForm):
             html.append("<b>Vincitore:</b> %s - %s</td></tr>"%(d_prat[VINCITORE][NOME_DITTA], d_prat[VINCITORE][SEDE_DITTA]))
         else:
             html.append('<b>Vincitore:</b> nessun vincitore</td></tr>')
-            html.append("<tr><td>"+render_field(self.nota_finale, cols=100)+"</td></tr>")
+            html.append("<tr><td>"+render_field(self.art_2, cols=100)+"</td></tr>")
         html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() +'</td></tr>')
         return '\n'.join(html)
 
