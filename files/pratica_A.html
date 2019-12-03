@@ -12,9 +12,6 @@
    {% if info.richiesta_approvabile %}
       &nbsp;&nbsp;[<a href=/approvarichiesta>Approva</a>]
    {% endif %}
-   {% if pratica.pratica_aperta == 1 %}
-      &nbsp;&nbsp;[<a href=/verificaallegati/A>Verifica allegati</a>]
-   {% endif %}
 {% else %}
    {% if info.richiesta_modificabile %}
       [<a href=/modificarichiesta>Genera</a>]
@@ -51,7 +48,9 @@
 {% endif %}
 <p>
 
-<b>Allegati:</b>
+<b>Allegati:</b> {% if pratica.pratica_aperta == 1 %} 
+      &nbsp;&nbsp;[<a href=/verificaallegati/A>Verifica allegati</a>]
+   {% endif %}
 {% if info.attachA %}
 <ul>
 {% for a in info.attachA %}

@@ -83,6 +83,7 @@ LDAP_PORT = "ldap_port"                         # config
 LINGUA_ORDINE = 'lingua_ordine'                 # dati_pratica
 LISTA_CODF = 'lista_codf'                       # dati_pratica
 LISTA_DITTE = 'lista_ditte'                     # dati_pratica
+LISTA_DITTE_INV = 'lista_ditte_inv'             # MENU allegati
 MANIF_INT = "manif.interesse"                   # MENU_MOD_ACQ
 MEPA = "mepa"                                   # MENU_MOD_ACQ
 MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
@@ -150,6 +151,7 @@ TRASP_INC = "t.inc"                             # MENU_TRASPORTO
 VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica
 VERSIONE = 'versione'                           # dati_pratica
+VINCITORE = 'ditta_vincitrice'                  # dati_pratica
 WEB_HOST = 'web_host'                           # config
 WEB_PORT = 'web_port'                           # config
 WEBSITE = 'website'                             # config, sede
@@ -237,7 +239,8 @@ TAB_ALLEGATI = {ALLEGATO_GENERICO_A: ("A99_", "Allegato generico", ALL_NAME),
                                       "Lista dettagliata allegata all'ordine", ALL_SING),
                 LISTA_DETTAGLIATA_B: ('B40_Lista_dettagliata_per_ordine',
                                       "Lista dettagliata allegata all'ordine", ALL_SING),
-                DOCUM_STIPULA: ("A08_Documento_di_stipula",
+                LISTA_DITTE_INV: ('A08_Lista_ditte_invitate', "Lista ditte invitate", ALL_SING),
+                DOCUM_STIPULA: ("A09_Documento_di_stipula",
                                 "Documento di stipula su MEPA", ALL_SING),
                 OFFERTA_DITTA_A: ('A10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
                 OFFERTA_DITTA_B: ('B10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),

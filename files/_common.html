@@ -23,7 +23,7 @@
 {% endif %}
 {% with errors = get_flashed_messages(category_filter="error") %}
 {% with infomsg = get_flashed_messages(category_filter="info") %}
-{% if messages or errors %}
+{% if infomsg or errors %}
 <!-- begin flashed messages -->
 <div id="overlay">
    <div>
@@ -95,4 +95,3 @@ overlay()
   {% endif %}
   </dd>
 {% endmacro %}
-

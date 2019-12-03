@@ -81,32 +81,27 @@ Il Direttore
                 nell'importo di € ((( info.str_oneri_sicurezza )));
 ((* endif *))
 \item[CONSIDERATO] che il Responsabile Unico del Procedimento, ha invitato alla predetta
-                   procedura di gara gli operatori economici di seguito elencati:
-\begin{itemize}
-((* for i in pratica.lista_ditte *))
-    \item ((( i.nome_ditta ))) - ((( i.sede_ditta )))
-((* endfor *))
-\end{itemize}
+                   procedura di gara gli operatori economici elencati nella lettera di invito allegata;
 
+((* if pratica.ditta_vincitrice *))
 \item[CONSIDERATO] che, entro il termine stabilito dalla predetta lettera di invito,
                    ovvero le ore ((( pratica.fine_gara_ore ))) del giorno
                    ((( pratica.fine_gara_giorno ))) sono pervenute le offerte degli
                    operatori economici di seguito elencati:
 \begin{itemize}
 ((* for i in pratica.lista_ditte *))
-((* if i.offerta *))
     \item ((( i.nome_ditta ))) - ((( i.sede_ditta )))
-((* endif *))
 ((* endfor *))
 \end{itemize}
 
-\item[RILEVATO] che l'offerta della ditta ((( pratica.nome_fornitore ))) - ((( pratica.ind_fornitore ))) risulta
+\item[RILEVATO] che l'offerta della ditta ((( pratica.ditta_vincitrice.nome_ditta ))) - ((( pratica.ditta_vincitrice.sede_ditta ))) risulta
                 prima nella graduatoria della gara;
 \item[CONSTATATO] che si sono conclusi con esito positivo i controlli di rito sul 
                   possesso dei requisiti di ordine generale dichiarati;
 \item[RISCONTRATA]  la regolarità della procedura di gara fin qui seguita;
 \item[CONFERMATA]  la copertura finanziaria sul/sui fondo/i ((( pratica.stringa_codf )));
 \item[RITENUTO]  che vi siano i presupposti normativi e di fatto per l'affidamento in oggetto;
+\end{list}
 
 \begin{center}
 Determina
@@ -129,6 +124,26 @@ Determina
                 su cui graverà il costo dello stesso.
 \end{list}
 
+((* else *))
+\item[RILEVATO] che non è pervenuta alcuna offerta rispondente ai termini di gara;
+\end{list}
+
+\begin{center}
+Determina
+\end{center}
+
+\begin{list}{VALUTATA}{}
+\item[Art. 1:]	di dichiarare nulla la procedura di gara
+\end{list}
+
+((* if pratica.nota_finale *))
+\vspace{5mm}
+\noindent
+
+{\bf Nota:} ((( pratica.nota_finale )))
+((* endif *))
+
+((* endif *))
 \vspace{0.5cm}
 
 

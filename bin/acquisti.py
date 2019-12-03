@@ -21,8 +21,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.3.2'
-__date__ = '20/11/2019'
+__version__ = '3.4.2'
+__date__ = '3/12/2019'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -40,6 +40,8 @@ __date__ = '20/11/2019'
 # Versione 3.2   7/2019:     Nuova versione stabile (dopo 2 mesi di on-line)
 
 # Versione 3.3  10/2019:     Aggiunta gestione RDO su MEPA (preliminare)
+
+# Versione 3.4  12/2019:     Completata gestione RDO su MEPA
 
 __start__ = time.asctime(time.localtime())
 
@@ -197,6 +199,16 @@ def _test_pdf_dichiarazione_bollo(basedir, d_prat, fase):
     if fase == "A":
         if d_prat[MOD_ACQUISTO] in (MEPA, RDO_MEPA, PROC_NEG, MANIF_INT):
             return len(ft.findfiles(basedir, TAB_ALLEGATI[DICH_IMPOSTA_BOLLO][0]))
+        return True
+    elif fase == "B":
+        return True
+    raise FASE_ERROR
+
+def _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
+    "test: esistenza lista ditte invitate"
+    if fase == "A":
+        if d_prat[MOD_ACQUISTO] == RDO_MEPA:
+            return len(ft.findfiles(basedir, TAB_ALLEGATI[LISTA_DITTE_INV][0]))
         return True
     elif fase == "B":
         return True
@@ -612,7 +624,7 @@ def menu_allegati_fasea(pratica):
         menu.append(sel_menu(DOCUM_STIPULA))
         menu.append(sel_menu(DICH_IMPOSTA_BOLLO))
     if mod_acquisto == RDO_MEPA:
-        menu = [sel_menu(LETT_INVITO_MEPA)]
+        menu = [sel_menu(LETT_INVITO_MEPA), sel_menu(LISTA_DITTE_INV)]
     if mod_acquisto in (MEPA, RDO_MEPA, INFER_5000, SUPER_5000,
                         INFER_1000, SUPER_1000, PROC_NEG, MANIF_INT):
         menu.append(sel_menu(DICH_IMPOSTA_BOLLO))
@@ -669,13 +681,14 @@ def clean_data(somedata):
     return somedata
 
 def clean_lista(rdo_data):
-    "Rimuove elementi vuoti da lista ditte"
+    "Rimuove elementi vuoti o cancellati da lista ditte"
     newlist = []
     for ditta in rdo_data[LISTA_DITTE]:
+        if ditta.get("T_cancella"):
+            continue
         if bool(ditta[NOME_DITTA]) or  bool(ditta[SEDE_DITTA]):
             newlist.append(ditta)
     rdo_data[LISTA_DITTE] = newlist
-
 
 def _clean_name(name):
     "Pulisce nome file (rimuove '_' e estensione)"
@@ -810,6 +823,8 @@ def _avvisi_allegati(basedir, d_prat, fase):
     ret = []
     if not _test_pdf_dichiarazione_bollo(basedir, d_prat, fase):
         ret.append("Manca dichiarazione assolvimento imposta bollo")
+    if not _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
+        ret.append("Manca Lista ditte invitate")
     if not _test_pdf_capitolato_rdo(basedir, d_prat, fase):
         ret.append("Manca capitolato per RDO")
     if not _test_pdf_offerta_ditta(basedir, d_prat, fase):
@@ -886,15 +901,16 @@ def filename_allegato(model, prefix, origname, ext, spec, d_prat):
 def _rdo_validate(dati_pratica):
     "Verifica coerenza dati relativi a RDO su MEPA"
     errors = []
-    vincitore = [x for x in dati_pratica[LISTA_DITTE] if x["vincitore"]]
-    if not vincitore:
-        errors.append("Non è stato indicato il vincitore della gara")
-    if len(vincitore) > 1:
-        errors.append("Sono state indicate più ditte vincitrici")
-    offerte = [x for x in dati_pratica[LISTA_DITTE] if x["offerta"]]
-    if not offerte:
-        errors.append("Non è stata indicata alcuna offerta")
-    return errors
+    vincitore = [x for x in dati_pratica[LISTA_DITTE] if x.get("vincitore")]
+    if vincitore:
+        if len(vincitore) > 1:
+            errors.append("Sono state indicate più ditte vincitrici")
+            vincitore = {}
+        else:
+            vincitore = vincitore[0]
+    else:
+        vincitore = {}
+    return errors, vincitore
 
 def _errore_basedir(user):
     "Segnala errore sessione"
@@ -964,12 +980,13 @@ def modificadetermina_a(user, basedir, d_prat):
 
 def modificadetermina_b(user, basedir, d_prat):
     "pagina: modifica determina fase B"
-    errors = _rdo_validate(d_prat)
+    errors, vincitore = _rdo_validate(d_prat)
     if errors:
         for err in errors:
             fk.flash(err, category="error")
         logging.debug("Pratica RDO non completa: %s", "; ".join(errors))
         return fk.redirect(fk.url_for('pratica1'))
+    d_prat[VINCITORE] = vincitore
     if NUMERO_DETERMINA_B not in d_prat:
         year = ft.thisyear()
         ndet = ft.find_max_det(year)[0]+1
@@ -977,7 +994,7 @@ def modificadetermina_b(user, basedir, d_prat):
         d_prat[DATA_DETERMINA_B] = ft.today(False)
         d_prat[NOME_DIRETTORE_B] = d_prat[NOME_DIRETTORE]
         logging.info("Nuovo num. determina B: %s", d_prat[NUMERO_DETERMINA_B])
-    det = DeterminaB(fk.request.form, **d_prat)
+    det = DeterminaB(fk.request.form, vincitore=bool(vincitore), **d_prat)
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
@@ -995,9 +1012,6 @@ def modificadetermina_b(user, basedir, d_prat):
             d_prat[PDF_ORDINE] = ''
             d_prat[PDF_DETERMINA_B] = DETB_PDF_FILE
             d_prat[FINE_GARA_GIORNO], d_prat[FINE_GARA_ORE] = d_prat[FINE_GARA].split()
-            vincitore = [x for x, ditta in enumerate(d_prat[LISTA_DITTE]) if ditta["vincitore"]][0]
-            d_prat[NOME_FORNITORE] = d_prat[LISTA_DITTE][vincitore]["nome_ditta"]
-            d_prat[IND_FORNITORE] = d_prat[LISTA_DITTE][vincitore]["sede_ditta"]
             d_prat[STR_PREZZO_GARA] = ft.stringa_costo(d_prat.get(PREZZO_GARA), "it")
             d_prat[STR_ONERI_IT] = ft.stringa_valore(d_prat.get(ONERI_SIC_GARA), "it")
             ft.jsave((basedir, PRAT_JFILE), d_prat)
@@ -1833,12 +1847,13 @@ def procedura_rdo():
                 m_entries = len(rdo.data[LISTA_DITTE])+2
 # Trucco per rendere variabile la dimensione del form per lista ditte
                 class LocalForm(PraticaRDO): pass
-                LocalForm.lista_ditte = new_lista_ditte(m_entries)
+                LocalForm.lista_ditte = new_lista_ditte("Lista ditte",
+                                                        m_entries)
 # Fine trucco
                 logging.debug("Richiesto incremento numero ditte: %d", m_entries)
                 rdo = LocalForm(fk.request.form)
             elif AVANTI in fk.request.form:
-                rdo = PraticaRDO(fk.request.form)
+#               rdo = PraticaRDO(fk.request.form)
                 if rdo.validate():
                     if LISTA_DITTE in d_prat:
                         del d_prat[LISTA_DITTE]

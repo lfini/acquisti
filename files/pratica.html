@@ -7,7 +7,7 @@
 </head>
 <body>
 <!-- template: pratica.html. Vers. 1.0 -->
-{% from "_common.html" import start_page, end_page %}
+{% from "_common.html" import start_page, end_page, tobottom %}
 {% macro getval(value) %}
 Pratica N. {{ value }}
 {% endmacro %}
@@ -50,6 +50,13 @@ Pratica N. {{ value }}
 {% include "pratica_A.html" %}
 {% if info.faseB %}
 <hr>
+<script type="text/javascript">
+fuction toBottom()
+{
+	window.scrollTo(0, document.body.scrollHeight);
+}
+window.onload=toBottom;
+</script>
 {% include "pratica_B.html" %}
 {% endif %}
 </table>

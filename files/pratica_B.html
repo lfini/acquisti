@@ -9,14 +9,14 @@
 [<a href=/procedura_rdo>Modifica</a>]
     {% endif %}
 <blockquote>
-	<b>Data inizio:</b> {{ pratica.inizio_gara }}<br>
-	<b>Data/ora fine:</b> {{ pratica.fine_gara }}<br><br>
-	<b>Ditte partecipanti:</b> 
-	<blockquote>
-	<table cellpadding=3 border=1>
-		<tr><th>Nome</th><th>Sede</th><th>Offerta</th><th>Vincitore</th></tr>
+<b>Data inizio:</b> {{ pratica.inizio_gara }}<br>
+<b>Data/ora fine:</b> {{ pratica.fine_gara }}<br><br>
+<b>Ditte partecipanti:</b> 
+<blockquote>
+   <table cellpadding=3 border=1>
+	   <tr><th>Nome</th><th>Sede</th> <th>Vincitore</th></tr>
     {% for ditta in pratica.lista_ditte %}
-    <tr><td>{{ ditta.nome_ditta }}</td><td>{{ ditta.sede_ditta }}<td>{% if ditta.offerta %} <b>X</b> {% else %} &nbsp; {% endif %}</td>
+    <tr><td>{{ ditta.nome_ditta }}</td><td>{{ ditta.sede_ditta }}</td>
 	             <td>{% if ditta.vincitore %} <b>X</b> {% else %} &nbsp; {% endif %}</td></tr>
     {% endfor %}
 	</table>
@@ -25,7 +25,6 @@
 {% if pratica.str_oneri_sicurezza %}
 	<b>Oneri di gara:</b> {{ pratica.str_prezzo_gara }}<br>
 {% endif %}
-
 </blockquote>
   {% else %}
     {% if info.rdo_modificabile %}
@@ -34,7 +33,9 @@
   {% endif %}
 <p>
 {% endif %}     <!-- Fine sezione per modalità acquisto RDO su MEPA -->
-<b> Allegati: </b>
+<b>Allegati:</b> {% if pratica.pratica_aperta == 1 %} 
+      &nbsp;&nbsp;[<a href=/verificaallegati/B>Verifica allegati</a>]
+   {% endif %}
 {% if info.attachB %}
 <ul>
 {% for l in info.attachB %}

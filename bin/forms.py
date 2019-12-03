@@ -8,8 +8,8 @@ import flask as fk
 import ftools as ft
 from constants import *
 
-__version__ = "1.6"
-__date__ = "25/11/2019"
+__version__ = "1.8"
+__date__ = "3/12/2019"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -311,7 +311,6 @@ class RichiestaAcquisto(ModifiedForm):
         if not self.costo.validate():
             self.errlist.append("Costo: "+", ".join(self.costo.errlist))
         if self.modalita_acquisto.data == RDO_MEPA:
-            print("DEBUG:", self.criterio_assegnazione.data)
             if self.criterio_assegnazione.data not in (PREZ_PIU_BASSO, OFF_PIU_VANT):
                 self.errlist.append("Specificare criterio di assegnazione")
 #           if not self.oneri_sicurezza.validate():
@@ -387,15 +386,15 @@ class DeterminaA(ModifiedForm):
             self.errlist.append("Manca indicazione RUP")
         return len(self.errlist) == 0
 
-    def renderme(self, dati_pratica):
+    def renderme(self, d_prat):
         "rendering del form"
         html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi:'\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
-        html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % dati_pratica)
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % d_prat]
+        html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % d_prat)
         html.append('<tr><td>'+render_field(self.numero_determina)+'<br>')
         html.append(render_field(self.data_determina)+'<br>')
         html.append(render_field(self.nome_direttore)+'</td></tr><tr><td>')
-        html.append("Codici Fondi: %s<p>" % dati_pratica[STR_CODF])
+        html.append("Codici Fondi: %s<p>" % d_prat[STR_CODF])
         html.append(render_field(self.capitolo)+'<br>')
         html.append(render_field(self.cup)+'<br>')
         html.append(render_field(self.email_rup)+'</td></tr><tr><td>')
@@ -410,14 +409,13 @@ class DeterminaB(ModifiedForm):
                                    [wt.validators.Optional("Manca data determina")])
     nome_direttore_b = MyTextField('Direttore', True,
                                    [wt.validators.Optional("Manca nome direttore")])
-#   modalita_acquisto_b = MyRadioField('Modalit&agrave; di acquisto', True,
-#                                      choices=MENU_MOD_ACQ_B,
-#                                      widget=radio_widget)
-#   criterio_assegnazione = MyRadioField("Criterio di assegnazione", True,
-#                                        choices=MENU_CRIT_ASS,
-#                                        widget=radio_widget)
+    nota_finale = MyTextAreaField('Nota finale in caso di annullamento gara', False)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+
+    def __init__(self, *pw, vincitore=False, **kw):
+        super().__init__(*pw, **kw)
+        self._vinc = vincitore
 
     def validate(self):
         "Validazione specifica per il form"
@@ -427,28 +425,29 @@ class DeterminaB(ModifiedForm):
             self.errlist.append("Manca data determina")
         if not self.nome_direttore_b.data:
             self.errlist.append("Manca nome direttore")
-#       if not self.modalita_acquisto_b.data:
-#           self.errlist.append("Devi specificare la modalità di acquisto")
-#       if not self.criterio_assegnazione.data:
-#           self.errlist.append("Devi specificare il criterio di assegnazione")
         return len(self.errlist) == 0
 
-    def renderme(self, dati_pratica):
+    def renderme(self, d_prat):
         "rendering del form"
         html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: '\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
-        html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % dati_pratica)
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % d_prat]
+        html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % d_prat)
         html.append('<tr><td>'+render_field(self.numero_determina_b)+'<br>')
         html.append(render_field(self.data_determina_b)+'<br>')
         html.append(render_field(self.nome_direttore_b)+'</td></tr><tr><td>')
-        html.append("<b>Modalità acquisto:</b> %s<br>" % dati_pratica[STR_MOD_ACQ])
-        html.append("<b>Criterio di assegnazione:</b> %s<br>" % dati_pratica[STR_CRIT_ASS])
-        html.append("<b>Codici Fondi:</b> %s<br>" % dati_pratica[STR_CODF])
-        html.append("<b>Capitolo:</b> %s<br>"%dati_pratica[CAPITOLO])
-        cup = dati_pratica.get(CUP).strip()
+        html.append("<b>Modalità acquisto:</b> %s<br>" % d_prat[STR_MOD_ACQ])
+        html.append("<b>Criterio di assegnazione:</b> %s<br>" % d_prat[STR_CRIT_ASS])
+        html.append("<b>Codici Fondi:</b> %s<br>" % d_prat[STR_CODF])
+        html.append("<b>Capitolo:</b> %s<br>"%d_prat[CAPITOLO])
+        cup = d_prat.get(CUP).strip()
         if cup:
             html.append("<b>CUP:</b> %s<br>"%cup)
-        html.append("<b>RUP:</b> %s"%dati_pratica[RUP]+'</td></tr><tr><td>')
+        html.append("<b>RUP:</b> %s<br>"%d_prat[RUP])
+        if self._vinc:
+            html.append("<b>Vincitore:</b> %s - %s</td></tr>"%(d_prat[VINCITORE][NOME_DITTA], d_prat[VINCITORE][SEDE_DITTA]))
+        else:
+            html.append('<b>Vincitore:</b> nessun vincitore</td></tr>')
+            html.append("<tr><td>"+render_field(self.nota_finale, cols=100)+"</td></tr>")
         html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() +'</td></tr>')
         return '\n'.join(html)
 
@@ -482,13 +481,13 @@ class Ordine(ModifiedForm):
             self.errlist.append("Manca specifica CIG")
         return len(self.errlist) == 0
 
-    def renderme(self, dati_pratica):
+    def renderme(self, d_prat):
         "rendering del form"
         html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: '\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % dati_pratica]
-        html.append('<p><b>%(descrizione_acquisto)s</b></p>' % dati_pratica)
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % d_prat]
+        html.append('<p><b>%(descrizione_acquisto)s</b></p>' % d_prat)
         html.append('<p>Presso la ditta:<blockquote>%(nome_fornitore)s<br>'\
-                    '%(ind_fornitore)s</blockquote></td></tr>' % dati_pratica)
+                    '%(ind_fornitore)s</blockquote></td></tr>' % d_prat)
         html.append('<tr><td><table width=100%><tr><td align=left>'+ \
                     render_field(self.numero_ordine)+'</td>')
         html.append('<td align=right>'+render_field(self.lingua_ordine)+'</td></tr></table></br>')
@@ -509,11 +508,11 @@ class AggiornaFormato(ModifiedForm):
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def renderme(self, dati_pratica):
+    def renderme(self, d_prat):
         "rendering del form"
         html = ['<tr><td> Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>'\
                 'richiesta.pdf</a> </td></tr>']
-        html.append('<tr><td> Costo: '+dati_pratica.get("costo", "")+'<br>'+ \
+        html.append('<tr><td> Costo: '+d_prat.get("costo", "")+'<br>'+ \
                     render_field(self.nuovo_costo)+'</td></tr>')
         html.append('<tr><td>'+render_field(self.nuova_modalita_acquisto) +'</tr></td>')
         html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti()+'</tr></td>')
@@ -543,31 +542,38 @@ class TrovaPratica(ModifiedForm):
         html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</tr></td>')
         return '\n'.join(html)
 
+BUTTON_HTML = "<td><button type=submit name=delete border=0 alt=X> <img src=/files/del-16.png> </button></td>"
+
 class Ditta(ModifiedForm):
     "form per singola ditta"
     nome_ditta = MyTextField('', True)
     sede_ditta = MyTextField('', True)
-    offerta = wt.BooleanField()
     vincitore = wt.BooleanField()
+    T_cancella = wt.BooleanField()
 
     def renderme(self, **_unused):
         "Rendering del form"
         html = []
         html.append("<td>"+render_field(self.nome_ditta)+"</td>")
         html.append("<td>"+render_field(self.sede_ditta)+"</td>")
-        html.append("<td>"+self.offerta()+"</td>")
+        if hasattr(self, "offerta"):
+            html.append("<td>"+self.offerta()+"</td>")
         html.append("<td>"+self.vincitore()+"</td>")
+        html.append("<td>"+self.T_cancella()+"</td>")
         return "".join(html)
 
-def new_lista_ditte(m_entries=5):
+class DittaExt(Ditta):
+    offerta = wt.BooleanField()
+
+def new_lista_ditte(label, m_entries=5):
     "Instanzia una lista ditte con dato numero di campi"
-    return MyFieldList(wt.FormField(Ditta), "Elenco ditte", True, min_entries=m_entries)
+    return MyFieldList(wt.FormField(Ditta), label, True, min_entries=m_entries)
 
 class PraticaRDO(ModifiedForm):
     "form per specifiche della pratica RDO"
     inizio_gara = MyTextField('Data inizio (g/m/aaaa)', True)
     fine_gara = MyTextField('Data/ora fine (g/m/aaaa ora:min)', True)
-    lista_ditte = new_lista_ditte()
+    lista_ditte = new_lista_ditte("Elenco ditte che hanno presentato offerta")
     prezzo_gara = MyFormField(CostoPiuTrasporto, "Prezzo di gara", True)
     oneri_sic_gara = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
     T_more = wt.SubmitField("+Ditte")
@@ -589,11 +595,11 @@ class PraticaRDO(ModifiedForm):
         html.append(render_field(self.inizio_gara)+"<br>")
         html.append(render_field(self.fine_gara))
         html.append("</td></tr>")
-        html.append("<tr><td><b>Elenco ditte</b><br>")
+        html.append("<tr><td><b>%s</b><br>"%self.lista_ditte.a_label)
         html.append("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
-                    "<th>Indirizzo</th><th>Offerta</th><th>Vincitore</th></tr></td></tr>")
+                    "<th>Indirizzo</th><th>Vincitore</th><th><img src=/files/del-20.png></th></tr></td></tr>")
         for idx, ditta in enumerate(self.lista_ditte):
-            html.append("<tr><td>%d</td>"%(idx+1)+ditta.renderme(**kw)+"</tr>")
+            html.append("<tr><td>%d</td>"%(idx+1)+ditta.renderme(number=idx, **kw)+"</tr>")
         html.append("</td></tr></table><br>")
         html.append("<div align=right>"+self.T_more()+"</div></td></tr>")
         html.append('<tr><td>'+render_field(self.prezzo_gara))
