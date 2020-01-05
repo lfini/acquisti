@@ -54,8 +54,8 @@ from table import jload, jsave, jload_b64, jsave_b64, Table, getpath
 import latex
 
 __author__ = 'Luca Fini'
-__version__ = '4.4.0'
-__date__ = '15/10/2019'
+__version__ = '4.4.1'
+__date__ = '05/01/2020'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -931,9 +931,13 @@ class DocList:
         ydir = os.path.join(thedir, self.year)
         self.records = []
         self.errors = []
-        pdirs = [x for x in os.listdir(ydir) if IS_PRAT_DIR.match(x)]
-        pdirs = [os.path.join(ydir, x) for x in pdirs if directory_filter(x)]
-        pdirs.sort()
+        try:
+            pdirs = [x for x in os.listdir(ydir) if IS_PRAT_DIR.match(x)]
+        except FileNotFoundError:
+            pdirs = []
+        else:
+            pdirs = [os.path.join(ydir, x) for x in pdirs if directory_filter(x)]
+            pdirs.sort()
         for pdir in pdirs:
             fnm = os.path.join(pdir, fname)
             if filename_filter(fnm):
