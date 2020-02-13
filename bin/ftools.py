@@ -55,7 +55,7 @@ import latex
 
 __author__ = 'Luca Fini'
 __version__ = '4.4.1'
-__date__ = '05/01/2020'
+__date__ = '7/01/2020'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate

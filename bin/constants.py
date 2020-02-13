@@ -252,10 +252,10 @@ ACCESSO_NON_PREVISTO = "Sequenza di accesso non prevista. URL: "
 
 APPROV_EMAIL_RESPINTA_OGGETTO = "Approvazione per e-mail respinta"
 
-APPROV_EMAIL_RESPINTA = """logging-format-interpolation
-L'approvazione della richiesta di cui alla pratica numero {numero_pratica} 
+APPROV_EMAIL_RESPINTA = """
+L'approvazione della richiesta di cui alla pratica numero %(numero_pratica)s
 
-   {descrizione_acquisto}
+   %(descrizione_acquisto)s
 
 è stata ricevuta per e-mail, ma è stata respinta perché la pratica
 nel frattempo è stata  modificata

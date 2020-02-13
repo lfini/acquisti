@@ -21,8 +21,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.4.2'
-__date__ = '3/12/2019'
+__version__ = '3.4.3'
+__date__ = '13/2/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -1795,10 +1795,10 @@ def email_approv(key):
         else:
             logging.error("Approvazione da e-mail non accettata: Firma errata (pratica: %s)",
                           appr[1])
-            mailtext = APPROV_EMAIL_RESPINTA % d_prat
+            mailtext = APPROV_EMAIL_RESPINTA%d_prat
     else:
         logging.error("Richiesta e-mail di approvazione non accettata: codice %s inesistente", key)
-        mailtext = APPROV_EMAIL_RESPINTA % d_prat
+        mailtext = APPROV_EMAIL_RESPINTA%d_prat
     if mailtext:
         recipients = [d_prat.get(EMAIL_RESPONSABILE), CONFIG.get(EMAIL_UFFICIO)]
         subj = APPROV_EMAIL_RESPINTA_OGGETTO
@@ -1934,8 +1934,8 @@ def localtest():
 
 def production():
     "lancia la procedura in modo produzione (all'interno del web server)"
-#   logging.basicConfig(level=logging.INFO)    # Livello logging normale
-    logging.basicConfig(level=logging.DEBUG)   # Più verboso
+    logging.basicConfig(level=logging.INFO)    # Livello logging normale
+#   logging.basicConfig(level=logging.DEBUG)   # Più verboso
     initialize_me()
                               # In production mode, add log handler to file
     email = {'mailhost': CONFIG[SMTP_HOST],
