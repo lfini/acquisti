@@ -10,8 +10,12 @@ from pprint import PrettyPrinter
 
 import wtforms as wt
 import flask as fk
-#from werkzeug.exceptions import ClientDisconnected
-from werkzeug import secure_filename
+
+#    cope with compatibility with older werkzeug versions
+try:
+    from werkzeug import secure_filename
+except ImportError:
+    from werkzeug.utils import secure_filename
 
 from constants import *
 import forms   # Mantenere!!!
@@ -21,8 +25,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.4.3'
-__date__ = '13/2/2020'
+__version__ = '3.5.0'
+__date__ = '5/05/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -42,6 +46,9 @@ __date__ = '13/2/2020'
 # Versione 3.3  10/2019:     Aggiunta gestione RDO su MEPA (preliminare)
 
 # Versione 3.4  12/2019:     Completata gestione RDO su MEPA
+
+# Versione 3.5   5/2020:     Corretto testo di Richiesta e determine nei casi RDO
+#                            e manifestazione di interesse.
 
 __start__ = time.asctime(time.localtime())
 
@@ -146,7 +153,7 @@ def _test_pdf_ordine_mepa(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] in (MEPA, CONSIP):
             return ft.findfiles(basedir, TAB_ALLEGATI[ORDINE_MEPA][0])
         return True
-    elif fase == "B":
+    if fase == "B":
         return True
     raise FASE_ERROR
 
@@ -156,7 +163,7 @@ def _test_pdf_trattativa_mepa(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] == TRATT_MEPA:
             return ft.findfiles(basedir, TAB_ALLEGATI[DOCUM_STIPULA][0])
         return True
-    elif fase == "B":
+    if fase == "B":
         return True
     raise FASE_ERROR
 
@@ -166,7 +173,7 @@ def _test_pdf_offerta_ditta(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000, PROC_NEG):
             return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_A][0])))
         return True
-    elif fase == "B":
+    if fase == "B":
         if d_prat.get(MOD_ACQUISTO_B, "") in (PROC_NEG, SUPER_5000, SUPER_1000):
             return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_B][0])))
         return True
@@ -178,7 +185,7 @@ def _test_pdf_lettera_invito(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] == PROC_NEG:
             return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_A][0])))
         return True
-    elif fase == "B":
+    if fase == "B":
         if d_prat[MOD_ACQUISTO] in (PROC_NEG, MANIF_INT):
             return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_B][0])))
         return True
@@ -190,7 +197,7 @@ def _test_pdf_capitolato_rdo(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] in (RDO_MEPA, ):
             return len(ft.findfiles(basedir, TAB_ALLEGATI[CAPITOLATO_RDO][0]))
         return True
-    elif fase == "B":
+    if fase == "B":
         return True
     raise FASE_ERROR
 
@@ -200,7 +207,7 @@ def _test_pdf_dichiarazione_bollo(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] in (MEPA, RDO_MEPA, PROC_NEG, MANIF_INT):
             return len(ft.findfiles(basedir, TAB_ALLEGATI[DICH_IMPOSTA_BOLLO][0]))
         return True
-    elif fase == "B":
+    if fase == "B":
         return True
     raise FASE_ERROR
 
@@ -210,7 +217,7 @@ def _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
         if d_prat[MOD_ACQUISTO] == RDO_MEPA:
             return len(ft.findfiles(basedir, TAB_ALLEGATI[LISTA_DITTE_INV][0]))
         return True
-    elif fase == "B":
+    if fase == "B":
         return True
     raise FASE_ERROR
 
@@ -352,7 +359,7 @@ def check_pratica_annullabile(the_user, d_prat):
         return True, []
     return False, [OPER_SOLO_AMMINISTRAZIONE]
 
-def check_rdo_modificabile(the_user, basedir, d_prat):
+def check_rdo_modificabile(_the_user, _basedir, d_prat):
     "test: rdo modificabile"
     if d_prat.get(PRATICA_APERTA) != 1:
         return False, ['Pratica chiusa']
@@ -384,48 +391,26 @@ def check_all(the_user, basedir, d_prat):
     info['richiesta_inviabile'] = check_richiesta_inviabile(the_user, basedir, d_prat)[0]
     return info
 
-def modello_determinaa(mod_acquisto):
-    "Stabilisce il template per la determina, fase A"
-    if mod_acquisto in (MEPA, CONSIP):
-        return "determina_mepa"
-    elif mod_acquisto == INFER_5000:
-        return "determina_inf5000"
-    elif mod_acquisto == INFER_1000:
-        return "determina_inf1000"
-    elif mod_acquisto == TRATT_MEPA:
-        return "determina_trattmepa"
-    elif mod_acquisto == SUPER_5000:
-        return "determina_sup5000"
-    elif mod_acquisto == SUPER_1000:
-        return "determina_sup1000"
-    elif mod_acquisto == RDO_MEPA:
-        return "determina_rdo"
-    elif mod_acquisto == PROC_NEG:
-        return "determina_procneg"
-    elif mod_acquisto == MANIF_INT:
-        return "determina_manif"
-    return ""
-
 def show_ordine(d_prat):
     "Stabilisce se la parte ordine deve comparire nella prima fase della pratica"
     mod_acquisto = d_prat[MOD_ACQUISTO]
     if mod_acquisto in (MEPA, CONSIP):
         return 0
-    elif mod_acquisto == INFER_5000:
+    if mod_acquisto == INFER_5000:
         return 1
-    elif mod_acquisto == INFER_1000:
+    if mod_acquisto == INFER_1000:
         return 1
-    elif mod_acquisto == SUPER_5000:
+    if mod_acquisto == SUPER_5000:
         return 1
-    elif mod_acquisto == SUPER_1000:
+    if mod_acquisto == SUPER_1000:
         return 1
-    elif mod_acquisto == RDO_MEPA:
+    if mod_acquisto == RDO_MEPA:
         return 2
-    elif mod_acquisto == PROC_NEG:
+    if mod_acquisto == PROC_NEG:
         return 2
-    elif mod_acquisto == MANIF_INT:
+    if mod_acquisto == MANIF_INT:
         return ""
-    elif d_prat.get(VERSIONE, 0) < 1:
+    if d_prat.get(VERSIONE, 0) < 1:
         return 1
     return ""
 
@@ -676,7 +661,7 @@ def clean_data(somedata):
     "Ripulisce dato generico"
     if isinstance(somedata, dict):
         return clean_dict(somedata)
-    elif isinstance(somedata, (tuple, list)):
+    if isinstance(somedata, (tuple, list)):
         return clean_list(somedata)
     return somedata
 
@@ -951,7 +936,7 @@ def modificadetermina_a(user, basedir, d_prat):
                          category="info")
             d_prat[TITOLO_DIRETTORE] = CONFIG[TITOLO_DIRETTORE]
             logging.info('Genera determina: %s/%s', basedir, DETA_PDF_FILE)
-            det_template = modello_determinaa(d_prat[MOD_ACQUISTO])
+            det_template = ft.modello_determinaa(d_prat[MOD_ACQUISTO])
             det_name = os.path.splitext(DETA_PDF_FILE)[0]
             ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
                        debug=LOCAL_DEBUG, pratica=d_prat, user=user)
@@ -963,11 +948,10 @@ def modificadetermina_a(user, basedir, d_prat):
             ft.jsave((basedir, PRAT_JFILE), d_prat)
             url = fk.url_for('pratica1')
             return fk.redirect(url)
-        else:
-            errors = det.get_errors()
-            for err in errors:
-                fk.flash(err, category="error")
-            logging.debug("Errori form DeterminaA: %s", "; ".join(errors))
+        errors = det.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        logging.debug("Errori form DeterminaA: %s", "; ".join(errors))
 
     ddp = {'title': 'Immissione dati per determina',
            'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
@@ -1001,13 +985,6 @@ def modificadetermina_b(user, basedir, d_prat):
             if not _test_pdf_dichiarazione_bollo(basedir, d_prat, "A"):
                 fk.flash("Manca dichiarazione sostitutiva di assolvimento Imposta Bollo",
                          category="info")
-            logging.info('Genera determina: %s/%s', basedir, DETB_PDF_FILE)
-            det_template = os.path.splitext(DETB_PDF_FILE)[0]
-            det_name = det_template
-            ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
-                       debug=LOCAL_DEBUG, pratica=d_prat, user=user)
-            d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Generata determina B'))
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
             d_prat[PDF_ORDINE] = ''
             d_prat[PDF_DETERMINA_B] = DETB_PDF_FILE
@@ -1015,12 +992,18 @@ def modificadetermina_b(user, basedir, d_prat):
             d_prat[STR_PREZZO_GARA] = ft.stringa_costo(d_prat.get(PREZZO_GARA), "it")
             d_prat[STR_ONERI_IT] = ft.stringa_valore(d_prat.get(ONERI_SIC_GARA), "it")
             ft.jsave((basedir, PRAT_JFILE), d_prat)
+            logging.info('Genera determina: %s/%s', basedir, DETB_PDF_FILE)
+            det_template = os.path.splitext(DETB_PDF_FILE)[0]
+            det_name = det_template
+            ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
+                       debug=LOCAL_DEBUG, pratica=d_prat, user=user)
+            d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
+                                                   'Generata determina B'))
             return fk.redirect(fk.url_for('pratica1'))
-        else:
-            errors = det.get_errors()
-            for err in errors:
-                fk.flash(err, category="error")
-            logging.debug("Errori form DeterminaA: %s", "; ".join(errors))
+        errors = det.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        logging.debug("Errori form DeterminaB: %s", "; ".join(errors))
 
     ddp = {'title': 'Immissione dati per determina',
            'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
@@ -1139,9 +1122,8 @@ def login():
         if ret:
             fk.session['userid'] = fk.request.form['userid']
             return fk.redirect(fk.url_for('start'))
-        else:
-            logging.error('Login negato: userid: "%s" (%s)', uid, why)
-            fk.flash('Accesso negato: {}'.format(why), category="error")
+        logging.error('Login negato: userid: "%s" (%s)', uid, why)
+        fk.flash('Accesso negato: {}'.format(why), category="error")
     return fk.render_template('login.html', form=form, sede=CONFIG[SEDE],
                               title='Procedura per acquisti')
 
@@ -1219,11 +1201,10 @@ def modificarichiesta():
             logging.info('Generata richiesta: %s/%s', basedir, RIC_PDF_FILE)
             _avvisi(user, basedir, d_prat, "A")
             return fk.redirect(fk.url_for('pratica1'))
-        else:
-            errors = racq.get_errors()
-            for err in errors:
-                fk.flash(err, category="error")
-            logging.debug("Errori form Richiesta di acquisto: %s", "; ".join(errors))
+        errors = racq.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        logging.debug("Errori form Richiesta di acquisto: %s", "; ".join(errors))
     return _render_richiesta(racq, d_prat)
 
 @ACQ.route('/verificaallegati/<fase>')
@@ -1389,31 +1370,30 @@ def lista_pratiche(stato, anno, ascendente):
         logging.error('Visualizzazione pratiche non autorizzata. Utente: %s', user['userid'])
         fk.session.clear()
         return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+    if stato[-1] == 'A':
+        filtac = lambda x: x.get(PRATICA_APERTA)
+        title = 'Elenco pratiche aperte'
     else:
-        if stato[-1] == 'A':
-            filtac = lambda x: x.get(PRATICA_APERTA)
-            title = 'Elenco pratiche aperte'
-        else:
-            filtac = lambda x: not x.get(PRATICA_APERTA)
-            title = 'Elenco pratiche chiuse'
-        if stato[:3] == 'RIC':
-            filtsb = lambda x: _test_richiedente(user, x)
-            title += ' come richiedente'
-        elif stato[:3] == 'RES':
-            filtsb = lambda x: _test_responsabile(user, x)
-            title += ' come resp. dei fondi'
-        else:
-            filtsb = lambda x: True
-        filt = lambda x: filtac(x) and filtsb(x)
-        try:
-            doclist = ft.DocList(DATADIR, PRAT_JFILE, anno, content_filter=filt, sort=sort_funct)
-        except Exception:
-            err_msg = _errore_doclist(anno)
-            fk.flash(err_msg, category="error")
-            logging.error(err_msg)
-            return fk.redirect(fk.url_for('start'))
-        theyear = int(anno)
-        years = [int(y) for y in doclist.years]
+        filtac = lambda x: not x.get(PRATICA_APERTA)
+        title = 'Elenco pratiche chiuse'
+    if stato[:3] == 'RIC':
+        filtsb = lambda x: _test_richiedente(user, x)
+        title += ' come richiedente'
+    elif stato[:3] == 'RES':
+        filtsb = lambda x: _test_responsabile(user, x)
+        title += ' come resp. dei fondi'
+    else:
+        filtsb = lambda x: True
+    filt = lambda x: filtac(x) and filtsb(x)
+    try:
+        doclist = ft.DocList(DATADIR, PRAT_JFILE, anno, content_filter=filt, sort=sort_funct)
+    except Exception:
+        err_msg = _errore_doclist(anno)
+        fk.flash(err_msg, category="error")
+        logging.error(err_msg)
+        return fk.redirect(fk.url_for('start'))
+    theyear = int(anno)
+    years = [int(y) for y in doclist.years]
     return fk.render_template('lista_pratiche_per_anno.html', stato=stato,
                               sede=CONFIG[SEDE], years=years, year=theyear,
                               dlist=doclist.records, title=title)
@@ -1496,10 +1476,9 @@ def trovapratica():
                'after': '</form>',
                'body': prf.renderme()}
         return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
-    else:
-        logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
-        fk.session.clear()
-        return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+    logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
+    fk.session.clear()
+    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
 
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
@@ -1606,7 +1585,7 @@ def modificadetermina(fase):
     if is_modif:
         if fase == "A":
             return modificadetermina_a(user, basedir, d_prat)
-        elif fase == "B":
+        if fase == "B":
             return modificadetermina_b(user, basedir, d_prat)
         raise FASE_ERROR
     for amsg in msg:
@@ -1697,11 +1676,10 @@ def modificaordine(fase):
                 ft.jsave((basedir, PRAT_JFILE), d_prat)
                 url = fk.url_for('pratica1')
                 return fk.redirect(url)
-            else:
-                errors = orn.get_errors()
-                for err in errors:
-                    fk.flash(err, category="error")
-                logging.debug("Errori form Ordine: %s", "; ".join(errors))
+            errors = orn.get_errors()
+            for err in errors:
+                fk.flash(err, category="error")
+            logging.debug("Errori form Ordine: %s", "; ".join(errors))
         ddp = {'title': 'Immissione dati per ordine',
                'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
                'before': '<form method=POST action=/modificaordine/%s '
@@ -1865,11 +1843,10 @@ def procedura_rdo():
                     ft.remove((basedir, ORD_PDF_FILE), show_error=False)
                     logging.debug("Aggiornata pratica con dati RDO")
                     return fk.redirect(fk.url_for('pratica1'))
-                else:
-                    errors = rdo.get_errors()
-                    for err in errors:
-                        fk.flash(err, category="error")
-                    logging.debug("Errori form PraticaRDO: %s", "; ".join(errors))
+                errors = rdo.get_errors()
+                for err in errors:
+                    fk.flash(err, category="error")
+                logging.debug("Errori form PraticaRDO: %s", "; ".join(errors))
         else:
             rdo = PraticaRDO(**d_prat)
         ddp = {'title': 'Immissione dati per RDO su MEPA',

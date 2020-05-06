@@ -1,5 +1,5 @@
 """
-Tools per la procedura acqusti.py
+Tools per la procedura acquisti.py
 
 Uso da linea di comando:
     python ftools.py access     - test username/password
@@ -43,6 +43,7 @@ from email.mime.text import MIMEText
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
 from functools import reduce
+from getpass import getpass
 
 import ldap3
 from Crypto.Cipher import AES
@@ -54,8 +55,8 @@ from table import jload, jsave, jload_b64, jsave_b64, Table, getpath
 import latex
 
 __author__ = 'Luca Fini'
-__version__ = '4.4.1'
-__date__ = '7/01/2020'
+__version__ = '4.4.2'
+__date__ = '3/05/2020'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -644,6 +645,28 @@ def swapname(name):
         ret = name
     return ret
 
+def modello_determinaa(mod_acquisto):
+    "Stabilisce il template per la determina, fase A"
+    if mod_acquisto in (MEPA, CONSIP):
+        return "determina_mepa"
+    if mod_acquisto == INFER_5000:
+        return "determina_inf5000"
+    if mod_acquisto == INFER_1000:
+        return "determina_inf1000"
+    if mod_acquisto == TRATT_MEPA:
+        return "determina_trattmepa"
+    if mod_acquisto == SUPER_5000:
+        return "determina_sup5000"
+    if mod_acquisto == SUPER_1000:
+        return "determina_sup1000"
+    if mod_acquisto == RDO_MEPA:
+        return "determina_rdo"
+    if mod_acquisto == PROC_NEG:
+        return "determina_procneg"
+    if mod_acquisto == MANIF_INT:
+        return "determina_manif"
+    return ""
+
 def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **data):
     "Crea documento PDF da template LaTeX e dict di termini"
     tfile = os.path.join(pkg_root, 'files', templ_name)+'.tex'
@@ -987,7 +1010,6 @@ def remove(path, show_error=True):
 
 def testlogin():
     "Test funzionamento login"
-    from getpass import getpass
     print('Prova userid/password')
     userid = input("Userid: ")
     psw = getpass()

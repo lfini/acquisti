@@ -214,7 +214,10 @@ attraverso la pubblicazione di un avviso per manifestazione di interesse.
 ((* endif *))
 %%%% Fine varianti per modalità acquisto
 
-Il costo presunto ammonta a ((( pratica.str_costo_it ))).
+Il costo presunto ammonta a ((( pratica.str_costo_it )))%
+((* if pratica.str_oneri_it *))%
+, di cui ((( pratica.str_oneri_it ))) per oneri di sicurezza non soggetti a ribasso%
+((* endif *)).
 
 Il sottoscritto dichiara che la spesa dovrà gravare sul/sui fondo/i:
 ((( pratica.stringa_codf ))). 

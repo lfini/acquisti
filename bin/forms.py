@@ -8,8 +8,8 @@ import flask as fk
 import ftools as ft
 from constants import *
 
-__version__ = "1.8"
-__date__ = "3/12/2019"
+__version__ = "1.9"
+__date__ = "4/05/2020"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -39,19 +39,24 @@ def popup(url, text, size=(700, 500)):
 def render_field(field, **kw):
     "Rendering di un campo"
     if field.help_spec:
-        help_url = '/files/%s'%field.help_spec
+        help_url = fk.Markup('/files/%s'%field.help_spec)
         hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
     else:
         hlink = ''
     if field.is_required:
-        lab = '<dt><u>%s</u>%s</dt>'%(str(field.a_label), hlink)
+        lab = fk.Markup('<dt><u>%s</u>%s</dt>'%(str(field.a_label), hlink))
     else:
-        lab = '<dt>%s%s</dt>'%(str(field.a_label), hlink)
+        lab = fk.Markup('<dt>%s%s</dt>'%(str(field.a_label), hlink))
     if isinstance(field, MyFormField):
-        ret = field.form.renderme(**kw)
+        ret = fk.Markup(field.form.renderme(**kw))
     else:
-        ret = field(**kw)
+        ret = fk.Markup(field(**kw))
     return lab+ret
+
+B_TRTD = fk.Markup('<tr><td>')
+E_TRTD = fk.Markup('</td></tr>')
+BRK = fk.Markup("<br />")
+NBSP = fk.Markup(" &nbsp; ")
 
 class MyBooleanField(wt.BooleanField):
     "La mia versione del BooleanField"
@@ -121,7 +126,7 @@ class MyAttachField(wt.Field):
             else:
                 spec = (atch[0], atch[1], "&nbsp;")
             ret += ATTACH_BUTTON % spec
-        return ret+"</table>"
+        return fk.Markup(ret+"</table>")
 
 class MyFormField(wt.FormField):
     "La mia versione del FormField"
@@ -165,10 +170,10 @@ class MyForm(wt.Form):
         ret = field(hlink, **kw)
         if not ret:
             if field.is_required:
-                lab = '<dt><u>%s</u>%s</dt>' % (field.label, hlink)
+                lab = '<dt><u>%s</u>%s</dt>'%(field.label, hlink)
             else:
-                lab = '<dt>%s%s</dt>' % (field.label, hlink)
-            ret = lab+'<dd> %s </dd>' % field(**kw)
+                lab = '<dt>%s%s</dt>'%(field.label, hlink)
+            ret = fk.Markup(lab+'<dd> %s </dd>'%field(**kw))
         return ret
 
 class ModifiedForm(wt.Form):
@@ -209,7 +214,7 @@ class ImportoPiuIva(ModifiedForm):
 
     def renderme(self, **_unused):
         "Rendering del form"
-        return self.importo(size=8)+self.valuta()+self.iva()+self.iva_free()
+        return fk.Markup(self.importo(size=8)+self.valuta()+self.iva()+self.iva_free())
 
 class CostoPiuTrasporto(ModifiedForm):
     "Form per costo+trasporto"
@@ -227,9 +232,9 @@ class CostoPiuTrasporto(ModifiedForm):
 
     def renderme(self, **_unused):
         "Rendering del form"
-        ret = "&nbsp;&nbsp;&nbsp;Importo: "+self.costo.renderme()+"<br />\n"
-        ret += "Trasporto: "+self.modo_trasp()+"<br />\n"
-        ret += "&nbsp;&nbsp;&nbsp;&nbsp;"+self.costo_trasporto.renderme()
+        ret = fk.Markup("&nbsp;&nbsp;&nbsp;&nbsp;Importo: ")+self.costo.renderme()+BRK
+        ret += fk.Markup("Trasporto: ")+self.modo_trasp()+BRK
+        ret += fk.Markup("&nbsp;&nbsp;&nbsp;&nbsp")+self.costo_trasporto.renderme()
         return ret
 
 class MyLoginForm(ModifiedForm):
@@ -319,42 +324,35 @@ class RichiestaAcquisto(ModifiedForm):
 
     def renderme(self):
         "rendering del form"
-        html = ['<tr><td>'+(render_field(self.data_richiesta, size=15)+'</td></tr>')]
-        html.append('<tr><td>'+render_field(self.modalita_acquisto))
-        html.append('</td></tr>')
-
-        if self.modalita_acquisto.data != 'None':
-            html.append('<tr><td>'+render_field(self.descrizione_acquisto,
-                                                size=50)+'</td></tr>')
+        html = B_TRTD+render_field(self.data_richiesta, size=15)+E_TRTD
+        html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
+        if self.modalita_acquisto.data is not None and self.modalita_acquisto.data != 'None':
+            html += B_TRTD+render_field(self.descrizione_acquisto, size=50)+E_TRTD
             if self.modalita_acquisto.data in (INFER_5000, SUPER_5000,
                                                INFER_1000, SUPER_1000, PROC_NEG):
-                html.append('<tr><td>'+render_field(self.descrizione_ordine,
-                                                    rows=3, cols=80)+'</td></tr>')
+                html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
             if self.modalita_acquisto.data in (SUPER_5000, SUPER_1000, PROC_NEG):
-                html.append('<tr><td>'+render_field(self.giustificazione,
-                                                    rows=3, cols=80)+'</td></tr>')
-            html.append('<tr><td>'+render_field(self.motivazione_acquisto,
-                                                rows=10, cols=80)+'</td></tr>')
-            html.append('<tr><td>'+'<div align=right> &rightarrow; %s</div>'% \
-                        popup(fk.url_for('vedicodf'),
-                              'Vedi lista Codici fondi e responsabili', size=(1100, 900)))
-            html.append(render_field(self.email_responsabile))
-            html.append('<br>'+render_field(self.lista_codf)+'</td></tr>')
+                html += B_TRTD+render_field(self.giustificazione, rows=3, cols=80)+E_TRTD
+            html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
+            html += B_TRTD+fk.Markup('<div align=right> &rightarrow; %s</div>'% \
+                                     popup(fk.url_for('vedicodf'),
+                                           'Vedi lista Codici fondi e responsabili',
+                                           size=(1100, 900)))
+            html += render_field(self.email_responsabile)
+            html += BRK+render_field(self.lista_codf)+E_TRTD
 
             if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
-                html.append('<tr><td>'+render_field(self.nome_fornitore, size=50)+'<br>')
-                html.append(render_field(self.ind_fornitore, sep='', size=50)+'</td></tr>')
-            html.append('<tr><td>'+render_field(self.costo))
-            html.append('</td></tr>')
+                html += B_TRTD+render_field(self.nome_fornitore, size=50)+BRK
+                html += render_field(self.ind_fornitore, sep='', size=50)+E_TRTD
+            html += B_TRTD+render_field(self.costo)+E_TRTD
 
             if self.modalita_acquisto.data in (RDO_MEPA, PROC_NEG):
-                html.append('<tr><td>'+render_field(self.criterio_assegnazione)+'</tr></td>')
-                html.append('<tr><td>'+render_field(self.oneri_sicurezza))
-                html.append('</td></tr>')
-            html.append('<tr><td>'+render_field(self.note_richiesta, rows=10, cols=80)+'</td></tr>')
-        html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</td></tr>')
-        html.append(self.newform())
-        return '\n'.join(html)
+                html += B_TRTD+render_field(self.criterio_assegnazione)+E_TRTD
+                html += B_TRTD+render_field(self.oneri_sicurezza)+E_TRTD
+            html += B_TRTD+render_field(self.note_richiesta, rows=10, cols=80)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        html += self.newform()
+        return html
 
 class DeterminaA(ModifiedForm):
     "form per definizione determina fase A"
@@ -388,18 +386,19 @@ class DeterminaA(ModifiedForm):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi:'\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % d_prat]
-        html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % d_prat)
-        html.append('<tr><td>'+render_field(self.numero_determina)+'<br>')
-        html.append(render_field(self.data_determina)+'<br>')
-        html.append(render_field(self.nome_direttore)+'</td></tr><tr><td>')
-        html.append("Codici Fondi: %s<p>" % d_prat[STR_CODF])
-        html.append(render_field(self.capitolo)+'<br>')
-        html.append(render_field(self.cup)+'<br>')
-        html.append(render_field(self.email_rup)+'</td></tr><tr><td>')
-        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() +'</td></tr>')
-        return '\n'.join(html)
+        html = B_TRTD+fk.Markup('Richiesta del %(data_richiesta)s. Resp.Fondi:'\
+                                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s'%d_prat)
+        html += fk.Markup('<p><b>%(descrizione_acquisto)s'%d_prat)+E_TRTD
+        html += B_TRTD+render_field(self.numero_determina)+BRK
+        html += render_field(self.data_determina)+BRK
+        html += render_field(self.nome_direttore)+E_TRTD
+        html += B_TRTD+fk.Markup("Codici Fondi: %s<p>"%d_prat[STR_CODF])
+        html += render_field(self.capitolo)+BRK
+        html += render_field(self.cup)+BRK
+#       html.append(render_field(self.email_rup)+'</td></tr><tr><td>')
+        html += render_field(self.email_rup)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
 class DeterminaB(ModifiedForm):
     "form per definizione determina fase B"
@@ -429,27 +428,29 @@ class DeterminaB(ModifiedForm):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: '\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % d_prat]
-        html.append('<p><b>%(descrizione_acquisto)s</td></tr>' % d_prat)
-        html.append('<tr><td>'+render_field(self.numero_determina_b)+'<br>')
-        html.append(render_field(self.data_determina_b)+'<br>')
-        html.append(render_field(self.nome_direttore_b)+'</td></tr><tr><td>')
-        html.append("<b>Modalità acquisto:</b> %s<br>" % d_prat[STR_MOD_ACQ])
-        html.append("<b>Criterio di assegnazione:</b> %s<br>" % d_prat[STR_CRIT_ASS])
-        html.append("<b>Codici Fondi:</b> %s<br>" % d_prat[STR_CODF])
-        html.append("<b>Capitolo:</b> %s<br>"%d_prat[CAPITOLO])
+        html = B_TRTD+fk.Markup('Richiesta del %(data_richiesta)s. Resp.Fondi: '\
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s'%d_prat)
+        html += fk.Markup('<p><b>%(descrizione_acquisto)s'%d_prat)+E_TRTD
+        html += B_TRTD+render_field(self.numero_determina_b)+BRK
+        html += render_field(self.data_determina_b)+BRK
+        html += render_field(self.nome_direttore_b)+E_TRTD
+        html += B_TRTD+fk.Markup("<b>Modalità acquisto:</b> %s<br>"%d_prat[STR_MOD_ACQ])
+        html += fk.Markup("<b>Criterio di assegnazione:</b> %s<br>"%d_prat[STR_CRIT_ASS])
+        html += fk.Markup("<b>Codici Fondi:</b> %s<br>" % d_prat[STR_CODF])
+        html += fk.Markup("<b>Capitolo:</b> %s<br>"%d_prat[CAPITOLO])
         cup = d_prat.get(CUP).strip()
         if cup:
-            html.append("<b>CUP:</b> %s<br>"%cup)
-        html.append("<b>RUP:</b> %s<br>"%d_prat[RUP])
+            html += fk.Markup("<b>CUP:</b> %s<br>"%cup)
+        html += fk.Markup("<b>RUP:</b> %s<br>"%d_prat[RUP])
         if self._vinc:
-            html.append("<b>Vincitore:</b> %s - %s</td></tr>"%(d_prat[VINCITORE][NOME_DITTA], d_prat[VINCITORE][SEDE_DITTA]))
+            html += fk.Markup("<b>Vincitore:</b> %s - %s"%
+                                  (d_prat[VINCITORE][NOME_DITTA],
+                                   d_prat[VINCITORE][SEDE_DITTA]))+E_TRTD
         else:
-            html.append('<b>Vincitore:</b> nessun vincitore</td></tr>')
-            html.append("<tr><td>"+render_field(self.art_2, cols=100)+"</td></tr>")
-        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() +'</td></tr>')
-        return '\n'.join(html)
+            html += fk.Markup('<b>Vincitore:</b> nessun vincitore')+E_TRTD
+            html += B_TRTD+render_field(self.art_2, cols=100)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
 class Ordine(ModifiedForm):
     "form per definizione ordine"
@@ -483,21 +484,21 @@ class Ordine(ModifiedForm):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = ['<tr><td>Richiesta del %(data_richiesta)s. Resp.Fondi: '\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s' % d_prat]
-        html.append('<p><b>%(descrizione_acquisto)s</b></p>' % d_prat)
-        html.append('<p>Presso la ditta:<blockquote>%(nome_fornitore)s<br>'\
-                    '%(ind_fornitore)s</blockquote></td></tr>' % d_prat)
-        html.append('<tr><td><table width=100%><tr><td align=left>'+ \
-                    render_field(self.numero_ordine)+'</td>')
-        html.append('<td align=right>'+render_field(self.lingua_ordine)+'</td></tr></table></br>')
-        html.append(render_field(self.data_ordine)+'<br>')
-        html.append(render_field(self.cig)+'</td></tr>')
-        html.append('<tr><td>'+render_field(self.descrizione_ordine, rows=3, cols=80)+'</td></tr>')
-        html.append('<tr><td>'+self.costo_ordine.renderme()+'</td></tr>')
-        html.append('<tr><td>'+render_field(self.note_ordine, rows=10, cols=80)+'</td></tr>')
-        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti() + '</td></tr>')
-        return '\n'.join(html)
+        html = B_TRTD+fk.Markup('Richiesta del %(data_richiesta)s. Resp.Fondi: '\
+                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s'%d_prat)
+        html += fk.Markup('<p><b>%(descrizione_acquisto)s</b></p>'%d_prat)
+        html += fk.Markup('<p>Presso la ditta:<blockquote>%(nome_fornitore)s<br>'\
+                    '%(ind_fornitore)s</blockquote>'%d_prat)+E_TRTD
+        html += B_TRTD+fk.Markup('<table width=100%><tr><td align=left>')+ \
+                    render_field(self.numero_ordine)+fk.Markup('</td>')
+        html += fk.Markup('<td align=right>')+render_field(self.lingua_ordine)+E_TRTD+fk.Markup('</table></br>')
+        html += render_field(self.data_ordine)+BRK
+        html += render_field(self.cig)+E_TRTD
+        html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
+        html += B_TRTD+self.costo_ordine.renderme()+E_TRTD
+        html += B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
 class AggiornaFormato(ModifiedForm):
     "Classe per aggiornamento formato pratiche vers.0/1"
@@ -510,13 +511,13 @@ class AggiornaFormato(ModifiedForm):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = ['<tr><td> Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>'\
-                'richiesta.pdf</a> </td></tr>']
-        html.append('<tr><td> Costo: '+d_prat.get("costo", "")+'<br>'+ \
-                    render_field(self.nuovo_costo)+'</td></tr>')
-        html.append('<tr><td>'+render_field(self.nuova_modalita_acquisto) +'</tr></td>')
-        html.append('<tr><td>'+self.T_annulla()+' &nbsp; '+self.T_avanti()+'</tr></td>')
-        return '\n'.join(html)
+        html = B_TRTD+fk.Markup('Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>'\
+                'richiesta.pdf</a>')+E_TRTD
+        html += B_TRTD+fk.Markup('Costo: '+d_prat.get("costo", ""))+BRK+ \
+                render_field(self.nuovo_costo)+E_TRTD
+        html += B_TRTD+render_field(self.nuova_modalita_acquisto)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
 class TrovaPratica(ModifiedForm):
     "form per ricerca pratiche"
@@ -532,17 +533,17 @@ class TrovaPratica(ModifiedForm):
 
     def renderme(self):
         "Rendering del form"
-        html = []
-        html.append('<tr><td>'+render_field(self.trova_prat_aperta)+'<br>')
-        html.append(render_field(self.trova_email_rich)+'<br>')
-        html.append(render_field(self.trova_email_resp)+'<br>')
-        html.append(render_field(self.trova_anno)+'<br>')
-        html.append(render_field(self.trova_parola)+'<br>')
-        html.append(render_field(self.elenco_ascendente)+'</td></tr>')
-        html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</tr></td>')
-        return '\n'.join(html)
+        html = B_TRTD+render_field(self.trova_prat_aperta)+BRK
+        html += render_field(self.trova_email_rich)+BRK
+        html += render_field(self.trova_email_resp)+BRK
+        html += render_field(self.trova_anno)+BRK
+        html += render_field(self.trova_parola)+BRK
+        html += render_field(self.elenco_ascendente)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
-BUTTON_HTML = "<td><button type=submit name=delete border=0 alt=X> <img src=/files/del-16.png> </button></td>"
+B_TD = fk.Markup("<td>")
+E_TD = fk.Markup("</td>")
 
 class Ditta(ModifiedForm):
     "form per singola ditta"
@@ -553,14 +554,13 @@ class Ditta(ModifiedForm):
 
     def renderme(self, **_unused):
         "Rendering del form"
-        html = []
-        html.append("<td>"+render_field(self.nome_ditta)+"</td>")
-        html.append("<td>"+render_field(self.sede_ditta)+"</td>")
+        html = B_TD+render_field(self.nome_ditta)+E_TD
+        html += B_TD+render_field(self.sede_ditta)+E_TD
         if hasattr(self, "offerta"):
-            html.append("<td>"+self.offerta()+"</td>")
-        html.append("<td>"+self.vincitore()+"</td>")
-        html.append("<td>"+self.T_cancella()+"</td>")
-        return "".join(html)
+            html += B_TD+self.offerta()+E_TD
+        html += B_TD+self.vincitore()+E_TD
+        html += B_TD+self.T_cancella()+E_TD
+        return html
 
 class DittaExt(Ditta):
     offerta = wt.BooleanField()
@@ -591,21 +591,19 @@ class PraticaRDO(ModifiedForm):
 
     def renderme(self, **kw):
         "Rendering del form"
-        html = ["<tr><td>"]
-        html.append(render_field(self.inizio_gara)+"<br>")
-        html.append(render_field(self.fine_gara))
-        html.append("</td></tr>")
-        html.append("<tr><td><b>%s</b><br>"%self.lista_ditte.a_label)
-        html.append("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
+        html = B_TRTD+render_field(self.inizio_gara)+BRK
+        html += render_field(self.fine_gara)+E_TRTD
+        html += B_TRTD+fk.Markup("<b>%s</b><br>"%self.lista_ditte.a_label)
+        html += fk.Markup("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
                     "<th>Indirizzo</th><th>Vincitore</th><th><img src=/files/del-20.png></th></tr></td></tr>")
         for idx, ditta in enumerate(self.lista_ditte):
-            html.append("<tr><td>%d</td>"%(idx+1)+ditta.renderme(number=idx, **kw)+"</tr>")
-        html.append("</td></tr></table><br>")
-        html.append("<div align=right>"+self.T_more()+"</div></td></tr>")
-        html.append('<tr><td>'+render_field(self.prezzo_gara))
-        html.append('<br>'+render_field(self.oneri_sic_gara)+'</td></tr>')
-        html.append('<tr><td>' + self.T_annulla() + ' &nbsp; ' + self.T_avanti() +'</tr></td>')
-        return '\n'.join(html)
+            html += B_TRTD+fk.Markup("%d</td>"%(idx+1))+ditta.renderme(number=idx, **kw)+fk.Markup("</tr>")
+        html += E_TRTD+fk.Markup("</table><br>")
+        html += fk.Markup("<div align=right>")+self.T_more()+fk.Markup("</div>")+E_TRTD
+        html += B_TRTD+render_field(self.prezzo_gara)
+        html += BRK+render_field(self.oneri_sic_gara)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
     def validate(self):
         "Validazione"

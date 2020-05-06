@@ -1,6 +1,7 @@
 """
 Definizione delle costanti per procedura acquisti
 """
+__version__ = "2.0"
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)

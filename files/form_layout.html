@@ -10,13 +10,13 @@
 {% from "_common.html" import start_page, end_page %}
 {{ start_page(data.before,sede.sede_it,data.title,data.subtitle) }}
 {% if data.note %}
-<tr><td>{{ data.note|safe }} </td></tr>
+<tr><td>{{ data.note | safe }} </td></tr>
 {% endif %}
 <!-- begin data.body -->
-{{ data.body|safe }}
+{{ data.body | safe }}
 <!-- end data.body -->
 {{ end_page() }}
 <!-- begin data.after -->
-{{ data.after|safe }}
+{{ data.after | safe }}
 <!-- end data.after -->
 </body>

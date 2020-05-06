@@ -49,7 +49,7 @@ installati utilizzando i comandi previsti dalla distribuzione, prima di
 poter utilizzare le procedure:
 
 <blockquote>
-python3-flask, python3-jinja2, python3-werkzeug, python3-wtforms 
+python3-flask, python3-jinja2, python3-ldap3, python3-werkzeug, python3-wtforms 
 python3-pam (Ubuntu: python3-pampy), python3-pypdf2.
 </blockquote>
 <em><b>Nota 1:</b> I nomi dei package possono cambiare a seconda della distribuzione di linux.
@@ -57,10 +57,18 @@ python3-pam (Ubuntu: python3-pampy), python3-pypdf2.
 </em>
 <br>
 <em><b>Nota 2:</b>I packages possono anche essere installati con la procedura standard di python: <b>pip3</b>
+	<p>
+	In tal caso i nomi dei packages sono: 
+	<tt>flask</tt>, <tt>jinja2</tt>, <tt>ldap3</tt>, <tt>werkzeug</tt>, <tt>wtforms</tt>,
+	<tt>python-pam</tt>, <tt>pypdf2</tt>.
 </em>
+<br>
 <em><b>Nota 3:</b>La procedura acquisti non funziona correttamente con la
-versione 2.2 di <tt>wtforms</tt>. &Egrave; ststa testata con successo con
+versione 2.2 di <tt>wtforms</tt>. &Egrave; stata testata con successo con
 le versioni 2.1 e 2.2.1:
+</em>
+<br>
+<em><b>Nota 4:</b>La procedura è stata testata con le versioni 0.16.0 e 1.0.1
 </em>
 <p>
 La procedura utilizza il programma <tt>pdflatex</tt> per la generazione dei documenti. Anche questo,

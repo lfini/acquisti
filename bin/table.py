@@ -413,8 +413,7 @@ def _getlock(name, ident):
             with open(lockname, 'r') as jfd:
                 lkinfo = json.load(jfd)
             raise LockException(name, lkinfo[2])
-        else:
-            raise
+        raise
     lkinfo = (uuid.uuid4().hex, time.time(), ident)
     filed = os.fdopen(fno, 'w')
     json.dump(lkinfo, filed)
