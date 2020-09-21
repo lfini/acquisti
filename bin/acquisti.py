@@ -25,8 +25,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.5.0'
-__date__ = '5/05/2020'
+__version__ = '3.6'
+__date__ = '11/09/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -49,6 +49,7 @@ __date__ = '5/05/2020'
 
 # Versione 3.5   5/2020:     Corretto testo di Richiesta e determine nei casi RDO
 #                            e manifestazione di interesse.
+# Versione 3.6   9/2020:     Corretto testo di ordine inglese
 
 __start__ = time.asctime(time.localtime())
 
@@ -1658,6 +1659,7 @@ def modificaordine(fase):
                     ord_name = ORD_NAME_IT
                 d_prat[STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "it")
                 d_prat[STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "uk")
+                d_prat[TITOLO_DIRETTORE_UK] = CONFIG[TITOLO_DIRETTORE_UK]
                 logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, ORD_PDF_FILE)
                 file_lista_dettagliata = filename_allegato(ALL_SING,
                                                            TAB_ALLEGATI[LISTA_DETTAGLIATA_A][0],

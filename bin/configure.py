@@ -27,6 +27,7 @@ PARAMS = OrderedDict([("nome_webmaster", "Nome del web master\n[es: Luca Fini]")
                       ("nome_direttore", "Nome del direttore\n[es: Maria Sofia Randich]"),
                       ("email_direttore", "Indirizzo e-mail del direttore\n[es: luca.fini@inaf.it]"),
                       ("titolo_direttore", "Titolo del direttore\n[es: Dott.ssa]"),
+                      ("titolo_direttore_uk", "Titolo del direttore per ordini in inglese\n[es: Dr.]"),
                       ("email_ufficio", "Indirizzo EMail dell'ufficio ordini\nA questo indirizzo sono inviati i messaggi automatici\ngenerati dalla procedura [es: ordini@arcetri.inaf.it]"),
                       ("latex_path", "Directory di installazione di pdflatex\n[es: /usr/local/bin]"),
                      ])

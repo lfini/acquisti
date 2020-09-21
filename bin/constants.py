@@ -148,6 +148,7 @@ STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
 SUPER_1000 = "super.1000"                       # Obsoleto. Mantenuto per compatibilità
 SUPER_5000 = "super.5000"                       # MENU_MOD_ACQ
 TITOLO_DIRETTORE = 'titolo_direttore'           # dati_pratica, config
+TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'     # dati_pratica, config
 TRASP_INC = "t.inc"                             # MENU_TRASPORTO
 VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica

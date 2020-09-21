@@ -151,12 +151,12 @@ def decrypt(text, passw=""):
     obj = AES.new(_pwd, AES.MODE_CFB, I16)
     return obj.decrypt(bytes(text)).decode("utf8")
 
-def ldap_authenticate(userid, password, server_ip, server_port):
+def ldap_authenticate(userid, password, server_ip, server_port, timeout=10):
     """Autenticazione ID/Password da server LDAP.
 Ritorno: -1 (errore LDAP), 0 id/pw non validi, 1 id/pw validi"""
     if server_ip in ("", "-"):
         return 0
-    server = ldap3.Server(server_ip, port=int(server_port))
+    server = ldap3.Server(server_ip, port=int(server_port), connect_timeout=timeout)
     conn = ldap3.Connection(server, USER_DN%userid, password)
     try:
         auth = conn.bind()
@@ -1056,7 +1056,7 @@ def makepwfile(ldappw=False):
     protect(pwpath)
 
 def input_anno():
-    "Richiesta iterattiva anno"
+    "Richiesta interattiva anno"
     year = input('Anno: ')
     if year:
         year = int(year)
