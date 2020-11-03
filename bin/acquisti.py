@@ -13,20 +13,21 @@ import flask as fk
 
 #    cope with compatibility with older werkzeug versions
 try:
-    from werkzeug import secure_filename
-except ImportError:
     from werkzeug.utils import secure_filename
+except ImportError:
+    from werkzeug import secure_filename
 
-from constants import *
+from constants import *          # pylint: disable=W0401
 import forms   # Mantenere!!!
 from forms import MyLoginForm, RichiestaAcquisto, DeterminaA, DeterminaB, Ordine
 from forms import AggiornaFormato, TrovaPratica, MyUpload, PraticaRDO, new_lista_ditte
+from forms import CodfForm, UserForm
 import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '3.6'
-__date__ = '11/09/2020'
+__version__ = '4.1'
+__date__ = '3/11/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -51,11 +52,16 @@ __date__ = '11/09/2020'
 #                            e manifestazione di interesse.
 # Versione 3.6   9/2020:     Corretto testo di ordine inglese
 
+# Versione 4.1  11/2020:     Integrate le funzione di housekeeping in acquisti
+#                            la procedura Housekeeping viene eliminata
+
 __start__ = time.asctime(time.localtime())
 
 PKG_ROOT = ft.pkgroot()
 DATADIR = ft.datapath()
 WORKDIR = ft.workpath()
+
+CONFIG = ft.jload((DATADIR, 'config.json'))
 
 BASEDIR_STR = 'basedir'
 
@@ -66,11 +72,14 @@ FILE_VERSION = 2    # Versione file pratica.json
 MAX_DETERMINA = 0
 START_YEAR = 0
 
-LOCAL_DEBUG = False
-DEBUG_EMAIL = ''
+class DEBUG:         # pylint: disable=R0903
+    "Variabili di supporto per Debug"
+    local = False
+    email = ''
 
-CONFIG = {}
-TESTO_APPROVAZIONE = ""
+class APPROV:         # pylint: disable=R0903
+    "Testo variabile per approvazioni"
+    testo = ""
 
 FASE_ERROR = Exception("Manca specifica fase")
 NO_BASEDIR = Exception("Basedir non definita")
@@ -78,9 +87,8 @@ ILL_ATCH = Exception("Modello allegato non previsto")
 
 def setdebug():
     "Determina modo DEBUG"
-    global LOCAL_DEBUG, DEBUG_EMAIL
-    LOCAL_DEBUG = True
-    DEBUG_EMAIL = CONFIG[EMAIL_WEBMASTER]
+    DEBUG.local = True
+    DEBUG.email = CONFIG[EMAIL_WEBMASTER]
 
 def update_lists():
     "Riinizializza tabelle"
@@ -369,7 +377,7 @@ def check_rdo_modificabile(_the_user, _basedir, d_prat):
 def check_all(the_user, basedir, d_prat):
     "Verifica lo stato della pratica e riporta un dict riassuntivo"
     info = {}
-    info['debug'] = bool(LOCAL_DEBUG)
+    info['debug'] = bool(DEBUG.local)
     info['developer'] = _test_developer(the_user)
     info['admin'] = _test_admin(the_user)
     info[PDF_RICHIESTA] = _test_pdf_richiesta(basedir, d_prat, "")
@@ -466,8 +474,8 @@ def _email_approv(basedir, userid, d_prat, ritrasm):
             subj = 'Ritrasmissione richiesta di acquisto.' + code
         else:
             subj = 'Trasmissione richiesta di acquisto.' +  code
-        body = _make_mail_body(TESTO_APPROVAZIONE, d_prat)
-        if LOCAL_DEBUG:
+        body = _make_mail_body(APPROV.testo, d_prat)
+        if DEBUG.local:
             webm = CONFIG[EMAIL_WEBMASTER]
             recipients = [webm]
             info = "Modo debug: invio e-mail a: {}. Pratica {}".format(webm, prat)
@@ -475,7 +483,7 @@ def _email_approv(basedir, userid, d_prat, ritrasm):
             recipients = [eresp]
             info = "Invio richiesta approvazione a: {}. " \
                    "Pratica {}. Subj: {}".format(eresp, prat, subj)
-        ret = ft.send_email(smtphost, sender, recipients, subj, body, debug_addr=DEBUG_EMAIL)
+        ret = ft.send_email(smtphost, sender, recipients, subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info(info)
             if code:
@@ -538,7 +546,7 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
     if sender:
         subj = 'Notifica approvazione richiesta di acquisto. Pratica: '+prat
         body = _make_mail_body(TESTO_NOTIFICA_APPROVAZIONE, d_prat)
-        if LOCAL_DEBUG:
+        if DEBUG.local:
             isdebug = 'Modo debug. '
         else:
             isdebug = ''
@@ -546,7 +554,7 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
         if d_prat.get(EMAIL_RICHIEDENTE, '-') != d_prat.get(EMAIL_RESPONSABILE, ''):
             recipients.append(d_prat[EMAIL_RICHIEDENTE])
         ret = ft.send_email(smtphost, CONFIG.get(EMAIL_RESPONDER),
-                            recipients, subj, body, debug_addr=DEBUG_EMAIL)
+                            recipients, subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("Inviata richiesta approvazione a %s. "
                          "Pratica %s", ', '.join(recipients), prat)
@@ -559,7 +567,7 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
             hdr0 = HEADER_NOTIFICA_RESPONSABILE_WEB
         body = _make_mail_body(hdr0+DETTAGLIO_PRATICA, d_prat)
         recipients = [sender]
-        ret = ft.send_email(smtphost, sender, recipients, subj, body, debug_addr=DEBUG_EMAIL)
+        ret = ft.send_email(smtphost, sender, recipients, subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("%sInviata conferma approvazione a %s. "
                          "Pratica %s", isdebug, ','.join(recipients), prat)
@@ -917,6 +925,13 @@ def _menu_scelta_utente(topline):
     menulist.insert(0, ('', '-- %s --'%topline))
     return menulist
 
+def _nome_resp(ulist, eaddr, prima_nome=True):
+    if prima_nome:
+        return '%s %s'%(ulist.get(eaddr, ['', '', '??', '??'])[3],
+                        ulist.get(eaddr, ['', '??', '??'])[2])
+    return '%s, %s'%(ulist.get(eaddr, ['', '', '??', '??'])[2],
+                     ulist.get(eaddr, ['', '??', '??'])[3])
+
 def modificadetermina_a(user, basedir, d_prat):
     "pagina: modifica determina fase A"
     if NUMERO_DETERMINA_A not in d_prat:
@@ -940,7 +955,7 @@ def modificadetermina_a(user, basedir, d_prat):
             det_template = ft.modello_determinaa(d_prat[MOD_ACQUISTO])
             det_name = os.path.splitext(DETA_PDF_FILE)[0]
             ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
-                       debug=LOCAL_DEBUG, pratica=d_prat, user=user)
+                       debug=DEBUG.local, pratica=d_prat, user=user)
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Determina generata'))
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
@@ -997,7 +1012,7 @@ def modificadetermina_b(user, basedir, d_prat):
             det_template = os.path.splitext(DETB_PDF_FILE)[0]
             det_name = det_template
             ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
-                       debug=LOCAL_DEBUG, pratica=d_prat, user=user)
+                       debug=DEBUG.local, pratica=d_prat, user=user)
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Generata determina B'))
             return fk.redirect(fk.url_for('pratica1'))
@@ -1036,7 +1051,7 @@ def start():
                                          "{} - Luca Fini, {}".format(__version__, __date__)}
     if _test_admin(user):
         status['admin'] = 1
-    return fk.render_template('start_pratiche.html', sede=CONFIG[SEDE], user=user, status=status)
+    return fk.render_template('start_acquisti.html', sede=CONFIG[SEDE], user=user, status=status)
 
 @ACQ.route("/about")
 def about():
@@ -1195,7 +1210,7 @@ def modificarichiesta():
             logging.info('Salvati dati pratica: %s/%s', basedir, PRAT_JFILE)
             ric_name = os.path.splitext(RIC_PDF_FILE)[0]
             ft.makepdf(PKG_ROOT, basedir, ric_name, ric_name,
-                       debug=LOCAL_DEBUG, pratica=d_prat, sede=CONFIG[SEDE])
+                       debug=DEBUG.local, pratica=d_prat, sede=CONFIG[SEDE])
             ft.remove((basedir, DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, DETB_PDF_FILE), show_error=False)
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
@@ -1510,7 +1525,7 @@ def pratica1():
     if fk.request.method == 'POST':
         try:
             fle = fk.request.files['upload_file']
-        except:
+        except Exception:
             fk.flash("Errore caricamento file!", category="error")
         else:
             _clear_conferma_chiusura(basedir, d_prat)
@@ -1671,7 +1686,7 @@ def modificaordine(fase):
                     include = ""
                     d_prat[DETTAGLIO_ORDINE] = 0
                 pdf_name = os.path.splitext(ORD_PDF_FILE)[0]
-                ft.makepdf(PKG_ROOT, basedir, ord_name, pdf_name, debug=LOCAL_DEBUG,
+                ft.makepdf(PKG_ROOT, basedir, ord_name, pdf_name, debug=DEBUG.local,
                            include=include, pratica=d_prat, sede=CONFIG[SEDE])
                 d_prat[PDF_ORDINE] = ORD_PDF_FILE
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))
@@ -1783,7 +1798,7 @@ def email_approv(key):
         recipients = [d_prat.get(EMAIL_RESPONSABILE), CONFIG.get(EMAIL_UFFICIO)]
         subj = APPROV_EMAIL_RESPINTA_OGGETTO
         ret = ft.send_email(smtphost, CONFIG.get(EMAIL_RESPONDER), recipients,
-                            subj, mailtext, debug_addr=DEBUG_EMAIL)
+                            subj, mailtext, debug_addr=DEBUG.email)
         if ret:
             logging.info("Inviato mail 'Approvazione per email respinta' a: %s",
                          ','.join(recipients))
@@ -1865,12 +1880,261 @@ def procedura_rdo():
                       "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
     return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
 
+#############################################################################
+################### Pagine housekeeping #####################################
+
+@ACQ.route('/housekeeping')
+def housekeeping():
+    "Inizio procedura housekeeping"
+    user = ft.login_check(fk.session)
+    if user:
+        status = {'footer': "Procedura housekeeping.py. Vers. %s - "
+                            "L. Fini, %s"%(__version__, __date__),
+                  'host': ft.host(fk.request.url_root)}
+
+        if _test_admin(user):
+            return fk.render_template('start_housekeeping.html',
+                                      user=user,
+                                      sede=CONFIG[SEDE],
+                                      status=status).encode('utf8')
+        fk.session.clear()
+        return fk.render_template('noaccess.html')
+    return fk.redirect(fk.url_for('login'))
+
+@ACQ.route("/sortcodf/<field>")
+def sortcodf(field):
+    "Riporta codici fondi con ordine specificato"
+    user = ft.login_check(fk.session)
+    if user:
+        if _test_admin(user):
+            ncodf = ft.FTable((DATADIR, 'codf.json'), sortable=('Codice', 'email_Responsabile'))
+            msgs = fk.get_flashed_messages()
+            return ncodf.render("Lista Codici fondi",
+                                select_url=("/editcodf",
+                                            "Per modificare, clicca sul simbolo: "
+                                            "<font color=red><b>&ofcir;</b></font>"),
+                                sort_url=('/sortcodf', '<font color=red>&dtrif;</font>'),
+                                menu=(('/addcodf', "Aggiungi Codice fondo"),
+                                      ('/downloadcodf', "Scarica CSV"),
+                                      ('/housekeeping', 'Torna')),
+                                sort_on=field,
+                                messages=msgs,
+                                footer="Procedura housekeeping.py. Vers. %s. &nbsp;-&nbsp; "
+                                       "L. Fini, %s" % (__version__, __date__))
+        return fk.render_template('noaccess.html').encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+
+@ACQ.route("/codf")
+def codf():
+    "Riporta codici fondi"
+    return sortcodf('')
+
+
+@ACQ.route('/addcodf', methods=('GET', 'POST'))
+def addcodf():
+    "Aggiungi codice fondo"
+    user = ft.login_check(fk.session)
+    if user:
+        if _test_admin(user):
+            cfr = CodfForm(formdata=fk.request.form)
+            ulist = ft.FTable((DATADIR, 'userlist.json')).as_dict('email', True)
+            resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
+            resp_menu.sort(key=lambda x: x[1])
+            cfr.email_Responsabile.choices = resp_menu
+            ncodf = ft.FTable((DATADIR, 'codf.json'))
+            if fk.request.method == 'POST':
+                if 'annulla' in fk.request.form:
+                    fk.flash('Operazione annullata')
+                    return fk.redirect(fk.url_for('housekeeping'))
+                if cfr.validate():
+                    data = ncodf.get_row(0, as_dict=True, default='') # get an empty row
+                    data.update(cfr.data)
+                    ncodf.insert_row(data)
+                    ncodf.save()
+                    msg = 'Aggiunto Codice fondo: %s' % data['Codice']
+                    logging.info(msg)
+                    fk.flash(msg)
+                    return fk.redirect(fk.url_for('codf'))
+                logging.debug("Validation errors: %s", cfr.errlist)
+            return ncodf.render_item_as_form('Aggiungi Codice fondo', cfr,
+                                             fk.url_for('addcodf'),
+                                             errors=cfr.errlist)
+        return fk.render_template('noaccess.html').encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+@ACQ.route('/editcodf/<nrec>', methods=('GET', 'POST'))
+def editcodf(nrec):
+    "Modifica tabella codici fondi"
+    nrec = int(nrec)
+    user = ft.login_check(fk.session)
+    if user:
+        if _test_admin(user):
+            ncodf = ft.FTable((DATADIR, 'codf.json'))
+            row = ncodf.get_row(nrec, as_dict=True)
+            ulist = ft.FTable((DATADIR, 'userlist.json')).as_dict('email')
+            resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
+            resp_menu.sort(key=lambda x: x[1])
+            if fk.request.method == 'GET':
+                logging.debug("Codice row=%s", row)
+                cfr = CodfForm(**row)
+                cfr.email_Responsabile.choices = resp_menu
+            else:
+                cfr = CodfForm(formdata=fk.request.form)
+                cfr.email_Responsabile.choices = resp_menu
+                if 'cancella' in fk.request.form:
+                    ncodf.delete_row(nrec)
+                    ncodf.sort(1)
+                    ncodf.save()
+                    msg = 'Cancellato Codice fondo: %s (%s)'%(row['Codice'],
+                                                              row['email_Responsabile'])
+                    fk.flash(msg)
+                    logging.info(msg)
+                    return fk.redirect(fk.url_for('codf'))
+                if 'annulla' in fk.request.form:
+                    fk.flash('Operazione annullata')
+                    return fk.redirect(fk.url_for('housekeeping'))
+                if cfr.validate():
+                    if 'avanti' in fk.request.form:
+                        row.update(cfr.data)
+                        ncodf.insert_row(row, nrec)
+                        print("row:", row, "   nrec:", nrec)
+                        ncodf.save()
+                        msg = 'Modificato Codice fondo: %s (%s)'%(row['Codice'],
+                                                                  row['email_Responsabile'])
+                        fk.flash(msg)
+                        logging.info(msg)
+                    return fk.redirect(fk.url_for('codf'))
+                logging.debug("Validation errors: %s", cfr.errlist)
+            return ncodf.render_item_as_form('Modifica Codice fondo', cfr,
+                                             fk.url_for('editcodf', nrec=str(nrec)),
+                                             errors=cfr.errlist, nrow=nrec)
+        return fk.render_template('noaccess.html').encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+@ACQ.route('/downloadcodf', methods=('GET', 'POST'))
+def downloadcodf():
+    "Download tabella codici fondi"
+    return download('codf')
+
+@ACQ.route('/downloadutenti', methods=('GET', 'POST'))
+def downloadutenti():
+    "Download tabella utenti"
+    return download('utenti')
+
+def download(_unused):
+    "Download"
+    user = ft.login_check(fk.session)
+    if user:
+#       table = ft.FTable((DATADIR, what+'.json'))
+        return fk.render_template('tbd.html', goto='/')
+    return fk.redirect(fk.url_for('login'))
+
+@ACQ.route("/utenti")
+def utenti():
+    "Genera lista utenti"
+    user = ft.login_check(fk.session)
+    if user:
+        if _test_admin(user):
+            users = ft.FTable((DATADIR, 'userlist.json'))
+            msgs = fk.get_flashed_messages()
+            return users.render("Lista utenti",
+                                select_url=("/edituser",
+                                            "Per modificare, clicca sul simbolo: "
+                                            "<font color=red><b>&ofcir;</b></font>"),
+                                menu=(('/adduser', "Aggiungi utente"),
+                                      ('/downloadutenti', "Scarica CSV"),
+                                      ('/housekeeping', 'Torna')),
+                                sort_on="surname",
+                                messages=msgs,
+                                footer="Procedura housekeeping.py. Vers. %s "
+                                       "- L. Fini, %s"%(__version__, __date__))
+        return fk.render_template('noaccess.html').encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+
+@ACQ.route('/adduser', methods=('GET', 'POST'))
+def adduser():
+    "Aggiungi utente"
+    user = ft.login_check(fk.session)
+    if user:
+        if _test_admin(user):
+            cfr = UserForm(formdata=fk.request.form)
+            users = ft.FTable((DATADIR, 'userlist.json'))
+            if fk.request.method == 'POST':
+                if 'annulla' in fk.request.form:
+                    fk.flash('Operazione annullata')
+                    return fk.redirect(fk.url_for('housekeeping'))
+                if cfr.validate():
+                    data = users.get_row(0, as_dict=True, default='') # get an empty row
+                    data.update(cfr.data)
+                    data['pw'] = '-'
+                    users.insert_row(data)
+                    users.save()
+                    msg = 'Aggiunto Utente: %s %s' % (data['surname'], data['name'])
+                    logging.info(msg)
+                    fk.flash(msg)
+                    return fk.redirect(fk.url_for('utenti'))
+                logging.debug("Validation errors: %s", cfr.errlist)
+            return users.render_item_as_form('Aggiungi utente', cfr,
+                                             fk.url_for('adduser'),
+                                             errors=cfr.errlist,
+                                             ignore=('pw', 'flags'))
+        return fk.render_template('noaccess.html').encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+@ACQ.route('/edituser/<nrec>', methods=('GET', 'POST'))
+def edituser(nrec):
+    "Modifica dati utente"
+    nrec = int(nrec)
+    user = ft.login_check(fk.session)
+    if user:
+        if _test_admin(user):
+            users = ft.FTable((DATADIR, 'userlist.json'))
+            users.sort(3)
+            row = users.get_row(nrec, as_dict=True)
+            if fk.request.method == 'GET':
+                logging.debug("Userlist row=%s", row)
+                cfr = UserForm(**row)
+                logging.debug("UserForm inizializzato: %s", cfr.data)
+            else:
+                cfr = UserForm(formdata=fk.request.form)
+                if 'annulla' in fk.request.form:
+                    fk.flash('Operazione annullata')
+                    return fk.redirect(fk.url_for('housekeeping'))
+                if 'cancella' in fk.request.form:
+                    row = users.get_row(nrec, as_dict=True)
+                    users.delete_row(nrec)
+                    users.sort(3)
+                    users.save()
+                    msg = "Cancellato utente N. %d: %s %s" %(nrec, row['name'], row['surname'])
+                    logging.info(msg)
+                    fk.flash(msg)
+                    return fk.redirect(fk.url_for('utenti'))
+                if cfr.validate():
+                    if 'avanti' in fk.request.form:
+                        logging.debug("Pressed: avanti. Modifica utente")
+                        row.update(cfr.data)
+                        users.insert_row(row, nrec)
+                        users.sort(3)
+                        users.save()
+                        msg = 'Modificato utente: %s %s' % (row['name'], row['surname'])
+                        logging.info(msg)
+                        fk.flash(msg)
+                    return fk.redirect(fk.url_for('utenti'))
+                logging.debug("Validation errors: %s", cfr.errlist)
+            return users.render_item_as_form('Modifica utente', cfr,
+                                             fk.url_for('edituser', nrec=str(nrec)),
+                                             nrow=nrec, errors=cfr.errlist,
+                                             ignore=('pw', 'flags'))
+        return fk.render_template('noaccess.html').encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+#############################################################################
 ############################### Inizializzazioni ############################
 
 def initialize_me():
     "inizializza tutto il necessario"
-    global CONFIG, TESTO_APPROVAZIONE
-
     logging.info('Starting acquisti.py - Vers. %s, %s. %s', __version__, __date__, __author__)
     logging.info('PKG_ROOT: %s', PKG_ROOT)
     logging.info('DATADIR: %s', DATADIR)
@@ -1878,15 +2142,14 @@ def initialize_me():
 
     configname = os.path.join(DATADIR, 'config.json')
     logging.info('Loading config from: %s', configname)
-    CONFIG = ft.jload(configname)
 
     ft.latex.set_path(CONFIG.get("latex_path", ""))
     logging.info("LaTeX path: %s", ft.latex.PDFLATEX.cmd)
 
     if CONFIG.get(EMAIL_RESPONDER):
-        TESTO_APPROVAZIONE = TESTO_APPROVAZIONE_RPY + DETTAGLIO_PRATICA
+        APPROV.testo = TESTO_APPROVAZIONE_RPY + DETTAGLIO_PRATICA
     else:
-        TESTO_APPROVAZIONE = TESTO_APPROVAZIONE_NORPY + DETTAGLIO_PRATICA
+        APPROV.testo = TESTO_APPROVAZIONE_NORPY + DETTAGLIO_PRATICA
 
     update_lists()
     ft.init_helplist()
@@ -1909,7 +2172,7 @@ def localtest():
     logging.basicConfig(level=logging.DEBUG)
     initialize_me()
     setdebug()
-    ACQ.run(host="0.0.0.0", port=4001, debug=True)
+    ACQ.run(host="0.0.0.0", port=4000, debug=True)
 
 def production():
     "lancia la procedura in modo produzione (all'interno del web server)"

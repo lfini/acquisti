@@ -6,10 +6,10 @@ import wtforms as wt
 import flask as fk
 
 import ftools as ft
-from constants import *
+from constants import *   #pylint: disable=W0401
 
-__version__ = "1.9"
-__date__ = "4/05/2020"
+__version__ = "2.0"
+__date__ = "3/11/2020"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -176,7 +176,7 @@ class MyForm(wt.Form):
             ret = fk.Markup(lab+'<dd> %s </dd>'%field(**kw))
         return ret
 
-class ModifiedForm(wt.Form):
+class FormWErrors(wt.Form):
     "Form modificato per gestione errori"
     def __init__(self, *f, **w):
         super().__init__(*f, **w)
@@ -186,7 +186,7 @@ class ModifiedForm(wt.Form):
         "Riporta elenco errori"
         return self.errlist
 
-class MyUpload(ModifiedForm):
+class MyUpload(FormWErrors):
     "Form per upload di files"
     upload_file = wt.FileField('Aggiungi allegato', [wt.validators.Optional()])
     tipo_allegato = MyAttachField()
@@ -196,7 +196,7 @@ class MyUpload(ModifiedForm):
         super().__init__(*p, **kw)
         self.tipo_allegato.set(choices)
 
-class ImportoPiuIva(ModifiedForm):
+class ImportoPiuIva(FormWErrors):
     "Form per importo più I.V.A."
     importo = wt.TextField("Importo", [wt.validators.Optional()])
     valuta = wt.SelectField("Valuta", choices=MENU_VALUTA)
@@ -216,7 +216,7 @@ class ImportoPiuIva(ModifiedForm):
         "Rendering del form"
         return fk.Markup(self.importo(size=8)+self.valuta()+self.iva()+self.iva_free())
 
-class CostoPiuTrasporto(ModifiedForm):
+class CostoPiuTrasporto(FormWErrors):
     "Form per costo+trasporto"
     costo = wt.FormField(ImportoPiuIva)
     modo_trasp = wt.SelectField('', choices=MENU_TRASPORTO)
@@ -237,7 +237,7 @@ class CostoPiuTrasporto(ModifiedForm):
         ret += fk.Markup("&nbsp;&nbsp;&nbsp;&nbsp")+self.costo_trasporto.renderme()
         return ret
 
-class MyLoginForm(ModifiedForm):
+class MyLoginForm(FormWErrors):
     "Form per login"
     userid = wt.TextField('Username')
     password = wt.PasswordField('Password')
@@ -263,7 +263,7 @@ class MyLoginForm(ModifiedForm):
         "Verifica password"
         return ft.authenticate(self._us, self._pw, self._ldap_host, self._ldap_port)
 
-class RichiestaAcquisto(ModifiedForm):
+class RichiestaAcquisto(FormWErrors):
     "Form per richiesta acquisto"
     data_richiesta = MyTextField('Data richiesta (g/m/aaaa)', True)
     descrizione_acquisto = MyTextField('Descrizione', True)
@@ -354,7 +354,7 @@ class RichiestaAcquisto(ModifiedForm):
         html += self.newform()
         return html
 
-class DeterminaA(ModifiedForm):
+class DeterminaA(FormWErrors):
     "form per definizione determina fase A"
     numero_determina = MyTextField('Numero determina', True,
                                    [wt.validators.InputRequired("Manca numero determina")])
@@ -400,7 +400,7 @@ class DeterminaA(ModifiedForm):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-class DeterminaB(ModifiedForm):
+class DeterminaB(FormWErrors):
     "form per definizione determina fase B"
     numero_determina_b = MyTextField('Numero determina', True,
                                      [wt.validators.InputRequired("Manca numero determina")])
@@ -443,16 +443,15 @@ class DeterminaB(ModifiedForm):
             html += fk.Markup("<b>CUP:</b> %s<br>"%cup)
         html += fk.Markup("<b>RUP:</b> %s<br>"%d_prat[RUP])
         if self._vinc:
-            html += fk.Markup("<b>Vincitore:</b> %s - %s"%
-                                  (d_prat[VINCITORE][NOME_DITTA],
-                                   d_prat[VINCITORE][SEDE_DITTA]))+E_TRTD
+            html += fk.Markup("<b>Vincitore:</b> %s - %s"%(d_prat[VINCITORE][NOME_DITTA],
+                                                           d_prat[VINCITORE][SEDE_DITTA]))+E_TRTD
         else:
             html += fk.Markup('<b>Vincitore:</b> nessun vincitore')+E_TRTD
             html += B_TRTD+render_field(self.art_2, cols=100)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-class Ordine(ModifiedForm):
+class Ordine(FormWErrors):
     "form per definizione ordine"
     lingua_ordine = MySelectField('', True, choices=(('IT', 'Italiano'), ('EN', 'Inglese')))
     numero_ordine = MyTextField('Numero ordine', True,
@@ -500,7 +499,7 @@ class Ordine(ModifiedForm):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-class AggiornaFormato(ModifiedForm):
+class AggiornaFormato(FormWErrors):
     "Classe per aggiornamento formato pratiche vers.0/1"
     nuovo_costo = MyFormField(CostoPiuTrasporto, "Costo", True)
     nuova_modalita_acquisto = MyRadioField('Modalit&agrave; di acquisto', True,
@@ -519,7 +518,7 @@ class AggiornaFormato(ModifiedForm):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-class TrovaPratica(ModifiedForm):
+class TrovaPratica(FormWErrors):
     "form per ricerca pratiche"
     trova_prat_aperta = MySelectField('Stato pratica', False,
                                       choices=((-1, 'Tutte'), (1, 'Aperta'), (0, 'Chiusa')))
@@ -545,7 +544,7 @@ class TrovaPratica(ModifiedForm):
 B_TD = fk.Markup("<td>")
 E_TD = fk.Markup("</td>")
 
-class Ditta(ModifiedForm):
+class Ditta(FormWErrors):
     "form per singola ditta"
     nome_ditta = MyTextField('', True)
     sede_ditta = MyTextField('', True)
@@ -563,13 +562,14 @@ class Ditta(ModifiedForm):
         return html
 
 class DittaExt(Ditta):
+    "Form per ditta con offerta"
     offerta = wt.BooleanField()
 
 def new_lista_ditte(label, m_entries=5):
     "Instanzia una lista ditte con dato numero di campi"
     return MyFieldList(wt.FormField(Ditta), label, True, min_entries=m_entries)
 
-class PraticaRDO(ModifiedForm):
+class PraticaRDO(FormWErrors):
     "form per specifiche della pratica RDO"
     inizio_gara = MyTextField('Data inizio (g/m/aaaa)', True)
     fine_gara = MyTextField('Data/ora fine (g/m/aaaa ora:min)', True)
@@ -581,7 +581,7 @@ class PraticaRDO(ModifiedForm):
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def __init__(self, *pw, **kw):
-        ModifiedForm.__init__(self, *pw, **kw)
+        super().__init__(*pw, **kw)
         self.min_entries = 2
 
     def increment(self):
@@ -627,3 +627,52 @@ class PraticaRDO(ModifiedForm):
         if n_vinc > 1:
             self.errlist.append("E' ammesso un solo vincitore")
         return not self.errlist
+
+class CodfForm(FormWErrors):
+    "Modulo per modifica codici fondi"
+    Codice = MyTextField('Codice', True)
+    Titolo = MyTextField('Titolo', True)
+    CUP = MyTextField('CUP', False)
+    email_Responsabile = MySelectField('Responsabile', True)
+
+    Commenti = MyTextAreaField('Commenti', False)
+    avanti = wt.SubmitField('Avanti')
+    annulla = wt.SubmitField('Annulla')
+    cancella = wt.SubmitField('Cancella record')
+
+    def validate(self):
+        "Validazione"
+        ret = True
+        if not self.Codice.data:
+            self.errlist.append("Il codice è obbligatorio")
+            ret = False
+        if not self.Titolo.data:
+            self.errlist.append("Devi specificare un titolo")
+            ret = False
+        if not self.email_Responsabile.data:
+            self.errlist.append("Devi specificare un responsabile")
+            ret = False
+        return ret
+
+class UserForm(FormWErrors):
+    "Form per modifica dati utente"
+    userid = MyTextField('username',
+                         [wt.validators.Optional()])
+    name = MyTextField('Nome',
+                       [wt.validators.Optional()])
+    surname = MyTextField('Cognome',
+                          [wt.validators.Optional()])
+
+    email = MyTextField('e-mail', True, [wt.validators.Email()])
+    amministratore = MyBooleanField('Funzioni di amministrazione', False)
+    avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+    cancella = wt.SubmitField('Cancella record', [wt.validators.Optional()])
+
+    def validate(self):
+        "Validazione"
+        if not (self.userid.data and self.name.data \
+                and self.surname.data and self.email.data):
+            self.errlist.append("Devi specificare tutti i campi richesti")
+            return False
+        return True

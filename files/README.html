@@ -8,7 +8,7 @@
 <h1>Procedure Web-based per la gestione degli acquisti</h1>
 
 <h4>  Luca Fini <br>    INAF - Osservatorio di Arcetri<br>
-Ottobre 2016 - Giugno 2018 </h4>
+Ottobre 2016 - Novembre 2020 </h4>
 </center>
 <a name=top>
 <table border=1>
@@ -116,7 +116,7 @@ Vengono estratti i seguenti files e directory:
 <ul>
 <li> <tt>README</tt>, <tt>config-esempio.json</tt>, <tt>test-table.json</tt>: esempi e documentazione
 <p>
-<li> <tt>acquisti.service</tt>, <tt>housekeeping.service</tt>, <tt>manageldap.service</tt>: Procedure per start/stop del server Web con <tt>systemctl</tt>.
+<li> <tt>acquisti.service</tt>, <tt>manageldap.service</tt>: Procedure per start/stop del server Web con <tt>systemctl</tt>.
 <p>
 <li><tt>bin</tt>: directory per procedure python.
 <li><tt>files</tt>: directory per files di supporto (incluso questo file).
@@ -279,28 +279,25 @@ e-mail (vedi: <a href=#email>risponditore e-mail</a>).
 <h2>2. Attivazione / disattivazione del server (<a href=#top>^</a>)</h2>
 </a>
 
-Le procedure vengono supportate da due (tre per Arcetri) istanze del server web, che
-utilizzano tre port IP diversi:
-<ul>
-<p><li> <tt><b>acquisti.py</b></tt> (port 4000): &Egrave; la procedura principale.
-Per l'accesso iniziale si utilizza sempre questa procedura, la cui URL risulta:
+La procedura <tt><b>acquisti.py</b></tt> utilizza il port 4000, la sua URL è dunque:
 
 <blockquote>
 <tt>http://polluce.arcetri.inaf.it:4000</tt>
 </blockquote>
 
-Le altre procedure sono accessibili a partire dal pannello principale di questa.
+Ad Arcetri è anche attiva una procedura per la gestione della
+tabella principale per i dati degli utenti
+utilizzata per generare l'elenco dei dipendenti
+nelle pagine web e la mailing list allusers (Valida solo per Arcetri!).
 
-<p><li> <tt><b>housekeeping.py</b></tt> (port 4100): &Egrave; necessaria per
-la gestione delle tabelle (utenti e Codici fondi).
+<p>La procedura è: <tt><b>manageldap.py</b></tt> ed utilizza il port 4010. La sua URL è:
 
-<p><li> <tt><b>manageldap.py</b></tt> (port 4010): Consente la gestione della
-tabella generale utenti dalla quale vengono
-generate le pagine web e la mailing list allusers (Valida solo per Arcetri!).
-</ul>
+<blockquote>
+<tt>http://polluce.arcetri.inaf.it:4010</tt>
+</blockquote>
 
-Solo la prima procedura &egrave; destinata a tutti gli utenti, le altre
-due vengono utilizzate solo dal personale dell'amministrazione.
+Questa seconda procedura è destinata al solo utilizzo
+da parte del personale dell'amministrazione.
 
 <p> L'attivazione delle procedure viene effettuata utilizzando
 il meccanismo <b>systemd</b>, standard nelle versioni correnti di
@@ -310,7 +307,6 @@ alla configurazione della sede.
 
 <ul>
     <li><tt> acquisti.service</tt>
-    <li><tt>  housekeeping.service </tt>
     <li><tt>manageldap.service</tt>
 </ul>
 
@@ -322,16 +318,13 @@ alla configurazione della sede.
 Il risultato dovrebbe essere come nel seguente esempio:
 <blockquote>
 <pre>
-{polluce}-root-82: ps -ef | grep unicorn
-acquisti  3888     1  0 feb24 ?        00:03:25 gunicorn: master [manageldap:app]
-acquisti  3893  3888  0 feb24 ?        00:00:26 gunicorn: worker [manageldap:app]
-acquisti  3922     1  0 feb20 ?        00:04:11 gunicorn: master [housekeeping:app]
-acquisti  4300     1  0 feb22 ?        00:03:54 gunicorn: master [acquisti:app]
-acquisti  8397  3922  0 mar07 ?        00:00:09 gunicorn: worker [housekeeping:app]
-acquisti 19293  3922  0 mar13 ?        00:00:03 gunicorn: worker [housekeeping:app]
-acquisti 23864  4300  0 mar13 ?        00:00:08 gunicorn: worker [acquisti:app]
-acquisti 23865  4300  0 mar13 ?        00:00:07 gunicorn: worker [acquisti:app]
-root     25261 17701  0 11:23 pts/0    00:00:00 grep --color=auto unicorn
+root     12998 12737  0 23:52 pts/1    00:00:00 grep --color=auto gunicorn
+acquisti 13732     1  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13736 13732  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13738 13732  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13761     1  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
+acquisti 13764 13761  0 21:20 ?        00:00:00 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
+acquisti 20077 13732  0 21:51 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
 </pre>
 </blockquote>
 
@@ -340,7 +333,7 @@ Il differente numero di processi per ciascuna procedura risulta dalla configuraz
 Per ogni server <tt>gunicorn</tt> occorre un processo principale pi&ugrave; un numero variabile
 di processi secondari che forniscono l'effettivo servizio; aumentando il numero di processi secondari
 si aumenta la "responsivit&agrave;" del server. Quindi sono stati previsti
-due processi server per <tt>acquisti</tt> ed uno solo per <tt>housekeeping</tt> e <tt>manageldap</tt>.
+due processi server per <tt>acquisti</tt> ed uno solo per <tt>manageldap</tt>.
 
 <h3>Files di log e notifiche di errore</h3>
 
@@ -354,10 +347,7 @@ Attualmente la directory contiene i seguenti files:
 <tr><td><tt>acquisti.log</tt></td><td> Log della procedura acquisti</td></tr>
 <tr><td><tt>acquisti.pid</tt></td><td> PID del WEB server per la procedura acquisti</td></tr>
 <tr><td><tt>email_fetcher.log</tt></td><td> Log della procedura email_fetcher</td></tr>
-<tr><td><tt>housekeeping.log</tt></td><td> Log della procedura housekeeping</td></tr>
-<tr><td><tt>housekeeping.pid</tt></td><td> PID del WEB server per la procedura housekeeping</td></tr>
 <tr><td><tt>httpd-acquisti.log</tt></td><td> Log del WEB server procedura acquisti</td></tr>
-<tr><td><tt>httpd-housekeeping.log</tt></td><td> Log del WEB server procedura housekeeping</td></tr>
 <tr><td><tt>httpd-manageldap.log</tt></td><td> Log del WEB server procedura manageldap</td></tr>
 <tr><td><tt>ldap.log</tt></td><td> Log della procedura manageldap</td></tr>
 </table>
@@ -379,18 +369,13 @@ condizioni di errore) all'indirizzo e-mail dell'amministratore del sistema
 </name>
 
 Gli utenti abilitati all'uso della procedura acquisti, devono essere registrati in un'apposita tabella,
-gestita mediante la procedura <tt><b>housekeeping</b></tt> (sezione
-utenti). L'autenticazione viene fatta con le credenziali per l'accesso
-al sistema utilizzando il package PAM, quindi ciascun utente deve prima
-essere normalmente registrato come utente generale dei servizi dell'osservatorio
-(poste elettronica, ecc.) e lo <i>username</i>
-indicato nella tabella dovr&agrave; essere quello utilizzato per l'accesso
-al server.
+gestita mediante le pagine <tt><b>housekeeping</b></tt> della procedura acquisti.
 
 <p> La tabella degli utenti pu&ograve; essere modificata da un utente
-con privilegi di amministratore mediante l'accesso alla procedura
+con privilegi di amministratore mediante l'accesso alle pagine
 <tt>housekeeping</tt>, ma il primo utente deve essere creato manualmente
-utilizzando la procedura <tt>ftools.py</tt>:
+utilizzando la procedura <tt>ftools.py</tt>, eseguita dalla directory HOME
+dell'utente proprietario della procedura <tt>acquisti</tt> come segue:
 
 <blockquote>
 <tt>[acquisti@server ~]$ <b>python3 bin/ftools.py user</b></tt>
@@ -408,7 +393,7 @@ manualmente utilizzando la procedura <tt>ftools.py</tt> come indicato sopra per 
 del primo utente. I privilegi assegnabili sono:
 <ul>
 <li> <b>A</b> (admin)  Accesso come ufficio amministrazione.
-<li> <b>L</b> (LDAP)  Accesso per modifica ai dati di utente su LDAP
+<li> <b>L</b> (LDAP)  Accesso per l'uso della procedura <tt>manageldap</tt>
 <li> <b>D</b> (developer)  Fornisce alcuni privilegi utili per lo sviluppatore
 </ul>
 
@@ -431,14 +416,14 @@ con UserID/Password.  L'autenticazione utilizza tre canali:
 per la gestione delle pratiche e accedono tramite pagine dotate di
 maggiori funzioni.
 
-<p> Gli utenti che hanno questo attributo, sono in grado di utilizzare
+<p> Gli utenti con privilegio  <b>L</b>, sono in grado di utilizzare
 anche alcune ulteriori funzioni essenzialmente di tipo informativo che non 
 compaiono nel pannello mostrato agli utenti normali.
 
 <h3>Tabella codici dei fondi di finanziamento</h3>
 La procedura richiede che sia compilata e mantenuta aggiornata la tabella
 dei codici dei fondi di finanziamento. Tale tabella viene creata ed aggiornata
-utilizzando la procedura <tt>housekeeping</tt> da parte del
+utilizzando la relativa pagina <tt>housekeeping</tt> da parte del
 personale amministrativo autorizzato.
 
 <h3>Informazioni sulle procedure</h3>
@@ -475,7 +460,7 @@ come nel seguente esempio:
 
 La struttura &egrave; organizzata con una directory per anno al di sotto
 delle quali vengono create sottodirectory corrispondenti a ciascuna
-pratica. In sostanza i files relativi alla pratica 5 del 2014 stanno
+pratica. In sostanza i files relativi alla pratica n. 5 del 2014 stanno
 nella directory <tt>.../data/2014/2014_000005</tt>.
 
 <h3>Files per le tabelle</h3>
@@ -494,7 +479,7 @@ I files relativi sono contenuti nella directory
 </blockquote>
 
 La gestione delle tabelle viene effettuata dagli utenti autorizzati
-mediate apposite sezioni della procedura <tt>housekeeping.py</tt>.
+mediante  le relative pagine presenti nella procedura <tt>acquisti</tt>.
 
 <h3>File per i dati della pratica</h3>
 Le informazioni relative a ciascuna pratica, utilizzate per la generazione
@@ -671,7 +656,7 @@ del form, corrispondente alla descrizione dell'acquisto, risulta:
 <h3>6.2 Programma di utilit&agrave; <tt>ftools.py</tt> </h3>
 Il file <tt><b>ftools.py</b></tt> contiene varie classi
 e funzioni utilizzate dalle procedure <tt>acquisti.py</tt>,
-<tt>housekeeping.py</tt> e <tt>manageldap.py</tt>, il file pu&ograve; per&ograve; essere usato in
+e <tt>manageldap.py</tt>, il file pu&ograve; per&ograve; essere usato in
 modo interattivo per effettuare alcune operazioni, come &egrave; stato
 gi&agrave; mostrato nei paragrafi precedenti. Le operazioni interattive
 sono elencate nella pagina di help che si ottiene lanciando la procedura

@@ -24,6 +24,7 @@ Uso da linea di comando:
 # VERSION 4.2    14/2/2019 Correzioni alla generazione dei costi
 # VERSION 4.3    1/3/2019 Ancora correzioni alla generazione dei costi
 # VERSION 4.4    1/3/2019 Migliorato parsing di data-ora
+# VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
 
 import sys
 import os
@@ -37,7 +38,7 @@ import string
 import stat
 import random
 from pprint import pprint
-import readline
+import readline           # pylint: disable=W0611
 import subprocess
 from email.mime.text import MIMEText
 import logging
@@ -49,14 +50,14 @@ import ldap3
 from Crypto.Cipher import AES
 import pam
 
-from constants import *
+from constants import *       # pylint: disable=W0401
 import table as tb   # Questa serve: non togliere!!
 from table import jload, jsave, jload_b64, jsave_b64, Table, getpath
 import latex
 
 __author__ = 'Luca Fini'
-__version__ = '4.4.2'
-__date__ = '3/05/2020'
+__version__ = '4.5.1'
+__date__ = '3/11/2020'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -404,11 +405,16 @@ class FTable(Table):
         self.sortable = [x for x in sortable if x in self.header]
 
     def render_item_as_form(self, title, form, action,
-                            nrow=0, ignore=()):
+                            nrow=0, ignore=(), errors=()):
         "HTML rendering di un campo per uso in un form"
         html = [TABLE_HEADER]
         if title:
             html.append('<h1> %s </h1>'%title)
+        if errors:
+            html.append("<hr><b><font color=red>Attenzione:</font></b><br />")
+            for err in errors:
+                html.append("&nbsp;&nbsp; - "+err+"<br />")
+            html.append("<hr>")
         html.append('<form method="POST" action="%s">'%action)
         if nrow > 0:
             html.append('<b>Record N. %d</b><p>'%nrow)
@@ -917,7 +923,7 @@ def is_year(year):
         nyr = int(year)
     except Exception:
         return False
-    return nyr > 2000 and nyr < 3000
+    return 2000 < nyr < 3000
 
 def get_years(ddate):
     "trova elenco anni definiti"
