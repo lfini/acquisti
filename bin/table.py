@@ -20,8 +20,8 @@ if sys.version_info.major < 3:
     raise Exception("Python 3 required")
 
 __author__ = 'Luca Fini'
-__version__ = '2.0'
-__date__ = '4/01/2018'
+__version__ = '2.1'
+__date__ = '20/11/2020'
 
 class TableException(Exception):
     "Exception raised by this module"
@@ -379,10 +379,12 @@ Table class:
                 if self.lkinfo[0] != lkinfo[0]:
                     raise LockException(self.filename, lkinfo[2])
                 _junlock(self.filename)
-    def save(self):
+    def save(self, fname=""):
         "Salva tabella in file json"
         jdata = {'header': self.header, 'rows': self.rows, 'opts':self.opts}
-        jsave(self.filename, jdata, lockinfo=self.lkinfo)
+        if not fname:
+            fname=self.filename
+        jsave(fname, jdata, lockinfo=self.lkinfo)
 
 def _junlock(path):
     name = getpath(path)

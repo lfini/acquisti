@@ -26,8 +26,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '4.1'
-__date__ = '3/11/2020'
+__version__ = '4.2'
+__date__ = '26/11/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -54,6 +54,7 @@ __date__ = '3/11/2020'
 
 # Versione 4.1  11/2020:     Integrate le funzione di housekeeping in acquisti
 #                            la procedura Housekeeping viene eliminata
+# Versione 4.2  11/2020:     Lista utenti convertita a nomi INAF
 
 __start__ = time.asctime(time.localtime())
 
