@@ -8,8 +8,8 @@ import flask as fk
 import ftools as ft
 from constants import *   #pylint: disable=W0401
 
-__version__ = "2.0"
-__date__ = "3/11/2020"
+__version__ = "2.1"
+__date__ = "30/11/2020"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -36,17 +36,21 @@ def popup(url, text, size=(700, 500)):
     return '<a href="%s"  onclick="window.open(\'%s\', \'newwindow\', \'width=%d, height=%d, '\
            'scrollbars=yes\'); return false;">%s</a>'%(url, url, size[0], size[1], text)
 
-def render_field(field, **kw):
+def render_field(field, oneline=False, **kw):
     "Rendering di un campo"
     if field.help_spec:
         help_url = fk.Markup('/files/%s'%field.help_spec)
         hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
     else:
         hlink = ''
-    if field.is_required:
-        lab = fk.Markup('<dt><u>%s</u>%s</dt>'%(str(field.a_label), hlink))
+    if oneline:
+        sep = "&nbsp;"
     else:
-        lab = fk.Markup('<dt>%s%s</dt>'%(str(field.a_label), hlink))
+        sep = "<br />"
+    if field.is_required:
+        lab = fk.Markup('<u>%s</u>%s%s'%(str(field.a_label), hlink, sep))
+    else:
+        lab = fk.Markup('%s%s%s'%(str(field.a_label), hlink, sep))
     if isinstance(field, MyFormField):
         ret = fk.Markup(field.form.renderme(**kw))
     else:
@@ -520,24 +524,24 @@ class AggiornaFormato(FormWErrors):
 
 class TrovaPratica(FormWErrors):
     "form per ricerca pratiche"
-    trova_prat_aperta = MySelectField('Stato pratica', False,
+    trova_prat_aperta = MySelectField('Stato pratica: ', False,
                                       choices=((-1, 'Tutte'), (1, 'Aperta'), (0, 'Chiusa')))
-    trova_email_rich = MySelectField('Richiedente', False)
-    trova_email_resp = MySelectField('Responsabile', False)
-    trova_anno = MySelectField('Anno', False)
-    trova_parola = MyTextField('Parola', False)
+    trova_richiedente = MyTextField('Richiedente: ', False)
+    trova_responsabile = MyTextField('Responsabile: ', False)
+    trova_anno = MySelectField('Anno: ', False)
+    trova_parola = MyTextField('Parola nella descrizione: ', False)
     elenco_ascendente = MyBooleanField('Ordine ascendente', False)
     T_avanti = wt.SubmitField('Trova', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def renderme(self):
         "Rendering del form"
-        html = B_TRTD+render_field(self.trova_prat_aperta)+BRK
-        html += render_field(self.trova_email_rich)+BRK
-        html += render_field(self.trova_email_resp)+BRK
-        html += render_field(self.trova_anno)+BRK
-        html += render_field(self.trova_parola)+BRK
-        html += render_field(self.elenco_ascendente)+E_TRTD
+        html = B_TRTD+render_field(self.trova_prat_aperta, oneline=True)+BRK+BRK
+        html += render_field(self.trova_richiedente, oneline=True)+BRK+BRK
+        html += render_field(self.trova_responsabile, oneline=True)+BRK+BRK
+        html += render_field(self.trova_anno, oneline=True)+BRK+BRK
+        html += render_field(self.trova_parola, oneline=True)+BRK+BRK
+        html += render_field(self.elenco_ascendente, oneline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 

@@ -26,8 +26,8 @@ import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '4.2'
-__date__ = '26/11/2020'
+__version__ = '4.3'
+__date__ = '30/11/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -55,6 +55,7 @@ __date__ = '26/11/2020'
 # Versione 4.1  11/2020:     Integrate le funzione di housekeeping in acquisti
 #                            la procedura Housekeeping viene eliminata
 # Versione 4.2  11/2020:     Lista utenti convertita a nomi INAF
+# Versione 4.3  11/2020:     Modificato pannello per ricerca pratiche
 
 __start__ = time.asctime(time.localtime())
 
@@ -575,9 +576,12 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
     else:
         logging.error("Indirizzo email responsabile non disponibile. Pratica %s", prat)
 
-def _str_match(ins, where):
-    "funzione ausiliaria per ricerche case insensitive"
-    return ins.lower() in where.lower()
+def word_match(ins, where):
+    "funzione ausiliaria per ricerca di parole case insensitive"
+    setins = frozenset((x.lower() for x in ins.split()))
+    setwhr = frozenset((x.lower() for x in where.split()))
+    print("Word match:", setins, setwhr, bool(setins.intersection(setwhr)))
+    return len(setins.intersection(setwhr)) == len(setins)
 
 def _filt_ric_aperte(theuser, prat):
     "filtro: pratiche aperte"
@@ -1139,7 +1143,7 @@ def login():
         if ret:
             fk.session['userid'] = fk.request.form['userid']
             return fk.redirect(fk.url_for('start'))
-        logging.error('Login negato: userid: "%s" (%s)', uid, why)
+        logging.error('Accesso negato: userid: "%s" (%s)', uid, why)
         fk.flash('Accesso negato: {}'.format(why), category="error")
     return fk.render_template('login.html', form=form, sede=CONFIG[SEDE],
                               title='Procedura per acquisti')
@@ -1427,11 +1431,11 @@ def trovapratica():
             fk.flash('Operazione annullata', category="info")
             return fk.redirect(fk.url_for('start'))
         prf = TrovaPratica(fk.request.form)
-        user_menu = [(x[4], x[6]) for  x in ft.USERLIST.rows]
+        user_menu = [(x[6], x[6]) for  x in ft.USERLIST.rows]
         user_menu.sort(key=lambda x: x[1])
         user_menu.insert(0, ('*', 'Tutti'))
-        prf.trova_email_resp.choices = user_menu
-        prf.trova_email_rich.choices = user_menu
+        prf.trova_responsabile.choices = user_menu
+        prf.trova_richiedente.choices = user_menu
         years = ft.get_years(DATADIR)
         years.sort()
         year_menu = list(zip(years, years))
@@ -1442,27 +1446,29 @@ def trovapratica():
             vaperta = int(prf.data.get('trova_prat_aperta', '-1'))
             if vaperta == 1:
                 ricerca += 'aperte)'
-                aperta_func = lambda x: x.get('trova_prat_aperta', 0)
+                aperta_func = lambda x: x.get(PRATICA_APERTA, 0) == 1
             elif vaperta == 0:
                 ricerca += 'chiuse)'
-                aperta_func = lambda x: x.get('trova_prat_aperta') != 1
+                aperta_func = lambda x: x.get(PRATICA_APERTA, 1) == 0
             else:
                 ricerca += 'aperte e chiuse)'
                 aperta_func = lambda x: True
-            if prf.data['trova_email_resp'] != '*':
-                resp_func = lambda x: _str_match(prf.data['trova_email_resp'],
-                                                 x.get(EMAIL_RESPONSABILE, ''))
-                ricerca += ' + (email resp.={})'.format(prf.data['trova_email_resp'])
+            nome_resp = prf.data['trova_responsabile']
+            if nome_resp:
+                resp_func = lambda x: word_match(nome_resp,
+                                                 x.get(NOME_RESPONSABILE, ''))
+                ricerca += ' + (resp.={})'.format(nome_resp)
             else:
                 resp_func = lambda x: True
-            if prf.data['trova_email_rich'] == '*':
-                rich_func = lambda x: True
+            nome_rich = prf.data['trova_richiedente']
+            if nome_rich:
+                rich_func = lambda x: word_match(nome_rich,
+                                                 x.get(NOME_RICHIEDENTE, ''))
+                ricerca += ' + (richied.={})'.format(nome_rich)
             else:
-                rich_func = lambda x: _str_match(prf.data['trova_email_rich'],
-                                                 x.get(EMAIL_RICHIEDENTE, ''))
-                ricerca += ' + (email rich.={})'.format(prf.data['trova_email_rich'])
+                rich_func = lambda x: True
             if prf.data['trova_parola']:
-                parola_func = lambda x: _str_match(prf.data.get('trova_parola', ''),
+                parola_func = lambda x: word_match(prf.data.get('trova_parola', ''),
                                                    x.get(DESCRIZIONE_ACQUISTO, ''))
                 ricerca += ' + (contiene parola={})'.format(prf.data['trova_parola'])
             else:
@@ -1482,7 +1488,8 @@ def trovapratica():
                 logging.error(err_msg)
                 return fk.redirect(fk.url_for('start'))
             title = 'Trova Pratiche'
-            subtitle = 'Risultato per ricerca: ' + ricerca
+            subtitle = 'Risultato per ricerca: '+ricerca+'<br>'+ \
+                       'N. pratiche selezionate: %d'%len(lista)
             return fk.render_template('lista_pratiche_per_anno.html', stato='', pre=[],
                                       post=[], year=theyear, dlist=lista.records, title=title,
                                       sede=CONFIG[SEDE], subtitle=subtitle)

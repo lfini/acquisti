@@ -25,6 +25,7 @@ Uso da linea di comando:
 # VERSION 4.3    1/3/2019 Ancora correzioni alla generazione dei costi
 # VERSION 4.4    1/3/2019 Migliorato parsing di data-ora
 # VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
+# VERSION 4.6    30/11/2020 aggiunto metodo __len__ a DocList
 
 import sys
 import os
@@ -56,8 +57,8 @@ from table import jload, jsave, jload_b64, jsave_b64, Table, getpath
 import latex
 
 __author__ = 'Luca Fini'
-__version__ = '4.5.1'
-__date__ = '3/11/2020'
+__version__ = '4.6.0'
+__date__ = '30/11/2020'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -812,7 +813,10 @@ def makeuser(userid):
         print(" -                 Cognome: '%s'"%user[1])
         print(" -                   Email: '%s'"%user[3])
         print(" - Password ('-': usa PAM): '%s'"%user[5])
-        print(" -                   Flags: '%s'"%user[4])
+        print(" -               Privilegi: '%s'"%user[4])
+        print()
+        print("Legenda privilegi: A, amministrazione; D, developer; L, modifica LDAP")
+        print()
         ans = input('Modificare/Cancellare utente [m/c]? ')
         ans = ans[:1].lower()
         if ans == "c":
@@ -838,7 +842,7 @@ def makeuser(userid):
         password = input(" - Password ('-': usa PAM/LDAP): ")
         if password:
             break
-    flags = input(" -                     Flags (ALD) [%s]: "%user[4])
+    flags = input(" -                 Privilegi (ALD) [%s]: "%user[4])
     if not name:
         name = user[2]
     else:
@@ -856,12 +860,12 @@ def makeuser(userid):
 
     print("Dati specificati per l'utente:")
     print()
-    print(" -   Userid:", userid)
-    print(" -     Nome:", name)
-    print(" -  Cognome:", surname)
-    print(" -    Email:", email)
-    print(" - Password:", password)
-    print(" -    Flags:", flags)
+    print(" -    Userid:", userid)
+    print(" -      Nome:", name)
+    print(" -   Cognome:", surname)
+    print(" -     Email:", email)
+    print(" -  Password:", password)
+    print(" - Privilegi:", flags)
     print()
     if password == "-":
         pwcrypt = '-'
@@ -981,6 +985,10 @@ class DocList:
                     self.records.append(rec)
         if sort:
             self.records.sort(key=sort)
+
+    def __len__(self):
+        "metodo standard per lunghezza"
+        return len(self.records)
 
 class PratIterator:
     "Iteratore sulle pratiche dell'anno specificato"
