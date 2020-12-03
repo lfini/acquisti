@@ -18,16 +18,13 @@ except ImportError:
     from werkzeug import secure_filename
 
 from constants import *          # pylint: disable=W0401
-import forms   # Mantenere!!!
-from forms import MyLoginForm, RichiestaAcquisto, DeterminaA, DeterminaB, Ordine
-from forms import AggiornaFormato, TrovaPratica, MyUpload, PraticaRDO, new_lista_ditte
-from forms import CodfForm, UserForm
+import forms as fms
 import ftools as ft
 from table import TableException
 
 __author__ = 'Luca Fini'
-__version__ = '4.3'
-__date__ = '30/11/2020'
+__version__ = '4.4'
+__date__ = '2/12/2020'
 
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
@@ -56,6 +53,7 @@ __date__ = '30/11/2020'
 #                            la procedura Housekeeping viene eliminata
 # Versione 4.2  11/2020:     Lista utenti convertita a nomi INAF
 # Versione 4.3  11/2020:     Modificato pannello per ricerca pratiche
+# Versione 4.4  12/2020:     Corretto errore nella selezione pratiche per richiedente/responsabile
 
 __start__ = time.asctime(time.localtime())
 
@@ -99,16 +97,6 @@ def update_lists():
 
 #  Utilities
 
-def _get_pratica(basedir):
-    elems = basedir.split(os.path.sep)
-    fname = elems[-1]
-    try:
-        year, numb = fname.split('_')
-    except Exception:
-        raise NO_BASEDIR
-    path_info = year+':'+numb
-    return path_info
-
 def _test_admin(the_user):
     return 'A' in the_user.get('flags')
 
@@ -116,12 +104,14 @@ def _test_developer(the_user):
     return 'D' in the_user.get('flags')
 
 def _test_richiedente(the_user, d_prat):
-    return the_user.get('email', 'x') == d_prat.get(EMAIL_RICHIEDENTE)
+    nomerich = d_prat.get(NOME_RICHIEDENTE, "")
+    nomeuser = the_user.get("surname", "")+" "+the_user.get("name", "")
+    return word_match(nomeuser, nomerich)
 
 def _test_responsabile(the_user, d_prat):
-    if the_user['email'] == d_prat.get(EMAIL_RESPONSABILE):
-        return True
-    return False
+    nomeresp = d_prat.get(NOME_RESPONSABILE, "")
+    nomeuser = the_user.get("surname", "")+" "+the_user.get("name", "")
+    return word_match(nomeuser, nomeresp)
 
 def _test_pdf_determina(basedir, _unused, fase):
     "test: esistenza determina"
@@ -579,34 +569,9 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
 def word_match(ins, where):
     "funzione ausiliaria per ricerca di parole case insensitive"
     setins = frozenset((x.lower() for x in ins.split()))
-    setwhr = frozenset((x.lower() for x in where.split()))
-    print("Word match:", setins, setwhr, bool(setins.intersection(setwhr)))
-    return len(setins.intersection(setwhr)) == len(setins)
-
-def _filt_ric_aperte(theuser, prat):
-    "filtro: pratiche aperte"
-    if _test_richiedente(theuser, prat):
-        return prat.get(PRATICA_APERTA)
-    return False
-
-def _filt_ric_chiuse(theuser, prat):
-    "filtro: pratiche chiuse"
-    if _test_richiedente(theuser, prat) or _test_admin(theuser):
-        return not prat.get(PRATICA_APERTA)
-    return False
-
-def _filt_da_approvare(theuser, prat):
-    "filtro: pratiche da approvare"
-    if not prat.get(PRATICA_APERTA):
-        return False
-    if _test_responsabile(theuser, prat):
-        return not prat.get(FIRMA_APPROVAZIONE)
-    return False
-
-def _filt_approvate(theuser, prat):
-    "filtro: pratiche approvate"
-    if _test_responsabile(theuser, prat):
-        return prat.get(FIRMA_APPROVAZIONE)
+    if setins:
+        setwhr = frozenset((x.lower() for x in where.split()))
+        return len(setins.intersection(setwhr)) == len(setins)
     return False
 
 def sel_menu(tipo_allegato):
@@ -710,8 +675,8 @@ ALL_B_MATCH = re.compile(r"B\d\d_")
 def pratica_common(user, basedir, d_prat):
     "parte comune alle pagine relative alla pratica"
     info = check_all(user, basedir, d_prat)
-    upla = MyUpload(menu_allegati_fasea(d_prat))
-    uplb = MyUpload(menu_allegati_faseb(d_prat))
+    upla = fms.MyUpload(menu_allegati_fasea(d_prat))
+    uplb = fms.MyUpload(menu_allegati_faseb(d_prat))
     # Workaround per aggiornare il formato dati pratica vers. 2
     if not d_prat.get(STR_MOD_ACQ) or STR_CRIT_ASS not in d_prat:
         d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, d_prat.get(MOD_ACQUISTO))
@@ -946,7 +911,7 @@ def modificadetermina_a(user, basedir, d_prat):
         d_prat[DATA_DETERMINA_A] = ft.today(False)
         d_prat[NOME_DIRETTORE] = CONFIG[NOME_DIRETTORE]
         logging.info("Nuovo num. determina: %s", d_prat[NUMERO_DETERMINA_A])
-    det = DeterminaA(fk.request.form, **d_prat)
+    det = fms.DeterminaA(fk.request.form, **d_prat)
     det.email_rup.choices = _menu_scelta_utente("Seleziona RUP")
     if fk.request.method == 'POST':
         if det.validate():
@@ -999,7 +964,7 @@ def modificadetermina_b(user, basedir, d_prat):
         d_prat[DATA_DETERMINA_B] = ft.today(False)
         d_prat[NOME_DIRETTORE_B] = d_prat[NOME_DIRETTORE]
         logging.info("Nuovo num. determina B: %s", d_prat[NUMERO_DETERMINA_B])
-    det = DeterminaB(fk.request.form, vincitore=bool(vincitore), **d_prat)
+    det = fms.DeterminaB(fk.request.form, vincitore=bool(vincitore), **d_prat)
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
@@ -1078,7 +1043,7 @@ def about():
     html.append('<tr><th>Modulo</th><th>Versione</th><th>Data</th><th>Autore</th></tr>')
     fmt = '<tr><td> <tt> {} </tt></td><td> {} </td><td>{}</td> <td> {} </td></tr>'
     html.append(fmt.format('acquisti.py', __version__, __date__, __author__))
-    html.append(fmt.format('forms.py', forms.__version__, forms.__date__, forms.__author__))
+    html.append(fmt.format('forms.py', fms.__version__, fms.__date__, fms.__author__))
     html.append(fmt.format('ftools.py', ft.__version__, ft.__date__, ft.__author__))
     html.append(fmt.format('latex.py', ft.latex.__version__,
                            ft.latex.__date__, ft.latex.__author__))
@@ -1136,8 +1101,8 @@ def login():
     "pagina: login"
     uid = fk.request.form.get('userid')
     pwd = fk.request.form.get('password')
-    form = MyLoginForm(DATADIR, uid, pwd, CONFIG.get(LDAP_HOST),
-                       CONFIG.get(LDAP_PORT), formdata=fk.request.form)
+    form = fms.MyLoginForm(DATADIR, uid, pwd, CONFIG.get(LDAP_HOST),
+                           CONFIG.get(LDAP_PORT), formdata=fk.request.form)
     if fk.request.method == 'POST' and form.validate():
         ret, why = form.password_ok()
         if ret:
@@ -1168,7 +1133,7 @@ def modificarichiesta():
             return fk.redirect(fk.url_for('pratica1'))
     if d_prat.get(VERSIONE, 0) == 0:
         return _aggiornaformato()
-    racq = RichiestaAcquisto(fk.request.form, **d_prat)
+    racq = fms.RichiestaAcquisto(fk.request.form, **d_prat)
     codfs = ft.CODFLIST.column('Codice', unique=True)
     codf_menu = list(zip(codfs, codfs))
     racq.lista_codf.choices = codf_menu
@@ -1283,7 +1248,7 @@ def aggiornaformato():
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
-    aggiornamento = AggiornaFormato(fk.request.form, **d_prat)
+    aggiornamento = fms.AggiornaFormato(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
         if ANNULLA in fk.request.form:
             fk.flash('Aggiornamento annullato', category="info")
@@ -1430,7 +1395,7 @@ def trovapratica():
         if ANNULLA in fk.request.form:
             fk.flash('Operazione annullata', category="info")
             return fk.redirect(fk.url_for('start'))
-        prf = TrovaPratica(fk.request.form)
+        prf = fms.TrovaPratica(fk.request.form)
         user_menu = [(x[6], x[6]) for  x in ft.USERLIST.rows]
         user_menu.sort(key=lambda x: x[1])
         user_menu.insert(0, ('*', 'Tutti'))
@@ -1669,7 +1634,7 @@ def modificaordine(fase):
             d_prat[DESCRIZIONE_ORDINE] = d_prat[DESCRIZIONE_ACQUISTO]
         if not d_prat.get(COSTO_ORDINE):
             d_prat[COSTO_ORDINE] = d_prat[COSTO]
-        orn = Ordine(fk.request.form, **d_prat)
+        orn = fms.Ordine(fk.request.form, **d_prat)
         if fk.request.method == 'POST':
             if ANNULLA in fk.request.form:
                 fk.flash('Operazione annullata', category="info")
@@ -1845,18 +1810,16 @@ def procedura_rdo():
             if ANNULLA in fk.request.form:
                 fk.flash('Operazione annullata', category="info")
                 return fk.redirect(fk.url_for('pratica1'))
-            rdo = PraticaRDO(fk.request.form)
+            rdo = fms.PraticaRDO(fk.request.form)
             if MORE in fk.request.form:
                 m_entries = len(rdo.data[LISTA_DITTE])+2
 # Trucco per rendere variabile la dimensione del form per lista ditte
-                class LocalForm(PraticaRDO): pass
-                LocalForm.lista_ditte = new_lista_ditte("Lista ditte",
-                                                        m_entries)
+                class LocalForm(fms.PraticaRDO): pass
+                LocalForm.lista_ditte = fms.new_lista_ditte("Lista ditte", m_entries)
 # Fine trucco
                 logging.debug("Richiesto incremento numero ditte: %d", m_entries)
                 rdo = LocalForm(fk.request.form)
             elif AVANTI in fk.request.form:
-#               rdo = PraticaRDO(fk.request.form)
                 if rdo.validate():
                     if LISTA_DITTE in d_prat:
                         del d_prat[LISTA_DITTE]
@@ -1873,7 +1836,7 @@ def procedura_rdo():
                     fk.flash(err, category="error")
                 logging.debug("Errori form PraticaRDO: %s", "; ".join(errors))
         else:
-            rdo = PraticaRDO(**d_prat)
+            rdo = fms.PraticaRDO(**d_prat)
         ddp = {'title': 'Immissione dati per RDO su MEPA',
                'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
                'before': '<form method=POST action=/procedura_rdo '\
@@ -1945,7 +1908,7 @@ def addcodf():
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
-            cfr = CodfForm(formdata=fk.request.form)
+            cfr = fms.CodfForm(formdata=fk.request.form)
             ulist = ft.FTable((DATADIR, 'userlist.json')).as_dict('email', True)
             resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
             resp_menu.sort(key=lambda x: x[1])
@@ -1985,10 +1948,10 @@ def editcodf(nrec):
             resp_menu.sort(key=lambda x: x[1])
             if fk.request.method == 'GET':
                 logging.debug("Codice row=%s", row)
-                cfr = CodfForm(**row)
+                cfr = fms.CodfForm(**row)
                 cfr.email_Responsabile.choices = resp_menu
             else:
-                cfr = CodfForm(formdata=fk.request.form)
+                cfr = fms.CodfForm(formdata=fk.request.form)
                 cfr.email_Responsabile.choices = resp_menu
                 if 'cancella' in fk.request.form:
                     ncodf.delete_row(nrec)
@@ -2067,7 +2030,7 @@ def adduser():
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
-            cfr = UserForm(formdata=fk.request.form)
+            cfr = fms.UserForm(formdata=fk.request.form)
             users = ft.FTable((DATADIR, 'userlist.json'))
             if fk.request.method == 'POST':
                 if 'annulla' in fk.request.form:
@@ -2103,10 +2066,10 @@ def edituser(nrec):
             row = users.get_row(nrec, as_dict=True)
             if fk.request.method == 'GET':
                 logging.debug("Userlist row=%s", row)
-                cfr = UserForm(**row)
+                cfr = fms.UserForm(**row)
                 logging.debug("UserForm inizializzato: %s", cfr.data)
             else:
-                cfr = UserForm(formdata=fk.request.form)
+                cfr = fms.UserForm(formdata=fk.request.form)
                 if 'annulla' in fk.request.form:
                     fk.flash('Operazione annullata')
                     return fk.redirect(fk.url_for('housekeeping'))
