@@ -1,7 +1,10 @@
 """
 Definizione delle costanti per procedura acquisti
 """
-__version__ = "2.0"
+
+import os.path
+
+__version__ = "2.1"
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
@@ -141,7 +144,7 @@ STR_COSTO_UK = 'str_costo_uk'                   # dati_pratica
 STR_COSTO_ORD_IT = 'str_costo_ord_it'           # dati_pratica
 STR_COSTO_ORD_UK = 'str_costo_ord_uk'           # dati_pratica
 STR_CRIT_ASS = 'str_crit_ass'                   # dati_pratica
-STR_MOD_ACQ =  'str_mod_acq'                    # dati_pratica
+STR_MOD_ACQ = 'str_mod_acq'                     # dati_pratica
 STR_ONERI_IT = 'str_oneri_it'                   # dati_pratica
 STR_ONERI_UK = 'str_oneri_uk'                   # dati_pratica
 STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
@@ -330,3 +333,10 @@ La richiesta di acquisto N. {numero_pratica}:
 
 è stata approvata dal responsabile dei fondi.
 """
+
+BINDIR = os.path.dirname(os.path.abspath(__file__))  # Path della directory eseguibili
+PKG_ROOT = os.path.abspath(os.path.join(BINDIR, ".."))  # Path della root del package
+
+DATADIR = os.path.join(PKG_ROOT, "data")   # path della directory per i dati"
+FILEDIR = os.path.join(PKG_ROOT, "files")  # path della directory dei files ausiliari"
+WORKDIR = os.path.join(PKG_ROOT, "work")   # path della directory di lavoro"

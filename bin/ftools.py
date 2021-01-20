@@ -26,6 +26,7 @@ Uso da linea di comando:
 # VERSION 4.4    1/3/2019 Migliorato parsing di data-ora
 # VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
 # VERSION 4.6    30/11/2020 aggiunto metodo __len__ a DocList
+# VERSION 4.7    05/12/2020 Integrazioni per usere GMail come server di posta
 
 import sys
 import os
@@ -33,7 +34,6 @@ import time
 import re
 import crypt
 import pwd
-import smtplib
 import hashlib
 import string
 import stat
@@ -41,7 +41,6 @@ import random
 from pprint import pprint
 import readline           # pylint: disable=W0611
 import subprocess
-from email.mime.text import MIMEText
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
 from functools import reduce
@@ -52,41 +51,26 @@ from Crypto.Cipher import AES
 import pam
 
 from constants import *       # pylint: disable=W0401
-import table as tb   # Questa serve: non togliere!!
-from table import jload, jsave, jload_b64, jsave_b64, Table, getpath
+import table as tb
 import latex
+import send_email as sm
 
 __author__ = 'Luca Fini'
-__version__ = '4.6.0'
-__date__ = '30/11/2020'
+__version__ = '4.6.1'
+__date__ = '4/12/2020'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
 else:
     PAM_AUTH = pam.pam().authenticate
 
-USERLIST = None
-CODFLIST = None
-HELPLIST = []
+class GlobLists:
+    "Liste usate dalla procedura. Definite in fase di inizializzazione"
+    USERLIST = None
+    CODFLIST = None
+    HELPLIST = []
 
 USER_DN = 'uid=%s,ou=people,dc=inaf,dc=it'
-
-def pkgroot():
-    "Riporta root directory del sistema"
-    dpath = os.path.dirname(os.path.abspath(__file__))
-    return os.path.abspath(os.path.join(dpath, ".."))
-
-def datapath():
-    "Riporta il path della directory per i dati"
-    return os.path.join(pkgroot(), "data")
-
-def filepath():
-    "Riporta il path della directory dei files ausiliari"
-    return os.path.join(pkgroot(), "files")
-
-def workpath():
-    "Riporta il path della directory di lavoro"
-    return os.path.join(pkgroot(), "work")
 
 def version():
     "Riporta versione del modulo"
@@ -174,31 +158,22 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):
         warning = "MODO DEBUG - destinatari originali: %s\n\n"%', '.join(recipients)
         message = warning+body
         dest = [debug_addr]
-        subjd = ' (DEBUG)'
+        subjd = subj+' (DEBUG)'
     else:
         message = body
         dest = recipients
-        subjd = ''
-    smtp = None
+        subjd = subj
     try:
-        msg = MIMEText(message.encode('utf8'), 'plain', 'utf8')
-        msg['Subject'] = subj+subjd
-        msg['From'] = sender
-        smtp = smtplib.SMTP(mailhost)
-        smtp.sendmail(sender, dest, msg.as_string())
-    except Exception as excp:
-        errmsg = "Sending mail to: %s - "%', '.join(recipients)+str(excp)
+        sm.send(mailhost, sender, dest, subjd, message)
+    except sm.EmailError as excp:
+        errmsg = "Mail to: %s - "%', '.join(recipients)+str(excp)
         logging.error(errmsg)
-        ret = False
-    else:
-        ret = True
-    if smtp:
-        smtp.close()
-    return ret
+        return False
+    return True
 
 def _clean_resp_codes(rcod):
     "Rimuove codici approvazione scaduti"
-    dpath = getpath(rcod)
+    dpath = tb.getpath(rcod)
     try:
         files = os.listdir(dpath)
     except Exception:
@@ -221,21 +196,21 @@ def get_resp_codes(thedir):
     for fname in ldir:
         code = os.path.splitext(fname)[0]
         fpath = os.path.join(dpath, fname)
-        respdata = jload(fpath)
+        respdata = tb.jload(fpath)
         ret[code] = respdata
     return ret
 
 def set_resp_code(thedir, key, userid, prat, sgn):
     "Crea file con codice approvazione"
     dpath = [thedir, 'approv']
-    dname = getpath(dpath)
+    dname = tb.getpath(dpath)
     if not os.path.exists(dname):
         os.makedirs(dname)
     _clean_resp_codes(dname)
     fname = key+'.json'
     dpath.append(fname)
     ttm = time.asctime(time.localtime())
-    jsave(dpath, [userid, prat, sgn, ttm])
+    tb.jsave(dpath, [userid, prat, sgn, ttm])
     logging.info("Creato file codice approvazione: %s", fname)
 
 def get_resp_code(thedir, key):
@@ -244,7 +219,7 @@ def get_resp_code(thedir, key):
     _clean_resp_codes(tpath)
     fname = key+'.json'
     tpath.append(fname)
-    return jload(tpath, [])
+    return tb.jload(tpath, [])
 
 def del_resp_code(thedir, key):
     "Cancella codice di approvazione"
@@ -333,7 +308,7 @@ def find_max_prat(year=None):
     if not year:
         year = thisyear()
     yys = '%d'%year
-    dpath = os.path.join(datapath(), yys)
+    dpath = os.path.join(DATADIR, yys)
     if not os.path.exists(dpath):
         return 0
     try:
@@ -353,7 +328,7 @@ def _find_max_field(what, year=None):
     if not isinstance(what, (list, tuple)):
         what = (what,)
     yys = '%d'%year
-    dpath = os.path.join(datapath(), yys)
+    dpath = os.path.join(DATADIR, yys)
     try:
         plist = os.listdir(dpath)
     except Exception:
@@ -363,7 +338,7 @@ def _find_max_field(what, year=None):
     for nprat in plist:
         path = os.path.join(dpath, nprat)
         try:
-            dati_pratica = jload((path, 'pratica.json'))
+            dati_pratica = tb.jload((path, 'pratica.json'))
         except tb.TableException:
             logging.error("Errore lettura pratica %s", path)
             continue
@@ -399,10 +374,10 @@ def clean_locks(datadir):
                 os.unlink(lockfile)
 
 ########################################## Table support
-class FTable(Table):
+class FTable(tb.Table):
     "definizione tabelle con estensioni per rendering HTML"
     def __init__(self, path, header=None, sortable=()):
-        Table.__init__(self, path, header)
+        tb.Table.__init__(self, path, header)
         self.sortable = [x for x in sortable if x in self.header]
 
     def render_item_as_form(self, title, form, action,
@@ -690,7 +665,7 @@ def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **
 
 def get_user(userid):
     "Riporta record di utente"
-    usr = USERLIST.where('userid', userid, as_dict=True)
+    usr = GlobLists.USERLIST.where('userid', userid, as_dict=True)
     if usr:
         ret = usr[0]
         ret['email'] = ret['email'].strip()
@@ -699,62 +674,57 @@ def get_user(userid):
 
 def _fullname(email):
     "Riporta il nome completo di utente, dato indirizzo e-mail"
-    rec = USERLIST.where('email', email)
+    rec = GlobLists.USERLIST.where('email', email)
     if rec:
         return rec[0][5]
     return 'Sconosciuto'
 
 def _read_userlist():
     "Legge la lista utenti"
-    global USERLIST
-    USERLIST = FTable((datapath(), 'userlist.json'))
-    if USERLIST.empty():
-        logging.error("Errore lettura userlist: %s", USERLIST.filename)
-    user_sn = USERLIST.columns((2, 3))
+    GlobLists.USERLIST = FTable((DATADIR, 'userlist.json'))
+    if GlobLists.USERLIST.empty():
+        logging.error("Errore lettura userlist: %s", GlobLists.USERLIST.filename)
+    user_sn = GlobLists.USERLIST.columns((2, 3))
     user_fn = ['%s %s'%(x[0], x[1]) for x in user_sn]
-    USERLIST.add_column(6, 'fullname', column=user_fn)
+    GlobLists.USERLIST.add_column(6, 'fullname', column=user_fn)
     logging.info("Lista utenti aggiornata")
 
 def update_userlist():
     "Aggiorna la lista utenti"
-    global USERLIST
-    if not USERLIST:
+    if not GlobLists.USERLIST:
         _read_userlist()
         return
-    if USERLIST.needs_update():
+    if GlobLists.USERLIST.needs_update():
         _read_userlist()
 
 def _read_codflist():
     "Legge la lista dei codici fondo"
-    global CODFLIST
-    CODFLIST = FTable((datapath(), 'codf.json'))
-    if CODFLIST.empty():
-        logging.warning("Errore lettura lista codici fondi: %s", CODFLIST.filename)
+    GlobLists.CODFLIST = FTable((DATADIR, 'codf.json'))
+    if GlobLists.CODFLIST.empty():
+        logging.warning("Errore lettura lista codici fondi: %s", GlobLists.CODFLIST.filename)
                           # Integrazione codflist (aggiunge nome esteso)
-    resp_em = CODFLIST.column(4)
+    resp_em = GlobLists.CODFLIST.column(4)
     resp_names = [_fullname(x) for x in resp_em]
-    CODFLIST.add_column(1, 'nome_Responsabile', column=resp_names)
+    GlobLists.CODFLIST.add_column(1, 'nome_Responsabile', column=resp_names)
     logging.info("Lista Codici fondo aggiornata")
 
 def update_codflist():
     "Aggiorna la lista dei codici fondo"
-    global CODFLIST
-    if not CODFLIST:
+    if not GlobLists.CODFLIST:
         _read_codflist()
         return
-    if CODFLIST.needs_update():
+    if GlobLists.CODFLIST.needs_update():
         _read_codflist()
 
 def init_helplist():
     "Genera una lista dei files di nome 'help_*.html' nella directory dei file ausiliari"
-    global HELPLIST
     _helpfilt = re.compile('help_.+[.]html')
     try:
-        flst = os.listdir(filepath())
+        flst = os.listdir(FILEDIR)
     except Exception:
-        HELPLIST = []
+        GlobLists.HELPLIST = []
     else:
-        HELPLIST = [x[5:-5] for x in flst if _helpfilt.match(x)]
+        GlobLists.HELPLIST = [x[5:-5] for x in flst if _helpfilt.match(x)]
 
 CHARS = string.ascii_letters+string.digits
 def randstr(lng):
@@ -789,7 +759,7 @@ def authenticate(userid, password, ldap_host, ldap_port):
 
 def checkdir():
     "Verifica esistenza della directory per dati e riporta il path"
-    thedir = datapath()
+    thedir = DATADIR
     if not os.path.exists(thedir):
         print()
         print("Directory %s inesistente"%thedir)
@@ -941,7 +911,7 @@ def namebasedir(anno, num):
     "genera path directory per nuova pratica"
     stanno = '%4.4d' % int(anno)
     stnum = '%6.6d' % int(num)
-    basedir = os.path.join(datapath(), stanno, stanno+'_'+stnum)
+    basedir = os.path.join(DATADIR, stanno, stanno+'_'+stnum)
     return basedir
 
 IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
@@ -975,7 +945,7 @@ class DocList:
             fnm = os.path.join(pdir, fname)
             if filename_filter(fnm):
                 try:
-                    rec = jload(fnm)
+                    rec = tb.jload(fnm)
                 except tb.TableException:
                     self.errors.append(fnm)
                     continue
@@ -995,7 +965,7 @@ class PratIterator:
     def __init__(self, year=None):
         if not year:
             year = thisyear()
-        self.ydir = os.path.join(datapath(), str(year))
+        self.ydir = os.path.join(DATADIR, str(year))
         self.pratdir = iter(os.listdir(self.ydir))
 
     def __iter__(self):
@@ -1005,14 +975,14 @@ class PratIterator:
         nextdir = self.pratdir.__next__()
         pratfile = os.path.join(self.ydir, nextdir, "pratica.json")
         try:
-            prat = jload(pratfile)
+            prat = tb.jload(pratfile)
         except tb.TableException:
             prat = {}
         return prat
 
 def remove(path, show_error=True):
     "Remove files"
-    fullname = getpath(path)
+    fullname = tb.getpath(path)
     try:
         os.unlink(fullname)
     except Exception as excp:
@@ -1028,7 +998,7 @@ def testlogin():
     userid = input("Userid: ")
     psw = getpass()
     thedir = checkdir()
-    config = jload((thedir, 'config.json'))
+    config = tb.jload((thedir, 'config.json'))
     ldap_host = config.get("ldap_host", "-")
     ldap_port = config.get("ldap_port", 0)
     try:
@@ -1045,18 +1015,18 @@ def testlogin():
 
 def show64file(filename):
     "Mostra file json codificato"
-    f64 = os.path.join(datapath(), filename)
-    obj64 = jload_b64(f64)
+    f64 = os.path.join(DATADIR, filename)
+    obj64 = tb.jload_b64(f64)
     print()
     print(obj64)
 
 def protect(fpath):
-    "set proper mode bits on filepath"
+    "set proper mode bits on given filepath"
     os.chmod(fpath, stat.S_IRUSR+stat.S_IWUSR)
 
 def makepwfile(ldappw=False):
     "Crea file per password"
-    pwpath = os.path.join(datapath(), 'pwfile.json')
+    pwpath = os.path.join(DATADIR, 'pwfile.json')
     pop3pw = input('password per accesso POP3: ')
     if not pop3pw:
         return
@@ -1066,7 +1036,7 @@ def makepwfile(ldappw=False):
         anonymouspw = input('password per LDAP anonimo (accesso R): ')
         pwdict['manager_pw'] = managerpw
         pwdict['anonymous_pw'] = anonymouspw
-    jsave_b64(pwpath, pwdict)
+    tb.jsave_b64(pwpath, pwdict)
     protect(pwpath)
 
 def input_anno():
@@ -1189,7 +1159,7 @@ def showdata(nprat):
         print()
         year = input_anno()
         basedir = namebasedir(year, nprat)
-        dati_pratica = jload((basedir, PRAT_JFILE))
+        dati_pratica = tb.jload((basedir, PRAT_JFILE))
         pprint(dati_pratica, indent=4)
     else:
         print()
@@ -1199,7 +1169,7 @@ def showpratiche():
     "Mostra elenco pratiche"
     year = input_anno()
     print("Elenco pratiche per l'anno", year)
-    elenco = DocList(datapath(), 'pratica.json', year=year, extract=_EXTRACT)
+    elenco = DocList(DATADIR, 'pratica.json', year=year, extract=_EXTRACT)
     for rec in elenco.records:
         print(" - %s %s %s/%s"%(rec[NUMERO_PRATICA], rec[DATA_RICHIESTA],
                                 rec[NOME_RICHIEDENTE], rec[NOME_RESPONSABILE]))

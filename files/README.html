@@ -32,7 +32,7 @@ pratiche per gli acquisti.
 <h2>1. Installazione</h2>
 </a>
 
-Le procedure sono implementate su Ubuntu Linux 16.04 e 18.04 e vengono
+Le procedure sono implementate su Ubuntu Linux 20.04 e vengono
 usate in produzione su una macchina con CentOS 7.x; Quindi &egrave; assicurata
 la compatibilit&agrave; con queste due distribuzioni. Le procedure
 dovrebbero essere compatibili con tutte le principali distribuzioni di
@@ -156,7 +156,6 @@ Il file viene creato con apposita procedura:
 <blockquote>
 <tt>[acquisti@polluce ~]$ <b>python3 bin/configure.py</b></tt>
 </blockquote>
-
 La procedura fornisce estese informazioni sui dati da immettere e in base alle risposte, genera il
 file:
 
@@ -175,8 +174,7 @@ Dopo aver terminato la configurazione è possibile riesaminarla con il comando:
 <dl>
 <dt><tt>approval_hosts</tt></dt>
 <dd>Indirizzo IP autorizzato a inviare le richieste HTTP
-generate dal risponditore e-mail (vedi: <a href=#email>risponditore
-e-mail</a>)</dd>
+generate dal risponditore e-mail (vedi: <a href=#email>risponditore e-mail</a>)</dd>
 
 <dt><tt>email_direttore</tt></dt>
 <dd>Indirizzo e-mail del direttore</dd>
@@ -211,12 +209,10 @@ l'autenticazione avviene solo per utenti con login abilitato sul server).</dd>
 
 <dt><tt>pop3_host</tt></dt>
 <dd>Indirizzo IP del server POP3. Necessario per supportare
-l'autorizzazione all'acquisto per e-mail (vedi: <a href=#email>risponditore
-e-mail</a>)</dd>
+l'autorizzazione all'acquisto per e-mail (vedi: <a href=#email>risponditore e-mail</a>)</dd>
 
 <dt><tt>pop3_pw</tt></dt>
-<dd>Password per l'accesso  POP3 (vedi: <a href=#email>risponditore
-e-mail</a>)</dd>
+<dd>Password per l'accesso  POP3 (vedi: <a href=#email>risponditore e-mail</a>)</dd>
 
 <dt><tt>pop3_user</tt></dt>
 <dd>Nome utente utilizzato per l'accesso  POP3 (vedi: <a
@@ -227,8 +223,10 @@ href=#email>risponditore e-mail</a>)</dd>
 <b>Nota</b>: per <tt>website</tt> si intende la URL della pagina web ufficiale della sede.</dd>
 
 <dt><tt>smtp_host</tt></dt>
-<dd>Indirizzo IP del server SMTP (vedi: <a href=#email>risponditore
-e-mail</a>)</dd>
+<dd>Indirizzo IP del server SMTP utilizzato per varie comunicazioni via e-mail
+(vedi: <a href=#mailserver>Configurazione del mail server</a> e <a href=#email>risponditore e-mail</a>)
+
+</dd>
 
 <dt><tt>titolo_direttore</tt></dt>
 <dd>Titolo del direttore che compare nei documenti generati (es.:
@@ -246,6 +244,26 @@ di conflitto, occorre verificare che il cambiamento sia fatto anche nelle
 procedure di attivazione (vedi sotto).</tt></dd> 
 
 </dl>
+
+<a name=mailserver>
+<h3>Configurazione del mail server</h3>
+</a>
+La procedura utilizza messaggi e-mail per vari avvisi (inclusi gli avvisi di errore
+inviati al "web master"). Deeve essere quindi configurato un adeguato server
+per consentire l'invio dei messaggi.<p>
+
+Sono previste due possibili configurazioni del server e-mail:
+<ol>
+<li> Server SMTP locale senza autenticazione
+<li> Invio tramite GMail API
+</ol>
+
+Per utilizzare il server SMTP locale occorre specificarne 
+l'indirizzo IP <a href=>file di configurazione</a> alla voce: <tt>smtp_host</tt>.
+Se tale voce viene lasciata in bianco la procedura utilizzarà invece la API di GMail.
+<p>
+In quest'ultimo caso occorre ottenere le credenziali di accesso come
+specificato nell'<a href=#appendice>appendice</a>.
 
 <h3>Creazione della tabella utenti</h3>
 Per poter effettuare operazioni sul sistema, occorre registrare gli
@@ -539,6 +557,10 @@ posta dell'Istituto, ma ci&ograve; non &egrave; indispensabile) e che
 dovr&agrave; corrispondere all'indirizzo e-mail dichiarato nel file di
 configurazione alla voce <tt>email_responder</tt> (per i nostri esempi:
 <tt>acquisti@arcetri.inaf.it</tt>).
+<p>
+Se per lo scopo viene cfeato un apposito account su GMail, lo stesso può essere usato
+come account per l'invio dei messaggi da parte della procedura
+(vedi: <a href=#mailserver>Appendice</a>)
 
 <h3> Procedura per la gestione dei messaggi</h3>
 La gestione dei messaggi viene effettuata dalla procedura
@@ -682,4 +704,43 @@ Uso da linea di comando:
     python ftools.py more   - Mostra ulteriori comandi (supporto allo
                               sviluppo o specifici per Arcetri)
 </pre></blockquote>
+
+<p>
+<hr>
+<p>
+
+<center>
+<a name=appendice>
+<h2> Appendice (<a href=#top>^</a>)<br>
+Generazione del token di autorizzazione per GMail API</h2>
+</a>
+</center>
+
+L'utilizzazione della API di GMail per l'invio di messaggi richiede la creazione
+di un account dedicato.
+
+<p>
+Dopo aver creato l'account occorre generare il file di credenziali dalla pagina:
+<blockquote>
+<a href=https://developers.google.com/gmail/api/quickstart/python>
+https://developers.google.com/gmail/api/quickstart/python
+</a>
+</blockquote>
+
+Seguendo il link "Enable the GMail API" che consente il file: <b><tt>credentials.json</tt></b>
+che deve essere copiato sulla directory: <tt>./data</tt> creata nella fase di
+<a href=#config>configurazione</a>
+
+<p>
+&Egrave; poi necessario effettuare il test di funzionamento della API di GMail utilizzando la
+procedura <tt>send_mail.py</tt> come segue:
+<blockquote>
+<tt>$ python send_mail.py -g &lt;indirizzo destinatario&gt;
+</blockquote>
+(Come indirizzo del destinatario è oppurtuno usare il proprio per verificare l'arrivo del messaggio)
+<p>
+
+In seguito al primo invio effettuato con successo, sarà generato il token di autorizzazione sulla
+stessa directory <tt>./data</tt>
+
 </body>

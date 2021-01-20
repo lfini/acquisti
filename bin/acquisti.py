@@ -20,7 +20,7 @@ except ImportError:
 from constants import *          # pylint: disable=W0401
 import forms as fms
 import ftools as ft
-from table import TableException
+import table as tb
 
 __author__ = 'Luca Fini'
 __version__ = '4.4'
@@ -54,14 +54,11 @@ __date__ = '2/12/2020'
 # Versione 4.2  11/2020:     Lista utenti convertita a nomi INAF
 # Versione 4.3  11/2020:     Modificato pannello per ricerca pratiche
 # Versione 4.4  12/2020:     Corretto errore nella selezione pratiche per richiedente/responsabile
+# Versione 4.5  12/2020:     Aggiunto support per invio mail con GMail API
 
 __start__ = time.asctime(time.localtime())
 
-PKG_ROOT = ft.pkgroot()
-DATADIR = ft.datapath()
-WORKDIR = ft.workpath()
-
-CONFIG = ft.jload((DATADIR, 'config.json'))
+CONFIG = tb.jload((DATADIR, 'config.json'))
 
 BASEDIR_STR = 'basedir'
 
@@ -425,7 +422,7 @@ def show_faseb(basedir, d_prat):
 
 def _nome_da_email(embody, prima_nome=True):
     "estrae nome da messaggio email"
-    row = ft.USERLIST.where('email', embody.strip())
+    row = ft.GlobLists.USERLIST.where('email', embody.strip())
     if row:
         if prima_nome:
             return '{} {}'.format(row[0][2], row[0][1])
@@ -443,7 +440,6 @@ def _make_mail_body(testo, d_prat):
 def _email_approv(basedir, userid, d_prat, ritrasm):
     "Invio mail di richiesta approvazione"
     ret = False
-    smtphost = CONFIG[SMTP_HOST]
     respd = CONFIG.get(EMAIL_RESPONDER)
     if respd:
         sender = respd
@@ -475,7 +471,8 @@ def _email_approv(basedir, userid, d_prat, ritrasm):
             recipients = [eresp]
             info = "Invio richiesta approvazione a: {}. " \
                    "Pratica {}. Subj: {}".format(eresp, prat, subj)
-        ret = ft.send_email(smtphost, sender, recipients, subj, body, debug_addr=DEBUG.email)
+        ret = ft.send_email(CONFIG.get(SMTP_HOST), sender, recipients,
+                            subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info(info)
             if code:
@@ -505,8 +502,8 @@ def _check_access(user_only=False):
     err_msg = None
     if basedir:
         try:
-            d_prat = ft.jload((basedir, PRAT_JFILE))
-        except TableException:
+            d_prat = tb.jload((basedir, PRAT_JFILE))
+        except tb.TableException:
             err_msg = _errore_accesso(basedir)
         else:
             # Aggiorna nome campi per versione 1 del file pratica
@@ -528,11 +525,10 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
     if byemail:
         hist += ' (per e-mail)'
     d_prat[STORIA_PRATICA].append(_hrecord(username, hist))
-    ft.jsave((basedir, PRAT_JFILE), d_prat)
+    tb.jsave((basedir, PRAT_JFILE), d_prat)
     fk.flash("L'approvazione della richiesta {} è stata correttamente "
              "registrata".format(d_prat[NUMERO_PRATICA]), category="info")
 
-    smtphost = CONFIG[SMTP_HOST]
     sender = d_prat[EMAIL_RESPONSABILE]
     prat = d_prat[NUMERO_PRATICA]
     if sender:
@@ -545,7 +541,7 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
         recipients = [CONFIG[EMAIL_UFFICIO]]
         if d_prat.get(EMAIL_RICHIEDENTE, '-') != d_prat.get(EMAIL_RESPONSABILE, ''):
             recipients.append(d_prat[EMAIL_RICHIEDENTE])
-        ret = ft.send_email(smtphost, CONFIG.get(EMAIL_RESPONDER),
+        ret = ft.send_email(CONFIG.get(SMTP_HOST), CONFIG.get(EMAIL_RESPONDER),
                             recipients, subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("Inviata richiesta approvazione a %s. "
@@ -559,7 +555,8 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
             hdr0 = HEADER_NOTIFICA_RESPONSABILE_WEB
         body = _make_mail_body(hdr0+DETTAGLIO_PRATICA, d_prat)
         recipients = [sender]
-        ret = ft.send_email(smtphost, sender, recipients, subj, body, debug_addr=DEBUG.email)
+        ret = ft.send_email(CONFIG.get(SMTP_HOST), sender, recipients,
+                            subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("%sInviata conferma approvazione a %s. "
                          "Pratica %s", isdebug, ','.join(recipients), prat)
@@ -619,7 +616,7 @@ def _clear_conferma_chiusura(basedir, d_prat, save=True):
     if d_prat and CONF_CHIUSURA in d_prat:
         del d_prat[CONF_CHIUSURA]
         if save:
-            ft.jsave((basedir, PRAT_JFILE), d_prat)
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
 
 def clean_dict(adict):
     "Crea newdict rimuovendo da adict le chiavi che iniziano per T_"
@@ -681,7 +678,7 @@ def pratica_common(user, basedir, d_prat):
     if not d_prat.get(STR_MOD_ACQ) or STR_CRIT_ASS not in d_prat:
         d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, d_prat.get(MOD_ACQUISTO))
         d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, d_prat.get(CRIT_ASS))
-        ft.jsave((basedir, PRAT_JFILE), d_prat)
+        tb.jsave((basedir, PRAT_JFILE), d_prat)
     if info.get(PDF_RICHIESTA):
         firma = d_prat.get(FIRMA_APPROVAZIONE)
         if firma:
@@ -766,7 +763,7 @@ def _modifica_pratica(what):
                 fk.flash(amsg, category="error")
             logging.error('Annullamento pratica non autorizzato: %s. User %s, pratica %s',
                           "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
-    ft.jsave((basedir, PRAT_JFILE), d_prat)
+    tb.jsave((basedir, PRAT_JFILE), d_prat)
     return fk.redirect(fk.url_for('pratica1'))
 
 def _delete_field(d_prat, field):
@@ -890,7 +887,7 @@ def _errore_doclist(anno):
 
 def _menu_scelta_utente(topline):
     "genera menù per acelta utente"
-    menulist = [(x[4], x[6]) for  x in ft.USERLIST.rows]
+    menulist = [(x[4], x[6]) for  x in ft.GlobLists.USERLIST.rows]
     menulist.sort(key=lambda x: x[1])
     menulist.insert(0, ('', '-- %s --'%topline))
     return menulist
@@ -931,7 +928,7 @@ def modificadetermina_a(user, basedir, d_prat):
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
             d_prat[PDF_ORDINE] = ''
             d_prat[PDF_DETERMINA_A] = DETA_PDF_FILE
-            ft.jsave((basedir, PRAT_JFILE), d_prat)
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
             url = fk.url_for('pratica1')
             return fk.redirect(url)
         errors = det.get_errors()
@@ -977,7 +974,7 @@ def modificadetermina_b(user, basedir, d_prat):
             d_prat[FINE_GARA_GIORNO], d_prat[FINE_GARA_ORE] = d_prat[FINE_GARA].split()
             d_prat[STR_PREZZO_GARA] = ft.stringa_costo(d_prat.get(PREZZO_GARA), "it")
             d_prat[STR_ONERI_IT] = ft.stringa_valore(d_prat.get(ONERI_SIC_GARA), "it")
-            ft.jsave((basedir, PRAT_JFILE), d_prat)
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
             logging.info('Genera determina: %s/%s', basedir, DETB_PDF_FILE)
             det_template = os.path.splitext(DETB_PDF_FILE)[0]
             det_name = det_template
@@ -1064,7 +1061,7 @@ def about():
 
         html.append('<tr><td><table cellpadding=3 border=1>')
         html.append('<tr><th> Lista files di help </th></tr>')
-        html.append('<tr><td>'+', '.join(ft.HELPLIST)+'</td></tr>')
+        html.append('<tr><td>'+', '.join(ft.GlobLists.HELPLIST)+'</td></tr>')
         html.append('</table></td></tr>')
 
         html.append('<tr><td><table cellpadding=3 border=1>')
@@ -1134,7 +1131,7 @@ def modificarichiesta():
     if d_prat.get(VERSIONE, 0) == 0:
         return _aggiornaformato()
     racq = fms.RichiestaAcquisto(fk.request.form, **d_prat)
-    codfs = ft.CODFLIST.column('Codice', unique=True)
+    codfs = ft.GlobLists.CODFLIST.column('Codice', unique=True)
     codf_menu = list(zip(codfs, codfs))
     racq.lista_codf.choices = codf_menu
     racq.email_responsabile.choices = _menu_scelta_utente("Seleziona responsabile")
@@ -1176,7 +1173,7 @@ def modificarichiesta():
             d_prat[FIRMA_APPROVAZIONE] = ""
             d_prat[SAVED] = 1
             d_prat[CONF_CHIUSURA] = 0
-            ft.jsave((basedir, PRAT_JFILE), d_prat)
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
             logging.info('Salvati dati pratica: %s/%s', basedir, PRAT_JFILE)
             ric_name = os.path.splitext(RIC_PDF_FILE)[0]
             ft.makepdf(PKG_ROOT, basedir, ric_name, ric_name,
@@ -1228,7 +1225,7 @@ def inviarichiesta():
             d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Inviata richiesta approvazione'))
-            ft.jsave((basedir, PRAT_JFILE), d_prat)
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
         else:
             msg = "Invio per approvazione fallito"
             fk.flash(msg, category="Error")
@@ -1263,7 +1260,7 @@ def aggiornaformato():
             _delete_field(d_prat, "stato_mepa")
             _delete_field(d_prat, "costo_ordine")
             d_prat[VERSIONE] = FILE_VERSION
-            ft.jsave((basedir, PRAT_JFILE), d_prat)
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
             ft.remove((basedir, DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
             msg0 = "Aggiornato formato pratica"
@@ -1318,13 +1315,13 @@ def cancella(name):
             fk.flash(amsg, category="error")
         logging.error('Rimozione allegato non autorizzata: %s. User %s pratica %s',
                       "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
-    ft.jsave((basedir, PRAT_JFILE), d_prat)
+    tb.jsave((basedir, PRAT_JFILE), d_prat)
     return pratica1()
 
 @ACQ.route('/vedicodf')
 def vedicodf():
     "pagine: visualizza lista codici fondo"
-    return ft.CODFLIST.render(title="Lista Codici fondi e responsabili")
+    return ft.GlobLists.CODFLIST.render(title="Lista Codici fondi e responsabili")
 
 @ACQ.route('/vedifile/<filename>')
 def vedifile(filename):
@@ -1396,7 +1393,7 @@ def trovapratica():
             fk.flash('Operazione annullata', category="info")
             return fk.redirect(fk.url_for('start'))
         prf = fms.TrovaPratica(fk.request.form)
-        user_menu = [(x[6], x[6]) for  x in ft.USERLIST.rows]
+        user_menu = [(x[6], x[6]) for  x in ft.GlobLists.USERLIST.rows]
         user_menu.sort(key=lambda x: x[1])
         user_menu.insert(0, ('*', 'Tutti'))
         prf.trova_responsabile.choices = user_menu
@@ -1536,7 +1533,7 @@ def pratica1():
                 fle.save(fpath)        # Archivia file da upload
                 msg = 'Allegato file '+name
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], msg))
-                ft.jsave((basedir, PRAT_JFILE), d_prat)
+                tb.jsave((basedir, PRAT_JFILE), d_prat)
                 ft.protect(fpath)
                 logging.info('Allegato file %s', fpath)
     return pratica_common(user, basedir, d_prat)
@@ -1554,7 +1551,7 @@ def togglestoria():
         d_prat[VEDI_STORIA] = 0
     else:
         d_prat[VEDI_STORIA] = 1
-    ft.jsave((basedir, PRAT_JFILE), d_prat)
+    tb.jsave((basedir, PRAT_JFILE), d_prat)
     return pratica_common(user, basedir, d_prat)
 
 @ACQ.route('/modificadetermina/<fase>', methods=('GET', 'POST', ))
@@ -1608,7 +1605,7 @@ def cancelladetermina(fase):
                                                    'Cancellati determina agg. e ordine'))
             logging.info("Cancellati determina agg. e ordine. Pratica N. %s",
                          d_prat.get(NUMERO_PRATICA, ''))
-        ft.jsave((basedir, PRAT_JFILE), d_prat)
+        tb.jsave((basedir, PRAT_JFILE), d_prat)
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
@@ -1663,7 +1660,7 @@ def modificaordine(fase):
                            include=include, pratica=d_prat, sede=CONFIG[SEDE])
                 d_prat[PDF_ORDINE] = ORD_PDF_FILE
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))
-                ft.jsave((basedir, PRAT_JFILE), d_prat)
+                tb.jsave((basedir, PRAT_JFILE), d_prat)
                 url = fk.url_for('pratica1')
                 return fk.redirect(url)
             errors = orn.get_errors()
@@ -1708,7 +1705,7 @@ def vedijson(fname):
     user, basedir = ret[:2]
     if _test_developer(user):
         ffn = fname+'.json'
-        data = ft.jload((basedir, ffn), {})
+        data = tb.jload((basedir, ffn), {})
         text = '<h4>{}</h4>'.format(os.path.join(basedir, ffn))
         ppt = PrettyPrinter(indent=4)
         text += '<pre>'+ ppt.pformat(data)+'</pre>'
@@ -1728,7 +1725,6 @@ def email_approv(key):
     host = fk.request.remote_addr
     ident = fk.request.headers.get('Identity')
     mailhost = fk.request.headers.get('Mail-Host')
-    smtphost = CONFIG[SMTP_HOST]
     sender = fk.request.headers.get('Sender-Email')
     info = "Richiesta da e-mail responder. Host: {}, Sender: {}, " \
            "MailServer: {}, Codice: {}".format(host, sender, mailhost, key)
@@ -1747,8 +1743,8 @@ def email_approv(key):
     num, year = appr[1].split('/')
     basedir = ft.namebasedir(year, num)
     try:
-        d_prat = ft.jload((basedir, PRAT_JFILE))
-    except TableException:
+        d_prat = tb.jload((basedir, PRAT_JFILE))
+    except tb.TableException:
         err_msg = _errore_accesso(basedir)
         fk.flash(err_msg, category="error")
         logging.error(err_msg)
@@ -1770,7 +1766,7 @@ def email_approv(key):
     if mailtext:
         recipients = [d_prat.get(EMAIL_RESPONSABILE), CONFIG.get(EMAIL_UFFICIO)]
         subj = APPROV_EMAIL_RESPINTA_OGGETTO
-        ret = ft.send_email(smtphost, CONFIG.get(EMAIL_RESPONDER), recipients,
+        ret = ft.send_email(CONFIG.get(SMTP_HOST), CONFIG.get(EMAIL_RESPONDER), recipients,
                             subj, mailtext, debug_addr=DEBUG.email)
         if ret:
             logging.info("Inviato mail 'Approvazione per email respinta' a: %s",
@@ -1814,7 +1810,7 @@ def procedura_rdo():
             if MORE in fk.request.form:
                 m_entries = len(rdo.data[LISTA_DITTE])+2
 # Trucco per rendere variabile la dimensione del form per lista ditte
-                class LocalForm(fms.PraticaRDO): pass
+                class LocalForm(fms.PraticaRDO): pass     # pylint: disable=C0115,C0321
                 LocalForm.lista_ditte = fms.new_lista_ditte("Lista ditte", m_entries)
 # Fine trucco
                 logging.debug("Richiesto incremento numero ditte: %d", m_entries)
@@ -1826,7 +1822,7 @@ def procedura_rdo():
                     rdo_data = rdo.data.copy()
                     clean_lista(rdo_data)
                     d_prat.update(clean_data(rdo_data))
-                    ft.jsave((basedir, PRAT_JFILE), d_prat)
+                    tb.jsave((basedir, PRAT_JFILE), d_prat)
                     ft.remove((basedir, DETB_PDF_FILE), show_error=False)
                     ft.remove((basedir, ORD_PDF_FILE), show_error=False)
                     logging.debug("Aggiornata pratica con dati RDO")

@@ -8,7 +8,9 @@ import flask as fk
 import wtforms as wt
 import ldaparcetri as ll
 import ftools as ft
-from forms import MyForm, MyTextField, MySelectField, MyLoginForm, render_field
+import table as tb
+from forms import MyTextField, MySelectField, MyLoginForm, render_field
+from constants import DATADIR, WORKDIR
 
 #  VERSION  1.0  30/01/2015: Prima versione
 #  VERSION  1.1  30/01/2015: Modificato metodo controllo password
@@ -19,22 +21,17 @@ from forms import MyForm, MyTextField, MySelectField, MyLoginForm, render_field
 #  VERSION  2.0  05/10/2018: Conversione a python 3
 #  VERSION  2.1  12/03/2019: Bug fix
 #  VERSION  2.2  26/03/2019: Bug fix
+#  VERSION  2.3  10/12/2020: Un po' di pulizia nel codice
 
 __author__ = 'Luca Fini'
-__version__ = '2.2'
-__date__ = '26/3/2019'
-
-PKG_ROOT = ft.pkgroot()
-DATADIR = ft.datapath()
-WORKDIR = ft.workpath()
-
+__version__ = '2.3'
+__date__ = '10/12/2020'
 
 ALLPEOPLE = ll.get_people_table(real=False)
 PEOPLE = [x for x in ALLPEOPLE if x.get('employeeType')]
 
-ALLTYPES = set([x.get('employeeType')[0] for x in PEOPLE])
 
-SELECTOR_EMPL = list(ALLTYPES)
+SELECTOR_EMPL = list({x.get('employeeType')[0] for x in PEOPLE})
 SELECTOR_EMPL.sort()
 
 HEADER_ABOUT = """<!DOCTYPE html>
@@ -46,10 +43,10 @@ HEADER_ABOUT = """<!DOCTYPE html>
 
 __start__ = time.asctime(time.localtime())
 
-CONFIG = ft.jload((DATADIR, 'config.json'))
-PWFILE = ft.jload_b64((DATADIR, 'pwfile.json'))
+CONFIG = tb.jload((DATADIR, 'config.json'))
+PWFILE = tb.jload_b64((DATADIR, 'pwfile.json'))
 
-class LdapForm(MyForm):
+class LdapForm(wt.Form):
     "Form per modifica LDAP"
     ldap_tel = MyTextField('Numero telefonico (completo di prefisso internazionale)', False)
     ldap_stanza = MyTextField('Numero di stanza', False)
@@ -116,10 +113,9 @@ def login():
         if ret:
             fk.session['userid'] = fk.request.form['userid']
             return fk.redirect(fk.url_for('start'))
-        else:
-            msg = 'Login negato per %s (%s)' % (usr, why)
-            fk.flash(msg)
-            logging.error(msg)
+        msg = 'Login negato per %s (%s)' % (usr, why)
+        fk.flash(msg)
+        logging.error(msg)
     return fk.render_template('login.html', form=form,
                               sede=CONFIG['sede'], title='Modifica dati utenti') # .encode('utf8')
 
@@ -167,8 +163,7 @@ def modifica_ldap(uid):
                    'body': cform.render()}
             return fk.render_template('form_layout.html', data=ddd,
                                       sede=CONFIG["sede"]).encode('utf8')
-        else:
-            return fk.render_template('noaccess.html').encode('utf8')
+        return fk.render_template('noaccess.html').encode('utf8')
     return fk.redirect(fk.url_for('login'))
 
 @MLP.route('/')
@@ -177,14 +172,16 @@ def start():
     user = ft.login_check(fk.session)
     if user:
         if _test_authorization(user):
-            people = [p for p in ll.get_people_table(real=True) if (p.get('sn') and p.get('givenName'))]
+            people = [p for p in ll.get_people_table(real=True) \
+                      if (p.get('sn') and p.get('givenName'))]
             page_data = ft.byinitial(people,
                                      key=lambda x: x.get('sn')[0].lower()+ \
                                                    x.get('givenName')[0].lower())
             initials = list(page_data.keys())
             initials.sort()
-            return fk.render_template('lista_people.html', title='Elenco generale utenti',
-                                      initials=initials, data=page_data, sede=CONFIG["sede"]).encode('utf8')
+            return fk.render_template('lista_people.html',
+                                      title='Elenco generale utenti', initials=initials,
+                                      data=page_data, sede=CONFIG["sede"]).encode('utf8')
         return fk.render_template('noaccess.html').encode('utf8')
     return fk.redirect(fk.url_for('login'))
 

@@ -27,7 +27,7 @@ def radio_widget(field, **kwargs):
     return ''.join(html)
 
 def _has(hspec):
-    if hspec in ft.HELPLIST:
+    if hspec in ft.GlobLists.HELPLIST:
         return 'help_'+hspec+'.html'
     return ''
 
@@ -162,23 +162,6 @@ class MyFieldList(wt.FieldList):
     def __call__(self, **kw):
         for item in self:
             return render_field(item, **kw)
-
-class MyForm(wt.Form):
-    "Ridefinizione form per supporto help"
-    def _render_field(self, field, **kw):
-        if field.help_spec:
-            help_url = '/files/%s' % field.help_spec
-            hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
-        else:
-            hlink = ''
-        ret = field(hlink, **kw)
-        if not ret:
-            if field.is_required:
-                lab = '<dt><u>%s</u>%s</dt>'%(field.label, hlink)
-            else:
-                lab = '<dt>%s%s</dt>'%(field.label, hlink)
-            ret = fk.Markup(lab+'<dd> %s </dd>'%field(**kw))
-        return ret
 
 class FormWErrors(wt.Form):
     "Form modificato per gestione errori"
@@ -494,7 +477,8 @@ class Ordine(FormWErrors):
                     '%(ind_fornitore)s</blockquote>'%d_prat)+E_TRTD
         html += B_TRTD+fk.Markup('<table width=100%><tr><td align=left>')+ \
                     render_field(self.numero_ordine)+fk.Markup('</td>')
-        html += fk.Markup('<td align=right>')+render_field(self.lingua_ordine)+E_TRTD+fk.Markup('</table></br>')
+        html += fk.Markup('<td align=right>')+render_field(self.lingua_ordine)+ \
+                          E_TRTD+fk.Markup('</table></br>')
         html += render_field(self.data_ordine)+BRK
         html += render_field(self.cig)+E_TRTD
         html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
@@ -599,9 +583,11 @@ class PraticaRDO(FormWErrors):
         html += render_field(self.fine_gara)+E_TRTD
         html += B_TRTD+fk.Markup("<b>%s</b><br>"%self.lista_ditte.a_label)
         html += fk.Markup("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
-                    "<th>Indirizzo</th><th>Vincitore</th><th><img src=/files/del-20.png></th></tr></td></tr>")
+                          "<th>Indirizzo</th><th>Vincitore</th><th>"\
+                          "<img src=/files/del-20.png></th></tr></td></tr>")
         for idx, ditta in enumerate(self.lista_ditte):
-            html += B_TRTD+fk.Markup("%d</td>"%(idx+1))+ditta.renderme(number=idx, **kw)+fk.Markup("</tr>")
+            html += B_TRTD+fk.Markup("%d</td>"%(idx+1))+ \
+                                     ditta.renderme(number=idx, **kw)+fk.Markup("</tr>")
         html += E_TRTD+fk.Markup("</table><br>")
         html += fk.Markup("<div align=right>")+self.T_more()+fk.Markup("</div>")+E_TRTD
         html += B_TRTD+render_field(self.prezzo_gara)
