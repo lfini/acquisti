@@ -8,7 +8,13 @@ Type=forking
 PIDFile=/home/public/acquisti/work/manageldap.pid
 User=acquisti
 WorkingDirectory=/home/public/acquisti
-ExecStart=/usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
+ExecStart=/usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 \
+    --pythonpath=/home/public/acquisti/bin -D \
+    --log-file=/home/public/acquisti/work/httpd-manageldap.log \
+    --pid=/home/public/acquisti/work/manageldap.pid \
+    --user=acquisti  \
+    --certfile=/home/public/acquisti/ebe_arcetri_inaf_it_cert.cer \
+    --keyfile=/home/public/acquisti/ebe_arcetri_inaf_it.key     manageldap:MLP
 ExecStop=/bin/kill -s TERM $MAINPID
 ExecReload=/bin/kill -s HUP $MAINPID
 

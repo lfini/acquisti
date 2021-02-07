@@ -8,7 +8,12 @@ Type=forking
 WorkingDirectory=/home/public/acquisti
 PIDFile=/home/public/acquisti/work/acquisti.pid
 User=acquisti
-ExecStart=/usr/local/bin/gunicorn -w 4 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+ExecStart=/usr/local/bin/gunicorn -w 5 -b 0.0.0.0:4000 \
+             --pythonpath=/home/public/acquisti/bin -D \
+             --log-file=/home/public/acquisti/work/httpd-acquisti.log \
+             --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti \
+             --certfile=/home/public/acquisti/ebe_arcetri_inaf_it_cert.cer \
+             --keyfile=/home/public/acquisti/ebe_arcetri_inaf_it.key        acquisti:ACQ
 ExecStop=/bin/kill -s TERM $MAINPID
 ExecReload=/bin/kill -s HUP $MAINPID
 
