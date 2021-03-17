@@ -164,7 +164,7 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):
         dest = recipients
         subjd = subj
     try:
-        sm.send(mailhost, sender, dest, subjd, message)
+        sm.send(mailhost, None, sender, dest, subjd, message)
     except sm.EmailError as excp:
         errmsg = "Mail to: %s - "%', '.join(recipients)+str(excp)
         logging.error(errmsg)
