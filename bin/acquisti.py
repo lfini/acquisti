@@ -22,10 +22,6 @@ import forms as fms
 import ftools as ft
 import table as tb
 
-__author__ = 'Luca Fini'
-__version__ = '4.4'
-__date__ = '2/12/2020'
-
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
 # Versione 2.0   20/08/2016: Revisione completa per inseguimento normativa
@@ -54,7 +50,12 @@ __date__ = '2/12/2020'
 # Versione 4.2  11/2020:     Lista utenti convertita a nomi INAF
 # Versione 4.3  11/2020:     Modificato pannello per ricerca pratiche
 # Versione 4.4  12/2020:     Corretto errore nella selezione pratiche per richiedente/responsabile
-# Versione 4.5  12/2020:     Aggiunto support per invio mail con GMail API
+# Versione 4.5  12/2020:     Aggiunto supporto per invio mail con GMail API
+# Versione 4.6   4/2021:     Aggiunto supporto per inclusione logo in testa ai documenti
+
+__author__ = 'Luca Fini'
+__version__ = '4.6'
+__date__ = '28/4/2021'
 
 __start__ = time.asctime(time.localtime())
 

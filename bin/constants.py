@@ -73,6 +73,7 @@ INFER_1000 = "infer.1000"                       # Obsoleto. Mantenuto per compat
 INFER_5000 = "infer.5000"                       # MENU_MOD_ACQ
 INIZIO_GARA = "inizio_gara"                     # dati pratica
 IVA = "iva"
+IVA_ = "iva_"                                   # MENU_IVA
 IVA10 = "iva_10"                                # MENU_IVA
 IVA22 = "iva_22"                                # MENU_IVA
 IVA4 = "iva_4"                                  # MENU_IVA
@@ -81,6 +82,7 @@ IVAFREE = "iva_free"                            # dati_pratica[costo]
 IVAINCL10 = "iva_incl10"                        # MENU_IVA
 IVAINCL22 = "iva_incl22"                        # MENU_IVA
 IVAINCL4 = "iva_incl4"                          # MENU_IVA
+IVAINCL = "iva_incl"                            # MENU_IVA
 IVA_NO = "iva_no"                               # MENU_IVA
 LDAP_HOST = "ldap_host"                         # config
 LDAP_PORT = "ldap_port"                         # config
@@ -176,9 +178,11 @@ MENU_IVA = ((IVA_NO, "-"),
             (IVA22, "+ I.V.A. 22%"),
             (IVA10, "+ I.V.A. 10%"),
             (IVA4, "+ I.V.A. 4%"),
+            (IVA_, "+ I.V.A."),
             (IVAINCL22, "I.V.A. 22% inclusa"),
             (IVAINCL10, "I.V.A. 10% inclusa"),
             (IVAINCL4, "I.V.A. 4% inclusa"),
+            (IVAINCL, "I.V.A. inclusa"),
             (IVAESENTE, "esente I.V.A."))
 
 MENU_VALUTA = ((EURO, "Euro"),

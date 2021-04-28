@@ -1,0 +1,22 @@
+%%% header comune a tutti i documenti
+
+\oddsidemargin -5mm  % Dimensione pagina 
+\evensidemargin -5mm % Adatte per pagina A4
+\topmargin -6mm     % ...
+\textheight 23.0cm   % ...
+\textwidth 17cm      % ...
+\headheight 15pt
+
+\usepackage{graphicx, fancyhdr}
+\pagestyle{fancy}
+
+\lhead{\begin{picture}(0,0) \put(0,0){\includegraphics[height=2cm]{((( logopath )))}} \end{picture}}
+
+\newcommand{\topaddr}{~\vspace{-2.5cm}
+\begin{center}
+\small \bf
+%%INAF - Osservatorio Astrofisico di Arcetri \\
+L.go Enrico Fermi, 5. 50125 Firenze (Italia)
+\end{center}
+\vspace{4cm}}
+

@@ -27,6 +27,7 @@ Uso da linea di comando:
 # VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
 # VERSION 4.6    30/11/2020 aggiunto metodo __len__ a DocList
 # VERSION 4.7    05/12/2020 Integrazioni per usere GMail come server di posta
+# VERSION 4.8    28/04/2021 Modifiche nper inserimento logo in testa ai documenti
 
 import sys
 import os
@@ -55,16 +56,18 @@ import table as tb
 import latex
 import send_email as sm
 
+# pylint: disable=C0302, W0703
+
 __author__ = 'Luca Fini'
-__version__ = '4.6.1'
-__date__ = '4/12/2020'
+__version__ = '4.8.0'
+__date__ = '28/4/2021'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
 else:
     PAM_AUTH = pam.pam().authenticate
 
-class GlobLists:
+class GlobLists:         # pylint: disable=R0903
     "Liste usate dalla procedura. Definite in fase di inizializzazione"
     USERLIST = None
     CODFLIST = None
@@ -273,7 +276,7 @@ def stringa_valore(costo, lang):
     else:
         vstr = valuta
     if iva_free:
-        istr = "("+iva_free+")"
+        istr = iva_free
     elif iva == IVAESENTE:
         istr = "(esente I.V.A.)" if lang == "it" else "(no V.A.T.)"
     elif iva == IVAINCL4:
@@ -282,6 +285,10 @@ def stringa_valore(costo, lang):
         istr = "(I.V.A. 10% inclusa)" if lang == "it" else "(10% V.A.T. included)"
     elif iva == IVAINCL22:
         istr = "(I.V.A. 22% inclusa)" if lang == "it" else "(22% V.A.T. included)"
+    elif iva == IVAINCL:
+        istr = "(I.V.A. inclusa)" if lang == "it" else "(V.A.T. included)"
+    elif iva == IVA_:
+        istr = "+ I.V.A." if lang == "it" else "+ V.A.T."
     elif iva == IVA4:
         istr = "+ I.V.A. 4%" if lang == "it" else "+ 4% V.A.T."
     elif iva == IVA10:
@@ -556,7 +563,7 @@ def thisyear():
     "Riporta l'anno corrente"
     return time.localtime().tm_year
 
-class Matchty:
+class Matchty:               # pylint: disable=R0903
     "classe per verificare il corretto tipo di un file"
     def __init__(self, tlist):
         def addp(name):
@@ -661,7 +668,9 @@ def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **
         attach_list = [attach]
     else:
         attach_list = None
-    latex.makepdf(destdir, pdfname, tfile, attach=attach_list, debug=debug, **data)
+    ndata = data.copy()
+    ndata["logopath"] = os.path.join(pkg_root, "files", "logofile.png")
+    latex.makepdf(destdir, pdfname, tfile, attach=attach_list, debug=debug, **ndata)
 
 def get_user(userid):
     "Riporta record di utente"
@@ -916,7 +925,7 @@ def namebasedir(anno, num):
 
 IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
 
-class DocList:
+class DocList:               # pylint: disable=R0903
     "definizione lista documenti"
     def __init__(self, thedir, fname,
                  year=None,

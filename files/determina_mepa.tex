@@ -4,24 +4,12 @@
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
-%% Template: determina_mepa.tex - vers. 2.1 
+%% Template: determina_mepa.tex - vers. 2.2 
 
-\oddsidemargin -5mm  % Dimensione pagina 
-\evensidemargin -5mm % Adatte per pagina A4
-\topmargin -30mm     % ...
-\textheight 25.5cm   % ...
-\textwidth 17cm      % ...
+((* include 'header.tex' *))
 
 \begin{document}
-\vspace{-2.5cm}
-\begin{center}
-\small \bf
-((( sede.sede_it ))) \\
-((( sede.indirizzo )))
-\end{center}
-
-\thispagestyle{empty}
-\vspace{1cm}
+\topaddr
 
 {\small Pratica N. ((( pratica.numero_pratica ))) }
 \vspace{1cm}

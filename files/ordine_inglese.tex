@@ -4,24 +4,13 @@
 \usepackage{eurosym}
 \usepackage{graphicx}
 
-\oddsidemargin -5mm  % Dimensione pagina 
-\evensidemargin -5mm % Adatte per pagina A4
-\topmargin -30mm     % ...
-\textheight 25.5cm   % ...
-\textwidth 17cm      % ...
+%% template: ordine_inglese.tex. Vers. 1.4
 
-%% template: ordine_inglese.tex. Vers. 1.3
+((* include 'header.tex *))
 
 \begin{document}
-\vspace{-2.5cm}
-\begin{center}
-\small \bf
-((( sede.sede_it ))) \\
-((( sede.indirizzo )))  \\
-((( sede.website )))
-\end{center}
-\thispagestyle{empty}
-\vspace{1cm}
+\topaddr
+
 {\small Pratica N. ((( pratica.numero_pratica ))) }
 \vspace{.4cm}
 

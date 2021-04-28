@@ -13,12 +13,13 @@ Ottobre 2016 - Novembre 2020 </h4>
 <a name=top>
 <table border=1>
 <tr>
-<td width=18% align=center><a href=#inst>Installazione</a></td>
-<td width=18% align=center><a href=#run>Attivazione del server</a></td>
-<td width=18% align=center><a href=#funz>Funzionamento</a></td>
-<td width=18% align=center><a href=#struc>Struttura archivio</a></td>
-<td width=18% align=center><a href=#email>Risponditore e-mail</a></td>
-<td width=18% align=center><a href=#varie>Note varie</a></td>
+<td width=14% align=center><a href=#inst>Installazione</a></td>
+<td width=14% align=center><a href=#config>Configurazione</a></td>
+<td width=14% align=center><a href=#run>Attivazione del server</a></td>
+<td width=14% align=center><a href=#funz>Funzionamento</a></td>
+<td width=14% align=center><a href=#struc>Struttura archivio</a></td>
+<td width=14% align=center><a href=#email>Risponditore e-mail</a></td>
+<td width=14% align=center><a href=#varie>Note varie</a></td>
 </tr></table>
 
 <p> Nelle pagine che seguono sono raccolti i dettagli tecnici relativi
@@ -32,7 +33,7 @@ pratiche per gli acquisti.
 <h2>1. Installazione</h2>
 </a>
 
-Le procedure sono implementate su Ubuntu Linux 20.04 e vengono
+Le procedure sono attualmente implementate su Ubuntu Linux 20.04 e vengono
 usate in produzione su una macchina con CentOS 7.x; Quindi &egrave; assicurata
 la compatibilit&agrave; con queste due distribuzioni. Le procedure
 dovrebbero essere compatibili con tutte le principali distribuzioni di
@@ -41,7 +42,6 @@ altri ambienti (Windows o MacOS)
 <p>
 &Egrave; richiesto python 3.4 o superiore
 <p>
-
 
 Sono richiesti i packages python sotto indicati, normalmente non installati, ma
 disponibili sulle distribuzioni testate e che devono quindi essere
@@ -126,7 +126,7 @@ Vengono estratti i seguenti files e directory:
 in altre sedi.
 
 <a name=config>
-<h3>Configurazione</h3>
+<h2>2. Configurazione</h2>
 </a>
 
 Al momento della prima installazione, occorre creare le sottodirectory
@@ -245,6 +245,25 @@ procedure di attivazione (vedi sotto).</tt></dd>
 
 </dl>
 
+<a name=logofile>
+<h3>File per il LOGO</h3>
+</a>
+Tutti i documenti generati hanno il logo dell'osservatorio in  testa. Nella distribuzione è
+presente il file:
+
+<blockquote>
+	<tt>.../files/logofile.png</tt>
+</blockquote>
+
+contenente il logo dell'Osservatorio di Arcetri.
+<p>
+Per il momento non esiste una procedura per la generazione del file, ed occorre prepararlo
+e sostituirlo al file indicato sopra.
+<p>
+
+La dimensione consigliata per il file
+è 1400x200 pixels, ed è opportuno che l'immagine sia su fondo bianco (o trasparente).
+
 <a name=mailserver>
 <h3>Configurazione del mail server</h3>
 </a>
@@ -294,7 +313,7 @@ e-mail (vedi: <a href=#email>risponditore e-mail</a>).
 <br>
 <br>
 <a name=run>
-<h2>2. Attivazione / disattivazione del server (<a href=#top>^</a>)</h2>
+<h2>3. Attivazione / disattivazione del server (<a href=#top>^</a>)</h2>
 </a>
 
 La procedura <tt><b>acquisti.py</b></tt> utilizza il port 4000, la sua URL è dunque:
@@ -378,7 +397,7 @@ condizioni di errore) all'indirizzo e-mail dell'amministratore del sistema
 <br>
 <br>
 <a name=funz>
-<h2>3. Funzionamento (<a href=#top>^</a>)</h2>
+<h2>4. Funzionamento (<a href=#top>^</a>)</h2>
 </a>
 
 
@@ -454,7 +473,7 @@ href=/about>Informazioni su procedura acquisti</a>.
 <br>
 <br>
 <a name=struc>
-<h2>4. Struttura dell'archivio  (<a href=#top>^</a>)</h2>
+<h2>5. Struttura dell'archivio  (<a href=#top>^</a>)</h2>
 </a>
 I dati generati nel corso dell'uso delle procedure vengono registrati
 sotto forma di files in formato JSON sotto la directory <tt>~/data</tt>,
@@ -522,7 +541,7 @@ corrispondenti agli allegati.
 <br>
 <br>
 <a name=email>
-<h2>5. Risponditore e-mail  (<a href=#top>^</a>)</h2>
+<h2>6. Risponditore e-mail  (<a href=#top>^</a>)</h2>
 
 <b>Nota:</b> L'attivazione del risponditore e-mail è opzionale. Nel caso in cui questo non
 sia attivato l'approvazione delle richieste può comunque
@@ -645,8 +664,8 @@ approvazione dovr&agrave; pervenire entro cinque giorni dalla richiesta.
 <br>
 <br>
 <a name=varie>
-<h2>6. Note Varie  (<a href=#top>^</a>)</h2>
-<h3>6.1 Personalizzazione </h3>
+<h2>7. Note Varie  (<a href=#top>^</a>)</h2>
+<h3>7.1 Personalizzazione </h3>
 La directory <b><tt>files</tt></b> Contiene files HTML "statici" corrispondenti
 alle varie pagine di help. &Egrave; ovviamente possibile modificare i files 
 per aggiornare le informazioni o renderle pi&ugrave; aderenti alle pratiche
@@ -675,7 +694,7 @@ del form, corrispondente alla descrizione dell'acquisto, risulta:
 <tt> &lt;input id="descrizione_acquisto" name="descrizione_acquisto" size="50" type="text" value=""&gt;</tt>
 </blockquote>
 
-<h3>6.2 Programma di utilit&agrave; <tt>ftools.py</tt> </h3>
+<h3>7.2 Programma di utilit&agrave; <tt>ftools.py</tt> </h3>
 Il file <tt><b>ftools.py</b></tt> contiene varie classi
 e funzioni utilizzate dalle procedure <tt>acquisti.py</tt>,
 e <tt>manageldap.py</tt>, il file pu&ograve; per&ograve; essere usato in

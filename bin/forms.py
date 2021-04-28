@@ -194,9 +194,6 @@ class ImportoPiuIva(FormWErrors):
         "Validazione dati"
         if not ft.is_number(self.importo.data):
             self.errlist.append("errore specifica importo")
-#       if self.iva.data == IVA_NO:
-#           if not self.iva_free.data:
-#               self.errlist.append("errore specifica I.V.A.")
         return len(self.errlist) == 0
 
     def renderme(self, **_unused):
