@@ -22,6 +22,8 @@ import forms as fms
 import ftools as ft
 import table as tb
 
+# pylint: disable=C0302
+
 # Versione 1.0   10/10/2014-28/10/2014  Prima release
 #
 # Versione 2.0   20/08/2016: Revisione completa per inseguimento normativa
@@ -52,10 +54,12 @@ import table as tb
 # Versione 4.4  12/2020:     Corretto errore nella selezione pratiche per richiedente/responsabile
 # Versione 4.5  12/2020:     Aggiunto supporto per invio mail con GMail API
 # Versione 4.6   4/2021:     Aggiunto supporto per inclusione logo in testa ai documenti
+# Versione 4.7   5/2021:     Rimossa approvazione per e-mail e sostituito mailserver
+#                            con server google
 
 __author__ = 'Luca Fini'
-__version__ = '4.6'
-__date__ = '28/4/2021'
+__version__ = '4.7'
+__date__ = '8/5/2021'
 
 __start__ = time.asctime(time.localtime())
 
@@ -241,7 +245,7 @@ def check_allegati_cancellabili(the_user, d_prat):
     ret.append('Non responsabile')
     return False, ret
 
-def check_richiesta_inviabile(the_user, basedir, d_prat):
+def check_richiesta_inviabile(the_user, basedir, d_prat):               # pylint: disable=R0911
     "test: richiesta inviabile"
     if d_prat.get(PRATICA_APERTA, 1) != 1:
         return (False, ['Pratica chiusa'])
@@ -249,8 +253,6 @@ def check_richiesta_inviabile(the_user, basedir, d_prat):
         return (False, ['Richiesta non generata'])
     if not _test_pdf_ordine_mepa(basedir, d_prat, "A"):
         return (False, ["Manca Bozza d'ordine MEPA"])
-#   if not _test_pdf_trattativa_mepa(basedir, d_prat, "A"):
-#       return (False, ["Manca offerta da trattativa diretta su MEPA"])
     if not (_test_admin(the_user) or _test_richiedente(the_user, d_prat)):
         return (False, ["Operazione consentita solo al richiedente o all'Amministrazione"])
     if d_prat.get(RICHIESTA_INVIATA):
@@ -259,7 +261,7 @@ def check_richiesta_inviabile(the_user, basedir, d_prat):
         return (False, ['Richiesta già approvata'])
     return (True, [])
 
-def check_richiesta_modificabile(the_user, basedir, d_prat):
+def check_richiesta_modificabile(the_user, basedir, d_prat):               # pylint: disable=W0703,R0911
     "test: richiesta modificabile"
     if d_prat.get(PRATICA_APERTA) != 1:  # NO: La pratica e' chiusa
         return (False, ['Pratica chiusa'])
@@ -287,8 +289,6 @@ def check_richiesta_approvabile(the_user, basedir, d_prat):
         return False, ['Richiesta già approvata']
     if not _test_pdf_ordine_mepa(basedir, d_prat, "A"):
         return False, ["Manca bozza d'ordine MEPA in allegato"]
-#   if not _test_pdf_trattativa_mepa(basedir, d_prat, "A"):
-#       return False, ["Manca offerta da trattativa diretta su MEPA in allegato"]
     return True, ''
 
 def check_determina_modificabile(the_user, basedir, d_prat, fase):
@@ -299,8 +299,6 @@ def check_determina_modificabile(the_user, basedir, d_prat, fase):
         return False, [OPER_SOLO_AMMINISTRAZIONE]
     if fase == "A" and _test_pdf_determina(basedir, d_prat, "B"):
         return False, ["Determina aggiudicazione generata"]
-#   if _test_pdf_ordine(basedir, d_prat, fase):
-#       return False, ["Ordine generato"]
     return True, []
 
 def check_determina_cancellabile(the_user, basedir, d_prat, fase):
@@ -390,7 +388,7 @@ def check_all(the_user, basedir, d_prat):
     info['richiesta_inviabile'] = check_richiesta_inviabile(the_user, basedir, d_prat)[0]
     return info
 
-def show_ordine(d_prat):
+def show_ordine(d_prat):               # pylint: disable=W0703,R0911
     "Stabilisce se la parte ordine deve comparire nella prima fase della pratica"
     mod_acquisto = d_prat[MOD_ACQUISTO]
     if mod_acquisto in (MEPA, CONSIP):
@@ -438,31 +436,20 @@ def _make_mail_body(testo, d_prat):
     "generazione testo messaggio email"
     return testo.format(web_host=CONFIG[WEB_HOST], web_port=CONFIG[WEB_PORT], **d_prat)
 
-def _email_approv(basedir, userid, d_prat, ritrasm):
+def _email_approv(d_prat, ritrasm):
     "Invio mail di richiesta approvazione"
     ret = False
-    respd = CONFIG.get(EMAIL_RESPONDER)
-    if respd:
-        sender = respd
-    elif ritrasm:
+    if ritrasm:
         sender = CONFIG[EMAIL_UFFICIO]
     else:
         sender = d_prat[EMAIL_RICHIEDENTE]
     eresp = d_prat.get(EMAIL_RESPONSABILE)
     prat = d_prat[NUMERO_PRATICA]
     if eresp:
-        key = ft.randstr(10)
-        sgn = ft.signature((basedir, RIC_PDF_FILE))
-        d_prat[CODICE_APPROVAZIONE] = key
-        if CONFIG.get(EMAIL_RESPONDER):
-            code = ' Code:'+key+':'
-        else:
-            logging.warning("Indirizzo responder non definito")
-            code = ''
         if ritrasm:
-            subj = 'Ritrasmissione richiesta di acquisto.' + code
+            subj = 'Ritrasmissione richiesta di acquisto.'
         else:
-            subj = 'Trasmissione richiesta di acquisto.' +  code
+            subj = 'Trasmissione richiesta di acquisto.'
         body = _make_mail_body(APPROV.testo, d_prat)
         if DEBUG.local:
             webm = CONFIG[EMAIL_WEBMASTER]
@@ -476,11 +463,6 @@ def _email_approv(basedir, userid, d_prat, ritrasm):
                             subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info(info)
-            if code:
-                try:
-                    ft.set_resp_code(DATADIR, key, userid, prat, sgn)
-                except Exception as excp:
-                    logging.error('Registrazione codice responder: %s', str(excp))
         else:
             logging.error(info)
     else:
@@ -518,13 +500,11 @@ def _check_access(user_only=False):
     logging.error(err_msg)
     return fk.redirect(fk.url_for('start'))
 
-def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
+def _approva_richiesta(username, basedir, d_prat, sgn):
     "funzione ausiliaria per approvazione richiesta"
     d_prat[FIRMA_APPROVAZIONE] = sgn
     hist = 'Richiesta approvata'
     d_prat[STATO_PRATICA] = hist
-    if byemail:
-        hist += ' (per e-mail)'
     d_prat[STORIA_PRATICA].append(_hrecord(username, hist))
     tb.jsave((basedir, PRAT_JFILE), d_prat)
     fk.flash("L'approvazione della richiesta {} è stata correttamente "
@@ -542,18 +522,13 @@ def _approva_richiesta(username, basedir, d_prat, sgn, byemail=False):
         recipients = [CONFIG[EMAIL_UFFICIO]]
         if d_prat.get(EMAIL_RICHIEDENTE, '-') != d_prat.get(EMAIL_RESPONSABILE, ''):
             recipients.append(d_prat[EMAIL_RICHIEDENTE])
-        ret = ft.send_email(CONFIG.get(SMTP_HOST), CONFIG.get(EMAIL_RESPONDER),
+        ret = ft.send_email(CONFIG.get(SMTP_HOST), CONFIG.get(EMAIL_UFFICIO),
                             recipients, subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("Inviata richiesta approvazione a %s. "
                          "Pratica %s", ', '.join(recipients), prat)
-        if CODICE_APPROVAZIONE in d_prat:
-            ft.del_resp_code(DATADIR, d_prat.get(CODICE_APPROVAZIONE))
         subj = 'Conferma ricevimento approvazione richiesta di acquisto. Pratica: '+prat
-        if byemail:
-            hdr0 = HEADER_NOTIFICA_RESPONSABILE_EMAIL
-        else:
-            hdr0 = HEADER_NOTIFICA_RESPONSABILE_WEB
+        hdr0 = HEADER_NOTIFICA_RESPONSABILE_WEB
         body = _make_mail_body(hdr0+DETTAGLIO_PRATICA, d_prat)
         recipients = [sender]
         ret = ft.send_email(CONFIG.get(SMTP_HOST), sender, recipients,
@@ -698,7 +673,7 @@ def pratica_common(user, basedir, d_prat):
                               pratica=d_prat, uploadA=upla,
                               uploadB=uplb, sede=CONFIG[SEDE])
 
-def _modifica_pratica(what):
+def _modifica_pratica(what):               # pylint: disable=R0912,R0915
     "parte comune alle pagine di modifica pratica"
     ret = _check_access()
     if not isinstance(ret, tuple):
@@ -715,7 +690,7 @@ def _modifica_pratica(what):
         else:
             for amsg in msg:
                 fk.flash(amsg, category="chiusura")
-            logging.warning('Chiusura pratica richiede conferma: %s. User %s, pratica %s',
+            logging.warning('Chiusura pratica richiede conferma: %s. Utente %s, pratica %s',
                             "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
             d_prat[CONF_CHIUSURA] = 1
     elif what[0].lower() == 'a':     # Apri pratica
@@ -729,14 +704,14 @@ def _modifica_pratica(what):
         else:
             for amsg in msg:
                 fk.flash(amsg, category="error")
-            logging.error('Apertura pratica non autorizzata: %s. User %s, pratica %s',
+            logging.error('Apertura pratica non autorizzata: %s. Utente %s, pratica %s',
                           "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     elif what[0].lower() == 'r':    # Invio richiesta per approvazione
         _clear_conferma_chiusura(basedir, d_prat, save=False)
         is_inv, msg = check_richiesta_inviabile(user, basedir, d_prat)
         if is_inv:
             d_prat[FIRMA_APPROVAZIONE] = ""
-            ret = _email_approv(basedir, user['userid'], d_prat, True)
+            ret = _email_approv(d_prat, True)
             if ret:
                 d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
@@ -746,7 +721,7 @@ def _modifica_pratica(what):
         else:
             for amsg in msg:
                 fk.flash(amsg, category="error")
-            logging.error('Invio richiesta non autorizzato: %s. User %s, pratica %s',
+            logging.error('Invio richiesta non autorizzato: %s. Utente %s, pratica %s',
                           "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     elif what[0].lower() == 'n':    # Annulla pratica
         _clear_conferma_chiusura(basedir, d_prat, save=False)
@@ -762,7 +737,7 @@ def _modifica_pratica(what):
         else:
             for amsg in msg:
                 fk.flash(amsg, category="error")
-            logging.error('Annullamento pratica non autorizzato: %s. User %s, pratica %s',
+            logging.error('Annullamento pratica non autorizzato: %s. Utente %s, pratica %s',
                           "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     tb.jsave((basedir, PRAT_JFILE), d_prat)
     return fk.redirect(fk.url_for('pratica1'))
@@ -840,7 +815,7 @@ def _genera_pratica(user):
     logging.info("Creata nuova pratica (temporanea)")
     return d_prat
 
-def filename_allegato(model, prefix, origname, ext, spec, d_prat):
+def filename_allegato(model, prefix, origname, ext, spec, d_prat):    # pylint: disable=R0913
     "Genera nomi file per allegati"
     if model == ALL_SING:
         name = prefix+ext
@@ -1019,10 +994,12 @@ def start():
                                          "{} - Luca Fini, {}".format(__version__, __date__)}
     if _test_admin(user):
         status['admin'] = 1
+    if _test_developer(user):
+        status['developer'] = 1
     return fk.render_template('start_acquisti.html', sede=CONFIG[SEDE], user=user, status=status)
 
 @ACQ.route("/about")
-def about():
+def about():                                 # pylint: disable=R0915
     "pagina: informazioni sulle procedure"
     user = ft.login_check(fk.session)
     if not user:
@@ -1077,14 +1054,6 @@ def about():
             txt = '&nbsp;'
         html.append('<tr><td>Output</td><td>{}</td</tr>'.format(txt))
         html.append('</table></td></tr>')
-        html.append('<tr><td><table cellpadding=3 border=1>')
-        html.append('<tr><th colspan=4> Tabella codici approvazione </th></tr>')
-        rcodes = ft.get_resp_codes(DATADIR)
-        for key in rcodes:
-            rcod = rcodes[key]
-            html.append("<tr><td> {} </td><td> {} </td><td> {} </td><td> {} "
-                        "</td></tr>".format(key, rcod[0], rcod[1], rcod[3]))
-        html.append('</table></td></tr>')
     body = '\n'.join(html)
     return fk.render_template('about.html', sede=CONFIG[SEDE], data=body)
 
@@ -1112,7 +1081,7 @@ def login():
                               title='Procedura per acquisti')
 
 @ACQ.route('/modificarichiesta', methods=('GET', 'POST'))
-def modificarichiesta():
+def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
     "pagina: modifica richiesta"
     ret = _check_access(user_only=True)
     if not isinstance(ret, tuple):
@@ -1126,7 +1095,7 @@ def modificarichiesta():
         if not is_modif:
             for amsg in msg:
                 fk.flash(amsg, category="error")
-            logging.error('Modifica richiesta non possibile: %s. User:%s pratica %s',
+            logging.error('Modifica richiesta non possibile: %s. Utente:%s pratica %s',
                           "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
             return fk.redirect(fk.url_for('pratica1'))
     if d_prat.get(VERSIONE, 0) == 0:
@@ -1213,7 +1182,7 @@ def inviarichiesta():
     _clear_conferma_chiusura(basedir, d_prat)
     is_inv, msg = check_richiesta_inviabile(user, basedir, d_prat)
     if is_inv:
-        ret = _email_approv(basedir, user['userid'], d_prat, False)
+        ret = _email_approv(d_prat, False)
         if ret:
             if d_prat[MOD_ACQUISTO] in (MEPA, CONSIP):
                 fk.flash("Ricorda di trasmettere la bozza d'ordine MEPA al "
@@ -1230,12 +1199,12 @@ def inviarichiesta():
         else:
             msg = "Invio per approvazione fallito"
             fk.flash(msg, category="Error")
-            logging.error(msg, "- Pratica:", d_prat[NUMERO_PRATICA],
-                          "EMail resp.:", d_prat[EMAIL_RESPONSABILE])
+            logging.error("Errore invio approvazione - Pratica: %s, EMail resp: %s",
+                          d_prat[NUMERO_PRATICA], d_prat[EMAIL_RESPONSABILE])
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
-        logging.error('Invi fallito: %s. User: %s pratica %s', "; ".join(msg),
+        logging.error('Invi fallito: %s. Utente: %s pratica %s', "; ".join(msg),
                       user['userid'], d_prat[NUMERO_PRATICA])
     return fk.redirect(fk.url_for('pratica1'))
 
@@ -1294,7 +1263,7 @@ def approvarichiesta():
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
-        logging.error('Approvazione non autorizzata: %s. User %s pratica %s',
+        logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     return fk.redirect(fk.url_for('pratica1'))
 
@@ -1314,7 +1283,7 @@ def cancella(name):
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
-        logging.error('Rimozione allegato non autorizzata: %s. User %s pratica %s',
+        logging.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
                       "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     tb.jsave((basedir, PRAT_JFILE), d_prat)
     return pratica1()
@@ -1371,7 +1340,7 @@ def lista_pratiche(stato, anno, ascendente):
     filt = lambda x: filtac(x) and filtsb(x)
     try:
         doclist = ft.DocList(DATADIR, PRAT_JFILE, anno, content_filter=filt, sort=sort_funct)
-    except Exception:
+    except Exception:               # pylint: disable=W0703
         err_msg = _errore_doclist(anno)
         fk.flash(err_msg, category="error")
         logging.error(err_msg)
@@ -1383,7 +1352,7 @@ def lista_pratiche(stato, anno, ascendente):
                               dlist=doclist.records, title=title)
 
 @ACQ.route('/trovapratica', methods=('POST', 'GET'))
-def trovapratica():
+def trovapratica():               # pylint: disable=R0912,R0914,R0915
     "pagina: trova pratica"
     user = ft.login_check(fk.session)
     if not user:
@@ -1445,7 +1414,7 @@ def trovapratica():
             try:
                 lista = ft.DocList(DATADIR, PRAT_JFILE, theyear,
                                    content_filter=selector, sort=sort_func)
-            except Exception:
+            except Exception:               # pylint: disable=W0703
                 err_msg = _errore_doclist(theyear)
                 fk.flash(err_msg, category="error")
                 logging.error(err_msg)
@@ -1487,7 +1456,7 @@ def get_tipo_allegato():
     return ""
 
 @ACQ.route('/pratica1', methods=('GET', 'POST'))
-def pratica1():
+def pratica1():               # pylint: disable=R0914
     "pagina: pratica, modo 1 (iterazione modifica)"
     ret = _check_access()
     if not isinstance(ret, tuple):
@@ -1496,7 +1465,7 @@ def pratica1():
     if fk.request.method == 'POST':
         try:
             fle = fk.request.files['upload_file']
-        except Exception:
+        except Exception:               # pylint: disable=W0703
             fk.flash("Errore caricamento file!", category="error")
         else:
             _clear_conferma_chiusura(basedir, d_prat)
@@ -1577,7 +1546,7 @@ def modificadetermina(fase):
         raise FASE_ERROR
     for amsg in msg:
         fk.flash(amsg, category="error")
-    logging.error('Gestione determina non autorizzata: %s. User %s, pratica %s',
+    logging.error('Gestione determina non autorizzata: %s. Utente %s, pratica %s',
                   "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     return pratica1()
 
@@ -1610,12 +1579,12 @@ def cancelladetermina(fase):
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
-        logging.error('cancellazione determina non autorizzata: %s. User %s, pratica %s',
+        logging.error('cancellazione determina non autorizzata: %s. Utente %s, pratica %s',
                       "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     return pratica1()
 
 @ACQ.route('/modificaordine/<fase>', methods=('GET', 'POST'))
-def modificaordine(fase):
+def modificaordine(fase):               # pylint: disable=R0912,R0914
     "pagina: modifica ordine"
     ret = _check_access()
     if not isinstance(ret, tuple):
@@ -1678,8 +1647,10 @@ def modificaordine(fase):
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
-        logging.error('Modifica ordine non autorizzata: %s. User %s, Pratica %s', \
+        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
                       "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
+        url = fk.url_for('pratica1')
+        return fk.redirect(url)
     return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
 
 @ACQ.route('/chiudipratica')
@@ -1720,69 +1691,16 @@ def files(name):
     "download file"
     return  ACQ.send_static_file(name)
 
-@ACQ.route('/email_approv/<key>')
-def email_approv(key):
+@ACQ.route('/email_approv/<_unused>')
+def email_approv(_unused):
     "pagina lanciata dall'apposito cliente attivato dal filtro e-mail"
-    host = fk.request.remote_addr
-    ident = fk.request.headers.get('Identity')
-    mailhost = fk.request.headers.get('Mail-Host')
-    sender = fk.request.headers.get('Sender-Email')
-    info = "Richiesta da e-mail responder. Host: {}, Sender: {}, " \
-           "MailServer: {}, Codice: {}".format(host, sender, mailhost, key)
-    logging.info(info)
-    if host not in CONFIG.get(APPROVAL_HOSTS, []):
-        logging.error("Richiesta da e-mail responder proveniente da host illegale: %s", host)
-        return ''
-    if ident != 'Email-Fetcher':
-        logging.error("Richiesta da e-mail responder con identita' illegale: %s", ident)
-        return ''
-    appr = ft.get_resp_code(DATADIR, key)
-    if not appr:
-        logging.error("Codice di approvazione %s non trovato", key)
-        return ''
-    mailtext = ""
-    num, year = appr[1].split('/')
-    basedir = ft.namebasedir(year, num)
-    try:
-        d_prat = tb.jload((basedir, PRAT_JFILE))
-    except tb.TableException:
-        err_msg = _errore_accesso(basedir)
-        fk.flash(err_msg, category="error")
-        logging.error(err_msg)
-        return fk.redirect(fk.url_for('start'))
-    if appr:
-        sgn = ft.signature((basedir, RIC_PDF_FILE))
-        if sgn == appr[2]:
-            nomeresp = d_prat[NOME_RESPONSABILE]
-            logging.info("Richiesta da e-mail responder validata. "
-                         "Pratica: %s. Resp: %s", appr[1], nomeresp)
-            _approva_richiesta(nomeresp, basedir, d_prat, sgn, byemail=True)
-        else:
-            logging.error("Approvazione da e-mail non accettata: Firma errata (pratica: %s)",
-                          appr[1])
-            mailtext = APPROV_EMAIL_RESPINTA%d_prat
-    else:
-        logging.error("Richiesta e-mail di approvazione non accettata: codice %s inesistente", key)
-        mailtext = APPROV_EMAIL_RESPINTA%d_prat
-    if mailtext:
-        recipients = [d_prat.get(EMAIL_RESPONSABILE), CONFIG.get(EMAIL_UFFICIO)]
-        subj = APPROV_EMAIL_RESPINTA_OGGETTO
-        ret = ft.send_email(CONFIG.get(SMTP_HOST), CONFIG.get(EMAIL_RESPONDER), recipients,
-                            subj, mailtext, debug_addr=DEBUG.email)
-        if ret:
-            logging.info("Inviato mail 'Approvazione per email respinta' a: %s",
-                         ','.join(recipients))
-        else:
-            logging.error("Fallito invio mail 'Approvazione per email respinta' a: %s",
-                          ','.join(recipients))
-    return ''
-
+    logging.error("la URL /email_approv non dovrebbe essere più utilizzata. Fermare il crontab!")
+    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
 
 @ACQ.route('/user')
 def user_tbd():
     "pagina T.B.D."
     return fk.render_template('tbd.html', goto='/', sede=CONFIG[SEDE])
-
 
 def remove_prefix(adict, prefix):
     "rimuove da dict tutte le chiavi che inizino per la stringa data"
@@ -1844,7 +1762,7 @@ def procedura_rdo():
     else:
         for amsg in msg:
             fk.flash(amsg, category="error")
-        logging.error('Modifica ordine non autorizzata: %s. User %s, Pratica %s', \
+        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
                       "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
     return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
 
@@ -1994,7 +1912,6 @@ def download(_unused):
     "Download"
     user = ft.login_check(fk.session)
     if user:
-#       table = ft.FTable((DATADIR, what+'.json'))
         return fk.render_template('tbd.html', goto='/')
     return fk.redirect(fk.url_for('login'))
 
@@ -2098,6 +2015,42 @@ def edituser(nrec):
         return fk.render_template('noaccess.html').encode('utf8')
     return fk.redirect(fk.url_for('login'))
 
+@ACQ.route('/testmail', methods=('GET',))
+def testmail():
+    "Invia messaggio di prova all'indirizzo di webmaster"
+    user = ft.login_check(fk.session)
+    if user:
+        if not _test_admin(user):
+            fk.session.clear()
+            return fk.render_template('noaccess.html')
+        thetime = time.asctime()
+        host = CONFIG.get(SMTP_HOST)
+        recipients = [CONFIG.get(EMAIL_WEBMASTER)]
+        sender = CONFIG.get(EMAIL_UFFICIO, "")
+        subj = "Messaggio di prova da procedura 'acquisti'"
+        body = """
+Invio messaggio di prova per verifica funzionamento del server.
+
+Messaggio inviato all'indirizzo corrispondente al Webmaster tramite
+server: %s (se indicato come "-", l'invio avviene tramite GMail API)
+""" % host
+        ret = ft.send_email(host, sender, recipients, subj, body)
+        return fk.render_template('testmail.html', time=thetime, sender=sender,
+                                  recipients=", ".join(recipients),
+                                  server=host, state=ret).encode('utf8')
+    return fk.redirect(fk.url_for('login'))
+
+@ACQ.route('/force_excp', methods=('GET',))
+def force_excp():
+    "Causa una eccezione"
+    user = ft.login_check(fk.session)
+    if user:
+        if not _test_admin(user):
+            fk.session.clear()
+            return fk.render_template('noaccess.html')
+        1/0                                 # pylint: disable=W0104
+    return fk.redirect(fk.url_for('login'))
+
 #############################################################################
 ############################### Inizializzazioni ############################
 
@@ -2114,10 +2067,7 @@ def initialize_me():
     ft.latex.set_path(CONFIG.get("latex_path", ""))
     logging.info("LaTeX path: %s", ft.latex.PDFLATEX.cmd)
 
-    if CONFIG.get(EMAIL_RESPONDER):
-        APPROV.testo = TESTO_APPROVAZIONE_RPY + DETTAGLIO_PRATICA
-    else:
-        APPROV.testo = TESTO_APPROVAZIONE_NORPY + DETTAGLIO_PRATICA
+    APPROV.testo = TESTO_APPROVAZIONE + DETTAGLIO_PRATICA
 
     update_lists()
     ft.init_helplist()
@@ -2140,19 +2090,18 @@ def localtest():
     logging.basicConfig(level=logging.DEBUG)
     initialize_me()
     setdebug()
-    ACQ.run(host="0.0.0.0", port=4000, debug=True)
+    ft.set_mail_logger(CONFIG[SMTP_HOST], CONFIG[EMAIL_PROCEDURA],
+                       CONFIG[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI (debug)')
+    ACQ.run(host="0.0.0.0", port=4001, debug=True)
 
 def production():
     "lancia la procedura in modo produzione (all'interno del web server)"
     logging.basicConfig(level=logging.INFO)    # Livello logging normale
 #   logging.basicConfig(level=logging.DEBUG)   # Più verboso
     initialize_me()
-                              # In production mode, add log handler to file
-    email = {'mailhost': CONFIG[SMTP_HOST],
-             'fromaddr': CONFIG[EMAIL_UFFICIO],
-             'toaddrs': [CONFIG[EMAIL_WEBMASTER]],
-             'subject': 'Notifica errore ACQUISTI'}
-    ft.set_file_logger((WORKDIR, 'acquisti.log'), email=email)
+    ft.set_file_logger((WORKDIR, 'acquisti.log'))
+    ft.set_mail_logger(CONFIG[SMTP_HOST], CONFIG[EMAIL_PROCEDURA],
+                       CONFIG[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI')
 
 if __name__ == '__main__':
     localtest()

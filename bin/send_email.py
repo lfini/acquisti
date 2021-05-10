@@ -44,7 +44,7 @@ def get_credentials():
         with open(TOKEN_FILE, 'rb') as token:
             creds = pickle.load(token)
     # Se il file di credenziali non esiste, deve essere generato
-    # lanciando questa procedura da line di comando
+    # lanciando questa procedura da linea di comando
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -82,7 +82,7 @@ def _send_smtp(mailhost, auth, sender, dest, msg):
         raise EmailError("[SMTP] "+str(excp))
     smtp.close()
 
-def send(mailhost, auth, sender, recipients, subj, message):
+def send(mailhost, auth, sender, recipients, subj, message):     # pylint: disable=R0913
     "Invia messaggio e-mail"
     try:
         msg = MIMEText(message.encode('utf8'), 'plain', 'utf8')

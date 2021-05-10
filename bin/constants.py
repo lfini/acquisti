@@ -34,7 +34,7 @@ APPROVAL_HOSTS = 'approval_hosts'               # config
 CAPITOLO = 'capitolo'                           # dati_pratica
 CITTA = "citta"                                 # config, sede
 COD_FISC = "cod_fisc"                           # config, sede
-CODICE_APPROVAZIONE = 'codice_approvazione'     # dati_pratica
+#CODICE_APPROVAZIONE = 'codice_approvazione'     # dati_pratica
 CONF_CHIUSURA = '_conf_chiusura'                # dati_pratica
 CONSIP = "consip"                               # MENU_MOD_ACQ
 COSTO = 'costo'                                 # dati_pratica
@@ -53,10 +53,10 @@ DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
 DOLLAR = "dollar"                               # MENU_VALUTA
 EMAIL_DIRETTORE = 'email_direttore'             # config
-EMAIL_RESPONDER = 'email_responder'             # config
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
 EMAIL_RICHIEDENTE = 'email_richiedente'         # dati_pratica
 EMAIL_RUP = 'email_rup'                         # dati_pratica
+EMAIL_PROCEDURA = 'email_procedura'             # config
 EMAIL_UFFICIO = 'email_ufficio'                 # config
 EMAIL_WEBMASTER = 'email_webmaster'             # config
 EURO = "euro"                                   # MENU_VALUTA
@@ -84,6 +84,7 @@ IVAINCL22 = "iva_incl22"                        # MENU_IVA
 IVAINCL4 = "iva_incl4"                          # MENU_IVA
 IVAINCL = "iva_incl"                            # MENU_IVA
 IVA_NO = "iva_no"                               # MENU_IVA
+LATEX_PATH = "latex_path"                       # config
 LDAP_HOST = "ldap_host"                         # config
 LDAP_PORT = "ldap_port"                         # config
 LINGUA_ORDINE = 'lingua_ordine'                 # dati_pratica
@@ -102,6 +103,7 @@ NOME_DIRETTORE_B = 'nome_direttore_b'           # dati_pratica
 NOME_FORNITORE = 'nome_fornitore'               # dati_pratica
 NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
+NOME_WEBMASTER = 'nome_webmaster'               # config
 NON_APP = "non.app"                             # MENU_TRASPORTO
 NOTE_RICHIESTA = 'note_richiesta'               # dati_pratica
 NUMERO_DETERMINA_A = 'numero_determina'         # dati_pratica
@@ -259,16 +261,16 @@ TAB_ALLEGATI = {ALLEGATO_GENERICO_A: ("A99_", "Allegato generico", ALL_NAME),
 ################################################### Varie stringhe
 ACCESSO_NON_PREVISTO = "Sequenza di accesso non prevista. URL: "
 
-APPROV_EMAIL_RESPINTA_OGGETTO = "Approvazione per e-mail respinta"
+#APPROV_EMAIL_RESPINTA_OGGETTO = "Approvazione per e-mail respinta"
 
-APPROV_EMAIL_RESPINTA = """
-L'approvazione della richiesta di cui alla pratica numero %(numero_pratica)s
-
-   %(descrizione_acquisto)s
-
-è stata ricevuta per e-mail, ma è stata respinta perché la pratica
-nel frattempo è stata  modificata
-"""
+#APPROV_EMAIL_RESPINTA = """
+#L'approvazione della richiesta di cui alla pratica numero %(numero_pratica)s
+#
+#   %(descrizione_acquisto)s
+#
+#è stata ricevuta per e-mail, ma è stata respinta perché la pratica
+#nel frattempo è stata  modificata
+#"""
 
 DETTAGLIO_PRATICA = """
 
@@ -309,7 +311,7 @@ TABLE_HEADER = """<!DOCTYPE html>
 <body>
 """
 
-TESTO_APPROVAZIONE_NORPY = """
+TESTO_APPROVAZIONE = """
 Ti è stata inviata la richiesta di acquisto N. {numero_pratica} per approvazione.
 (vedi dettagli sotto).
 
@@ -318,17 +320,6 @@ Per approvarla puoi accedere alla procedura per la gestione degli ordini:
      http://__host__
 
 e selezionare: Elenco richieste aperte"""
-
-TESTO_APPROVAZIONE_RPY = """
-Ti è stata inviata la richiesta di acquisto N. {numero_pratica} per approvazione.
-(vedi dettagli sotto).
-
-Puoi approvarla rispondendo a questo messaggio, lasciando inalterato l'oggetto,
-oppure puoi accedere alla procedura per la gestione degli ordini:
-
-     http://{web_host}:{web_port}
-
-e selezionare: Elenco pratiche da approvare"""
 
 TESTO_NOTIFICA_APPROVAZIONE = """
 La richiesta di acquisto N. {numero_pratica}:

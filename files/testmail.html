@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test e-mail sending</title>
+</head>
+<body>
+<!-- template: testmail.html - vers. 1.0 -->
+<h3> Invio messaggio e-mail di test </h3>
+
+Ora di invio: {{ time }}  <br>
+Mittente: {{ sender }} <br>
+Destinatari: {{ recipients }} <br>
+<p>
+Server: {{ server }} (se indicato come "-", l'invio avviene tramite GMail API)
+<p>
+Invio riuscito: {{ state }}
+</body>

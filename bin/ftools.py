@@ -27,7 +27,8 @@ Uso da linea di comando:
 # VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
 # VERSION 4.6    30/11/2020 aggiunto metodo __len__ a DocList
 # VERSION 4.7    05/12/2020 Integrazioni per usere GMail come server di posta
-# VERSION 4.8    28/04/2021 Modifiche nper inserimento logo in testa ai documenti
+# VERSION 4.8    10/05/2021 Modifiche per inserimento logo in testa ai documenti
+#                           Attivazione di GMail come server di posta (anche per errori)
 
 import sys
 import os
@@ -44,6 +45,7 @@ import readline           # pylint: disable=W0611
 import subprocess
 import logging
 from logging.handlers import RotatingFileHandler, SMTPHandler
+from logging import StreamHandler
 from functools import reduce
 from getpass import getpass
 
@@ -89,23 +91,44 @@ def _setformatter():
     if hasattr(logger, 'eHandler'):
         logger.eHandler.setFormatter(formatter)
 
-def set_file_logger(path, email=None):
-    "imposta logger"
+class GMailHandler(StreamHandler):           # pylint: disable=R0903
+    "Logging handler che usa GMail API"
+    def __init__(self, fromaddr, toaddr, subject):
+        super().__init__()
+        self.fromaddr = fromaddr
+        self.dest = [toaddr]
+        self.subject = subject
+        print("GMailHandler init:", self.dest)
 
+    def emit(self, record):
+        "Invia messaggio di log vis GMail"
+        sm.send("", None, self.fromaddr, self.dest, self.subject, self.format(record))
+        print("GMailHandler emit:", record)
+
+def set_file_logger(path):
+    "imposta logger su file"
     logger = logging.getLogger()
     fpath = os.path.join(*path)
-    hndl = RotatingFileHandler(fpath, maxBytes=10000000, backupCount=3, encoding='utf8')
+    hndl = RotatingFileHandler(fpath, maxBytes=1000000, backupCount=3, encoding='utf8')
     logger.fHandler = hndl
     logger.setLevel(logging.INFO)
     logger.host_info = 'x.x.x.x'
     logger.user_info = '----------'
     logger.addHandler(hndl)
-    if email:
-        ehndl = SMTPHandler(email['mailhost'], email['fromaddr'],
-                            email['toaddrs'], email['subject'])
-        ehndl.setLevel(logging.ERROR)
-        logger.eHandler = ehndl
-        logger.addHandler(ehndl)
+    _setformatter()
+
+def set_mail_logger(mailhost, sender, recipient, subject):
+    "imposta logger via e-email"
+    logger = logging.getLogger()
+    if mailhost == '-':
+        ehndl = GMailHandler(sender, recipient, subject)
+        logger.info("Abilitato log via GMail")
+    else:
+        ehndl = SMTPHandler(mailhost, sender, recipient, subject)
+        logger.info("Abilitato log via SMTP: %s", mailhost)
+    ehndl.setLevel(logging.ERROR)
+    logger.eHandler = ehndl
+    logger.addHandler(ehndl)
     _setformatter()
 
 def set_host_info(hostname):
@@ -155,7 +178,7 @@ Ritorno: -1 (errore LDAP), 0 id/pw non validi, 1 id/pw validi"""
         return 1
     return 0
 
-def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):
+def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # pylint: disable=R0913
     "Invio messaggio e-mail"
     if debug_addr:
         warning = "MODO DEBUG - destinatari originali: %s\n\n"%', '.join(recipients)
@@ -166,73 +189,75 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):
         message = body
         dest = recipients
         subjd = subj
+    if mailhost.strip() == "-":
+        mailhost = None
     try:
         sm.send(mailhost, None, sender, dest, subjd, message)
-    except sm.EmailError as excp:
+    except Exception as excp:
         errmsg = "Mail to: %s - "%', '.join(recipients)+str(excp)
         logging.error(errmsg)
         return False
     return True
 
-def _clean_resp_codes(rcod):
-    "Rimuove codici approvazione scaduti"
-    dpath = tb.getpath(rcod)
-    try:
-        files = os.listdir(dpath)
-    except Exception:
-        return
-    for fname in files:
-        fpt = os.path.join(dpath, fname)
-        ctime = os.path.getmtime(fpt)
-        if time.time()-ctime > APPROVAL_EXPIRATION:
-            logging.info("Rimosso file codice approvazione scaduto: %s", fname)
-            os.unlink(fpt)
+#def _clean_resp_codes(rcod):
+#    "Rimuove codici approvazione scaduti"
+#    dpath = tb.getpath(rcod)
+#    try:
+#        files = os.listdir(dpath)
+#    except Exception:
+#        return
+#    for fname in files:
+#        fpt = os.path.join(dpath, fname)
+#        ctime = os.path.getmtime(fpt)
+#        if time.time()-ctime > APPROVAL_EXPIRATION:
+#            logging.info("Rimosso file codice approvazione scaduto: %s", fname)
+#            os.unlink(fpt)
 
-def get_resp_codes(thedir):
-    "Crea lista codici di approvazione"
-    dpath = os.path.join(thedir, 'approv')
-    ret = {}
-    try:
-        ldir = os.listdir(dpath)
-    except OSError:
-        return ret
-    for fname in ldir:
-        code = os.path.splitext(fname)[0]
-        fpath = os.path.join(dpath, fname)
-        respdata = tb.jload(fpath)
-        ret[code] = respdata
-    return ret
+#def get_resp_codes(thedir):
+#    "Crea lista codici di approvazione"
+#    dpath = os.path.join(thedir, 'approv')
+#    ret = {}
+#    try:
+#        ldir = os.listdir(dpath)
+#    except OSError:
+#        return ret
+#    for fname in ldir:
+#        code = os.path.splitext(fname)[0]
+#        fpath = os.path.join(dpath, fname)
+#        respdata = tb.jload(fpath)
+#        ret[code] = respdata
+#    return ret
 
-def set_resp_code(thedir, key, userid, prat, sgn):
-    "Crea file con codice approvazione"
-    dpath = [thedir, 'approv']
-    dname = tb.getpath(dpath)
-    if not os.path.exists(dname):
-        os.makedirs(dname)
-    _clean_resp_codes(dname)
-    fname = key+'.json'
-    dpath.append(fname)
-    ttm = time.asctime(time.localtime())
-    tb.jsave(dpath, [userid, prat, sgn, ttm])
-    logging.info("Creato file codice approvazione: %s", fname)
+#def set_resp_code(thedir, key, userid, prat, sgn):
+#    "Crea file con codice approvazione"
+#    dpath = [thedir, 'approv']
+#    dname = tb.getpath(dpath)
+#    if not os.path.exists(dname):
+#        os.makedirs(dname)
+#    _clean_resp_codes(dname)
+#    fname = key+'.json'
+#    dpath.append(fname)
+#    ttm = time.asctime(time.localtime())
+#    tb.jsave(dpath, [userid, prat, sgn, ttm])
+#    logging.info("Creato file codice approvazione: %s", fname)
 
-def get_resp_code(thedir, key):
-    "Trova codice di approvazione"
-    tpath = [thedir, 'approv']
-    _clean_resp_codes(tpath)
-    fname = key+'.json'
-    tpath.append(fname)
-    return tb.jload(tpath, [])
+#def get_resp_code(thedir, key):
+#    "Trova codice di approvazione"
+#    tpath = [thedir, 'approv']
+#    _clean_resp_codes(tpath)
+#    fname = key+'.json'
+#    tpath.append(fname)
+#    return tb.jload(tpath, [])
 
-def del_resp_code(thedir, key):
-    "Cancella codice di approvazione"
-    fname = os.path.join(thedir, 'approv', key+'.json')
-    try:
-        os.unlink(fname)
-    except Exception:
-        pass
-    else:
-        logging.info("rimosso file codice approvazione: %s", fname)
+#def del_resp_code(thedir, key):
+#    "Cancella codice di approvazione"
+#    fname = os.path.join(thedir, 'approv', key+'.json')
+#    try:
+#        os.unlink(fname)
+#    except Exception:
+#        pass
+#    else:
+#        logging.info("rimosso file codice approvazione: %s", fname)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ'
 
@@ -256,7 +281,7 @@ def byinitial(inlist, key=lambda x: x, remove_empty=True):
         byin[idx].sort(key=key)
     return byin
 
-def stringa_valore(costo, lang):
+def stringa_valore(costo, lang):                         # pylint: disable=R0912
     "generazione specifica della stringa valore per il costo del bene"
     importo = costo[IMPORTO].strip()
     valuta = costo[VALUTA].strip()
@@ -387,7 +412,7 @@ class FTable(tb.Table):
         tb.Table.__init__(self, path, header)
         self.sortable = [x for x in sortable if x in self.header]
 
-    def render_item_as_form(self, title, form, action,
+    def render_item_as_form(self, title, form, action,            # pylint: disable=R0913
                             nrow=0, ignore=(), errors=()):
         "HTML rendering di un campo per uso in un form"
         html = [TABLE_HEADER]
@@ -432,7 +457,7 @@ class FTable(tb.Table):
         html.append('</dl>')
         return '\n'.join(html)
 
-    def render(self, title=None, menu=(), select_url=(), sort_url=(),
+    def render(self, title=None, menu=(), select_url=(), sort_url=(),      # pylint: disable=R0912,R0913,R0914
                edit_symb=EDIT_SYMB, index=False, sort_on=1, footer='',
                select=None, messages=()):
         "HTML rendering della tabella"
@@ -634,7 +659,7 @@ def swapname(name):
         ret = name
     return ret
 
-def modello_determinaa(mod_acquisto):
+def modello_determinaa(mod_acquisto):                  # pylint: disable=R0911
     "Stabilisce il template per la determina, fase A"
     if mod_acquisto in (MEPA, CONSIP):
         return "determina_mepa"
@@ -656,7 +681,7 @@ def modello_determinaa(mod_acquisto):
         return "determina_manif"
     return ""
 
-def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **data):
+def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **data):   # pylint: disable=R0913
     "Crea documento PDF da template LaTeX e dict di termini"
     tfile = os.path.join(pkg_root, 'files', templ_name)+'.tex'
     pdfname = pdf_name+'.pdf'
@@ -743,7 +768,7 @@ def randstr(lng):
 ABILITATO = "Utente abilitato, "
 NON_ABILITATO = "Utente non abilitato, "
 
-def authenticate(userid, password, ldap_host, ldap_port):
+def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
     abilitato = bool(user)
@@ -776,7 +801,7 @@ def checkdir():
         sys.exit()
     return thedir
 
-def makeuser(userid):
+def makeuser(userid):                         # pylint: disable=R0912,R0915
     "Crea record di utente"
     thedir = checkdir()
     header = ['userid', 'surname', 'name', 'email', 'flags', 'pw']
@@ -927,7 +952,7 @@ IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
 
 class DocList:               # pylint: disable=R0903
     "definizione lista documenti"
-    def __init__(self, thedir, fname,
+    def __init__(self, thedir, fname,                        # pylint: disable=R0913
                  year=None,
                  directory_filter=lambda x: True,
                  filename_filter=lambda x: True,
@@ -1188,7 +1213,7 @@ def showpratiche():
         for err in elenco.errors:
             print("  ", err)
 
-def main():
+def main():                                           # pylint: disable=R0912
     "Procedura per uso da linea di comando e test"
     if len(sys.argv) <= 1:
         print(version())

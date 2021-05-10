@@ -6,7 +6,7 @@
 <script src="/files/overlay.js"></script>
 </head>
 <body>
-<!-- template: start_acquisti.html -->
+<!-- template: start_acquisti.html  Vers. 1.1 -->
 
 {% from "_common.html" import start_page, end_page %}
 {{ start_page("",sede.sede_it,"Gestione acquisti") }}
@@ -38,6 +38,15 @@
 <p>
 <li> <a href=/about>Informazioni su procedura acquisti</tt></a>
 <li> <a href=/files/README.html>Documentazione tecnica</a>
+</ul>
+</td></tr>
+{% endif %}
+{% if status.developer %}
+<tr><td>
+<h3> Operazioni per tests </h3>
+<ul>
+<li><b><a href=/testmail>Invia messaggio di prova a webmaster</a></b>
+<li><b><a href=/force_excp>Forza eccezione (divide by 0)</a></b>
 </ul>
 </td></tr>
 {% endif %}

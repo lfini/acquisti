@@ -18,7 +18,8 @@ __author__ = 'Luca Fini'
 __version__ = '3.1'
 __date__ = '17/10/2019'
 
-class PDFLATEX:
+class PDFLATEX:         # pylint: disable=R0903
+    "Info ausiliaria per lancio di pdflatex"
     cmd = '/usr/bin/pdflatex'
 
 _NOTA = 'Il prezzo '+chr(232)+' specificato in Euro ('+chr(8364)+ \
@@ -123,7 +124,8 @@ def sanitize(data):
         return newdata
     return data
 
-class BATCHMODE:
+class BATCHMODE:         # pylint: disable=R0903
+    "Flag per selezione batchmode"
     on = True
 
 class SplittedAttachment:
@@ -204,7 +206,7 @@ def cleantempdir(tempdir):
     except FileNotFoundError:
         pass
 
-def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):
+def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):  #pylint: disable=R0915,R0914
     "Genera file PDF da template LaTeX"
     path, fname = os.path.split(template)
     env = Environment(loader=FileSystemLoader(path))
@@ -254,7 +256,7 @@ def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):
         os.rename(tmppdf, pdffile)
         os.chmod(pdffile, 0o600)
         ret = True
-    except Exception as excp:
+    except Exception as excp:  #pylint: disable=W0703
         ret = True
         logging.error("renaming %s to %s [%s]", tmppdf, pdffile, str(excp))
     if  debug:

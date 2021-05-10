@@ -10,53 +10,132 @@ Dove:
 import sys
 import os
 from collections import OrderedDict
-import readline
+import readline                         # pylint: disable=W0611
 
 import ftools
+from constants import *                 # pylint: disable=W0401
+from table import jload, jsave
 
-__version__ = "1.1"
+__version__ = "1.2"
 
-SEDE = OrderedDict([("sede_it", "Identificazione sede INAF\n[es: INAF - Osservatorio Astrofisico di Arcetri]"),
-                    ("sede_uk", "Identificazione della sede per documenti in inglese\n[es: INAF - Arcetri Astrophysical Observatory]"),
-                    ("indirizzo", "Indirizzo postale della sede (una linea)\n[es: L.go Enrico Fermi, 5. 50125 Firenze (Italia)]"),
-                    ("citta", "Città\n[es: Firenze]"),
-                    ("website", "URL completa del sito web della sede\n[es: http://www.arcetri.inaf.it]")])
+LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
+[es: 389]
+"""
 
-PARAMS = OrderedDict([("nome_webmaster", "Nome del web master\n[es: Luca Fini]"),
-                      ("email_webmaster", "Indirizzo e-mail del web master\n(a cui saranno mandati i messaggi di errore)\n[es: lfini@arcetri.inaf.it]"),
-                      ("nome_direttore", "Nome del direttore\n[es: Maria Sofia Randich]"),
-                      ("email_direttore", "Indirizzo e-mail del direttore\n[es: luca.fini@inaf.it]"),
-                      ("titolo_direttore", "Titolo del direttore\n[es: Dott.ssa]"),
-                      ("titolo_direttore_uk", "Titolo del direttore per ordini in inglese\n[es: Dr.]"),
-                      ("email_ufficio", "Indirizzo EMail dell'ufficio ordini\nA questo indirizzo sono inviati i messaggi automatici\ngenerati dalla procedura [es: ordini@arcetri.inaf.it]"),
-                      ("latex_path", "Directory di installazione di pdflatex\n[es: /usr/local/bin]"),
+LDAP_HOST_DESC = """Indirizzo del server LDAP per autenticazione utenti
+[es: ldap.ced.inaf.it]
+(Usa '-' per disabilitare autenticazione LDAP)
+"""
+
+SMTP_HOST_DESC = """Indirizzo IP del server SMTP
+Indirizzo del server SMTP utilizzato dalla procedura
+per inviare i messaggi automatici [es: smtp.arcetri.astro.it]
+(usare "-" se si utilizza GMail API per  l'invio di messaggi.
+altrimenti usare un indirizzo e-mail valido per il server SMTP)
+"""
+
+WEB_PORT_DESC = """Port IP assegnato alla procedura
+[es: 4000)
+"""
+
+WEB_HOST_DESC = """Indirizzo IP del server che ospita la procedura
+[es: www.arcetri.inaf.it]
+"""
+
+LATEX_PATH_DESC = """Directory di installazione di pdflatex
+[es: /usr/local/bin]
+"""
+
+EMAIL_UFFICIO_DESC = """Indirizzo EMail dell'ufficio ordini.
+A questo indirizzo sono inviati i messaggi automatici
+generati dalla procedura [es: ordini.oaa@inaf.it]
+"""
+
+TITOLO_DIRETTORE_DESC = """Titolo del direttore
+[es: Dott.ssa]
+"""
+
+TITOLO_DIRETTORE_UK_DESC = """Titolo del direttore per ordini in inglese
+[es: Dr.]
+"""
+
+EMAIL_DIRETTORE_DESC = """Indirizzo e-mail del direttore
+[es: luca.fini@inaf.it]
+"""
+
+NOME_DIRETTORE_DESC = """Nome del direttore
+[es: Maria Sofia Randich
+"""
+
+EMAIL_WEBMASTER_DESC = """Indirizzo e-mail del web master
+(a questo indirizzo saranno mandati i messaggi di errore)
+[es: luca.fini@inaf.it]
+"""
+
+NOME_WEBMASTER_DESC = """Nome del web master
+[es: Luca Fini]
+"""
+
+WEBSITE_DESC = """URL completa del sito web della sede
+[es: http://www.arcetri.inaf.it]
+"""
+
+CITTA_DESC = """Città [es: Firenze]
+"""
+
+INDIRIZZO_DESC = """Indirizzo postale della sede (una linea)
+[es: L.go Enrico Fermi, 5. 50125 Firenze (Italia)
+"""
+
+SEDE_UK_DESC = """Identificazione della sede per documenti in inglese
+[es: INAF - Arcetri Astrophysical Observatory
+"""
+
+SEDE_DESC = """Identificazione sede INAF
+[es: INAF - Osservatorio Astrofisico di Arcetri
+"""
+
+EMAIL_PROCEDURA_DESC = """Indirizzo e-mail da cui provengono i messaggi tecnici.
+Dovrebbe corrispondere all'identità GMail utilizzata per l'invio di messaggi.
+(Es.: acquisti.oaa@gmail.com)
+"""
+
+SEDE = OrderedDict([(SEDE_IT, SEDE_DESC),
+                    (SEDE_UK, SEDE_UK_DESC),
+                    (INDIRIZZO, INDIRIZZO_DESC),
+                    (CITTA, CITTA_DESC),
+                    (WEBSITE, WEBSITE_DESC),
+                   ])
+
+PARAMS = OrderedDict([(NOME_WEBMASTER, NOME_WEBMASTER_DESC),
+                      (EMAIL_WEBMASTER, EMAIL_WEBMASTER_DESC),
+                      (NOME_DIRETTORE, NOME_DIRETTORE_DESC),
+                      (EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
+                      (TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
+                      (TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
+                      (EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
+                      (LATEX_PATH, LATEX_PATH_DESC),
                      ])
 
-TECH = OrderedDict([("web_host", "Indirizzo IP del server che ospita la procedura\n[es: www.arcetri.inaf.it]"),
-                    ("web_port", "Port IP assegnato alla procedura\n[es: 4000)"),
-                    ("smtp_host", "Indirizzo IP del server SMTP\nIndirizzo del server SMTP utilizzato dalla procedura\nper inviare i messaggi automatici [es: smtp.arcetri.astro.it]"),
-                    ("email_responder", "Indirizzo EMail valido per il responder automatico\n[es: acquisti@arcetri.inaf.it]"),
-                    ("ldap_host", "Indirizzo del server LDAP per autenticazione utenti\n[es: ldap.ced.inaf.it]\n(Usa '-' per disabilitare autenticazione LDAP)"),
-                    ("ldap_port", "IP port del server LDAP per autenticazione utenti\n[es: 389]"),
-                    ("pop3_host", "Indirizzo del server POP3 del responder\n[es: pop3.arcetri.inaf.it]"),
-                    ("pop3_user", "Username POP3 per accesso ai mail del responder\n[es: acquisti]"),
-                    ("pop3_pw", "Password POP3 per accesso ai mail del responder"),
-                    ("approval_host", "Indirizzo IP per le richieste del responder\nSi tratta dell'indirizzo IP (numerico) del server sul quale\ngira la procedura del responder automatico [es: 193.206.154.33]"),
+TECH = OrderedDict([(WEB_HOST, WEB_HOST_DESC),
+                    (WEB_PORT, WEB_PORT_DESC),
+                    (SMTP_HOST, SMTP_HOST_DESC),
+                    (EMAIL_PROCEDURA, EMAIL_PROCEDURA_DESC),
+                    (LDAP_HOST, LDAP_HOST_DESC),
+                    (LDAP_PORT, LDAP_PORT_DESC),
                    ]
                   )
 
 def creadirs():
     "Crea struttura directory di lavoro"
-    datadir = ftools.datapath()
-    workdir = ftools.workpath()
-    approvdir = os.path.join(datadir, 'approv')
+    approvdir = os.path.join(DATADIR, 'approv')
 
     print()
-    if os.path.exists(datadir):
-        print("Directory %s già esistente"%datadir)
+    if os.path.exists(DATADIR):
+        print("Directory %s già esistente"%DATADIR)
     else:
-        os.makedirs(datadir)
-        print("Creata directory %s"%datadir)
+        os.makedirs(DATADIR)
+        print("Creata directory %s"%DATADIR)
 
     if os.path.exists(approvdir):
         print("Directory %s già esistente"%approvdir)
@@ -64,11 +143,11 @@ def creadirs():
         os.makedirs(approvdir)
         print("Creata directory %s"%approvdir)
 
-    if os.path.exists(workdir):
-        print("Directory %s già esistente"%workdir)
+    if os.path.exists(WORKDIR):
+        print("Directory %s già esistente"%WORKDIR)
     else:
-        os.makedirs(workdir)
-        print("Creata directory %s"%workdir)
+        os.makedirs(WORKDIR)
+        print("Creata directory %s"%WORKDIR)
     print()
 
 def ask_one(name, old_config, new_config, help_text):
@@ -114,11 +193,11 @@ def main():
         print(__doc__)
         sys.exit()
 
-    cfile_name = os.path.join(ftools.datapath(), "config.json")
-    cfile_save = os.path.join(ftools.datapath(), "config.save")
+    cfile_name = os.path.join(DATADIR, "config.json")
+    cfile_save = os.path.join(DATADIR, "config.save")
 
     if os.path.exists(cfile_name):
-        old_config = ftools.jload(cfile_name)
+        old_config = jload(cfile_name)
     else:
         old_config = {}
 
@@ -141,7 +220,7 @@ def main():
         print()
         if old_config:
             os.rename(cfile_name, cfile_save)
-        ftools.jsave(cfile_name, new_config)
+        jsave(cfile_name, new_config)
 
         if old_config:
             print("La configurazione precedente si trova nel file:", cfile_save)

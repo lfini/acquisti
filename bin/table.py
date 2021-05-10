@@ -25,7 +25,6 @@ __date__ = '20/11/2020'
 
 class TableException(Exception):
     "Exception raised by this module"
-    pass
 
 class LockException(Exception):
     "Exception when file is locked"
@@ -56,7 +55,7 @@ def _clean(item):
         return item.strip()
     return item
 
-class Table:
+class Table:                             # pylint: disable=R0902
     """
 Table class:
    table.header: array of column names
@@ -104,7 +103,7 @@ Table class:
             self.ncols = len(self.header)
             try:
                 self._maxpos = max(self.rows, key=lambda x: x[0])[0]
-            except:
+            except:                       # pylint: disable=W0702
                 self._maxpos = 0
             self.readtime = time.time()
 
@@ -132,7 +131,7 @@ Table class:
         "Return row index of row with main key pos"
         try:
             index = [x[0] for x in self.rows].index(pos)
-        except:
+        except:                       # pylint: disable=W0702
             index = (-1)
         return index
 
@@ -141,11 +140,11 @@ Table class:
         if isinstance(field, str):
             try:
                 return self.header.index(field)
-            except:
+            except:                       # pylint: disable=W0702
                 return -1
         try:
             indx = int(field)
-        except:
+        except:                       # pylint: disable=W0702
             return -1
         if indx < 0 or indx >= len(self.header):
             return -1
@@ -194,7 +193,7 @@ Table class:
         "Returns true if file has been written since it has been read"
         try:
             ftime = os.stat(self.filename).st_mtime
-        except:
+        except:                       # pylint: disable=W0702
             ftime = 0
         return self.readtime < ftime
 
@@ -312,7 +311,7 @@ Table class:
         for row in self.rows:
             try:
                 toinsert = column[colid]
-            except:
+            except:                       # pylint: disable=W0702
                 toinsert = value
             row.insert(pos, toinsert)
             colid += 1
@@ -326,7 +325,7 @@ Table class:
         for row in self.rows:
             del row[indx]
 
-    def where(self, field, item, as_dict=False, index=False, comp=None):
+    def where(self, field, item, as_dict=False, index=False, comp=None):   # pylint: disable=R0913
         "Returns rows with matching field"
         indx = self._field(field)
         if indx < 0:
@@ -383,7 +382,7 @@ Table class:
         "Salva tabella in file json"
         jdata = {'header': self.header, 'rows': self.rows, 'opts':self.opts}
         if not fname:
-            fname=self.filename
+            fname = self.filename
         jsave(fname, jdata, lockinfo=self.lkinfo)
 
 def _junlock(path):
@@ -391,7 +390,7 @@ def _junlock(path):
     lockname = name+'.lock'
     try:
         os.unlink(lockname)
-    except:
+    except:                       # pylint: disable=W0702
         pass
     return name
 
@@ -426,7 +425,7 @@ def _jload(name, nofile=None):
     try:
         with open(name) as jfd:
             ret = json.load(jfd)
-    except Exception as excp:
+    except Exception as excp:                       # pylint: disable=W0703
         if nofile is None:
             raise TableException("Errore jload(%s) [%s]"%(name, str(excp)))
         ret = nofile
@@ -480,18 +479,18 @@ def usage():
     print("table.py.  %s - Version: %s, %s" % (__author__, __version__, __date__))
     print(__doc__)
 
-def main():
+def main():                        # pylint: disable=R0914,R0915
     "Codice di test"
     table_file = 'test_table.json'
     lock_file = table_file+'.lock'
 
     try:
         os.unlink(table_file)
-    except:
+    except:                       # pylint: disable=W0702
         pass
     try:
         os.unlink(lock_file)
-    except:
+    except:                       # pylint: disable=W0702
         pass
 
     tbl = Table(table_file, header=('Field1', 'Field2', 'Field3', 'Field4'))

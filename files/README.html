@@ -50,7 +50,13 @@ poter utilizzare le procedure:
 
 <blockquote>
 python3-flask, python3-jinja2, python3-ldap3, python3-werkzeug, python3-wtforms 
-python3-pam (Ubuntu: python3-pampy), python3-pypdf2, PyCrypto (quest'ultimo installabile solo con <tt>pip3</tt>).
+python3-pam (Ubuntu: python3-pampy), python3-pypdf2, PyCrypto, oauth2client,
+(i due ultimi installabili solo con <tt>pip3</tt>).
+<p>
+Occorre poi installare il package per l'uso delle api di Google google-api-python-client (vedere
+<a href=#appendice>appendice</a>)
+
+
 </blockquote>
 <em><b>Nota 1:</b> I nomi dei package possono cambiare a seconda della distribuzione di linux.
 	Ad esempio per CentOS 7.5 i nomi hanno prefisso <tt>python34</tt>, anziché <tt>python3</tt>
@@ -736,7 +742,7 @@ Generazione del token di autorizzazione per GMail API</h2>
 </center>
 
 L'utilizzazione della API di GMail per l'invio di messaggi richiede la creazione
-di un account dedicato.
+di un account dedicato su GMail.
 
 <p>
 Dopo aver creato l'account occorre generare il file di credenziali dalla pagina:

@@ -10,7 +10,7 @@ import ldaparcetri as ll
 import ftools as ft
 import table as tb
 from forms import MyTextField, MySelectField, MyLoginForm, render_field
-from constants import DATADIR, WORKDIR
+from constants import *     # pylint: disable=W0401
 
 #  VERSION  1.0  30/01/2015: Prima versione
 #  VERSION  1.1  30/01/2015: Modificato metodo controllo password
@@ -127,7 +127,7 @@ def modifica_ldap(uid):
         if _test_authorization(user):
             try:
                 urecord = ll.get_people_record(uid)
-            except Exception as excp:
+            except Exception as excp:                # pylint: disable=W0703
                 msg = "Errore: %s"%str(excp)
                 fk.flash(msg)
                 logging.error(msg)
@@ -220,12 +220,10 @@ def localtest():
 
 def production():
     "Start in production mode"
-    email = {'mailhost': CONFIG['smtp_host'],
-             'fromaddr': 'acquisti@arcetri.inaf.it',
-             'toaddrs': [CONFIG['email_webmaster']],
-             'subject': 'Notifica errore LDAP manager'}
     logging.basicConfig(level=logging.INFO)
-    ft.set_file_logger((WORKDIR, 'ldap.log'), email=email)
+    ft.set_file_logger((WORKDIR, 'ldap.log'))
+    ft.set_mail_logger(CONFIG[SMTP_HOST], CONFIG[EMAIL_PROCEDURA],
+                       CONFIG[EMAIL_WEBMASTER], 'Notifica errore LDAP manager')
     initialize_me()
 
 if __name__ == '__main__':

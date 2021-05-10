@@ -75,10 +75,8 @@ def main():
     if "-h" in sys.argv:
         usage()
         sys.exit()
-    if "-a" in sys.argv:
-        arcetri=True
-    else:
-        arcetri = False
+    arcetri = bool("-a" in sys.argv)
+
     if not sys.argv[-1].startswith("-"):
         filt = sys.argv[-1]
     else:
