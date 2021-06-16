@@ -9,7 +9,6 @@
 # NOTA: occorre prima interrompere i servizi
 #
 #     systemctl stop acquisti
-#     systemctl stop housekeeping
 #     systemctl stop manageldap
 #
 
@@ -23,11 +22,6 @@ if [ ! \( -d $bin_target -a -d $files_target \) ]; then
    echo "Cannot found release: $VERSION"
    exit 1
 fi
-
-#   1. stop dei processi (da eseguire come root)
-#      systemctl stop acquisti
-#      systemctl stop manageldap
-#      systemctl stop housekeeping
 
 rm -f bin
 ln -s $bin_target bin

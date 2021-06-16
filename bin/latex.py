@@ -13,10 +13,11 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 
 # VERSION 3.0    05/01/2018  - Versione python3
 # VERSION 3.1    17/10/2019  - path pdflatex configurabile
+# VERSION 3.2    17/10/2019  - Corretto formato per inclusione 
 
 __author__ = 'Luca Fini'
-__version__ = '3.1'
-__date__ = '17/10/2019'
+__version__ = '3.2'
+__date__ = '10/5/2021'
 
 class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
@@ -159,11 +160,15 @@ INIZIO_ALLEGATO = """
 
 HEADER_PAGINA = """
 \\newpage
-\\vspace{-10mm}{\\small Allegato %d / Pag. %d}
+\\quad
+\\begin{flushright}
 \\vspace{-20mm}
+{\\small Allegato %d / Pag. %d}
+\\end{flushright}
+\\vspace{-15mm}
 """
 
-INSERISCI_PAGINA = """\\makebox[\\textwidth]{\\includegraphics[width=\\textwidth]{%s}}
+INSERISCI_PAGINA = """\\makebox[\\textwidth]{\\includegraphics[height=0.9\\textheight]{%s}}
 """
 
 def insert_attachments(dst, atcs, debug=False):

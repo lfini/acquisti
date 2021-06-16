@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>About</title>
+</head>
+<body>
+<!-- template: environ.html -->
+{% from "_common.html" import start_page, end_page %}
+{{ start_page("","","Variabili di ambiente per procedura <tt><b>acquisti.py</b></tt>") }}
+<tr><td>
+{{ environ|safe }}
+</td></tr> <tr><td>
+<h2> Dati <tt>request</tt></h2>
+{{ request|safe }}
+</td></tr>
+{{ end_page() }}
+&rightarrow; <a href=/>Torna</a>
+</body>
+ 

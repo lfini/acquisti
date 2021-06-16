@@ -5,6 +5,8 @@ Definizione delle costanti per procedura acquisti
 import os.path
 
 __version__ = "2.1"
+__date__ = "16/6/2021"
+__author__ = "Luca Fini"
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
@@ -317,7 +319,7 @@ Ti è stata inviata la richiesta di acquisto N. {numero_pratica} per approvazion
 
 Per approvarla puoi accedere alla procedura per la gestione degli ordini:
 
-     http://__host__
+     %s
 
 e selezionare: Elenco richieste aperte"""
 

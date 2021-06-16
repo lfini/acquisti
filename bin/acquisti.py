@@ -10,6 +10,7 @@ from pprint import PrettyPrinter
 
 import wtforms as wt
 import flask as fk
+import constants as const    #  Mantenere: serve per about()
 
 #    cope with compatibility with older werkzeug versions
 try:
@@ -56,14 +57,19 @@ import table as tb
 # Versione 4.6   4/2021:     Aggiunto supporto per inclusione logo in testa ai documenti
 # Versione 4.7   5/2021:     Rimossa approvazione per e-mail e sostituito mailserver
 #                            con server google
+# Versione 4.8   6/2021:     Corretto bug nella generazione dei messaggi di richiesta approvazione
 
 __author__ = 'Luca Fini'
-__version__ = '4.7'
-__date__ = '8/5/2021'
+__version__ = '4.8'
+__date__ = '16/6/2021'
 
 __start__ = time.asctime(time.localtime())
 
 CONFIG = tb.jload((DATADIR, 'config.json'))
+
+THIS_URL = os.environ.get("REQUEST_SCHEME", "???")+"://"+ \
+           os.environ.get("SERVER_NAME", "??.??.??")+":"+ \
+           os.environ.get("SERVER_PORT", "?")
 
 BASEDIR_STR = 'basedir'
 
@@ -78,10 +84,6 @@ class DEBUG:         # pylint: disable=R0903
     "Variabili di supporto per Debug"
     local = False
     email = ''
-
-class APPROV:         # pylint: disable=R0903
-    "Testo variabile per approvazioni"
-    testo = ""
 
 FASE_ERROR = Exception("Manca specifica fase")
 NO_BASEDIR = Exception("Basedir non definita")
@@ -450,7 +452,8 @@ def _email_approv(d_prat, ritrasm):
             subj = 'Ritrasmissione richiesta di acquisto.'
         else:
             subj = 'Trasmissione richiesta di acquisto.'
-        body = _make_mail_body(APPROV.testo, d_prat)
+        testo = TESTO_APPROVAZIONE%fk.request.host_url + DETTAGLIO_PRATICA
+        body = _make_mail_body(testo, d_prat)
         if DEBUG.local:
             webm = CONFIG[EMAIL_WEBMASTER]
             recipients = [webm]
@@ -1018,6 +1021,7 @@ def about():                                 # pylint: disable=R0915
     html.append('<tr><th>Modulo</th><th>Versione</th><th>Data</th><th>Autore</th></tr>')
     fmt = '<tr><td> <tt> {} </tt></td><td> {} </td><td>{}</td> <td> {} </td></tr>'
     html.append(fmt.format('acquisti.py', __version__, __date__, __author__))
+    html.append(fmt.format('constants.py', const.__version__, const.__date__, const.__author__))
     html.append(fmt.format('forms.py', fms.__version__, fms.__date__, fms.__author__))
     html.append(fmt.format('ftools.py', ft.__version__, ft.__date__, ft.__author__))
     html.append(fmt.format('latex.py', ft.latex.__version__,
@@ -1042,18 +1046,18 @@ def about():                                 # pylint: disable=R0915
         html.append('<tr><td>'+', '.join(ft.GlobLists.HELPLIST)+'</td></tr>')
         html.append('</table></td></tr>')
 
-        html.append('<tr><td><table cellpadding=3 border=1>')
-        html.append('<tr><th colspan=2> Verifica crontab</th></tr>')
-        out, err = ft.spawn(LISTCRONTAB)
-        if err:
-            html.append("<tr><td><font color=red>Errore</font></td>"
-                        "<td><pre>{}</pre></td</tr>".format(err))
-        if out:
-            txt = '<pre>{}</pre>'.format(out)
-        else:
-            txt = '&nbsp;'
-        html.append('<tr><td>Output</td><td>{}</td</tr>'.format(txt))
-        html.append('</table></td></tr>')
+#       html.append('<tr><td><table cellpadding=3 border=1>')
+#       html.append('<tr><th colspan=2> Verifica crontab</th></tr>')
+#       out, err = ft.spawn(LISTCRONTAB)
+#       if err:
+#           html.append("<tr><td><font color=red>Errore</font></td>"
+#                       "<td><pre>{}</pre></td</tr>".format(err))
+#       if out:
+#           txt = '<pre>{}</pre>'.format(out)
+#       else:
+#           txt = '&nbsp;'
+#       html.append('<tr><td>Output</td><td>{}</td</tr>'.format(txt))
+#       html.append('</table></td></tr>')
     body = '\n'.join(html)
     return fk.render_template('about.html', sede=CONFIG[SEDE], data=body)
 
@@ -2015,12 +2019,45 @@ def edituser(nrec):
         return fk.render_template('noaccess.html').encode('utf8')
     return fk.redirect(fk.url_for('login'))
 
+@ACQ.route('/environ', methods=('GET',))
+def environ():
+    "Mostra informazioni su environment"
+    user = ft.login_check(fk.session)
+    if user:
+        if not _test_developer(user):
+            fk.session.clear()
+            return fk.render_template('noaccess.html')
+    html = ["<ul>"]
+    keys = list(os.environ.keys())
+    keys.sort()
+    for key in keys:
+        html.append("<li><b>%s</b>: %s"%(key, os.environ[key]))
+    html.append("</ul>")
+    env = '\n'.join(html)
+    html = ["<ul>"]
+    html.append("<li><b>%s</b>: %s"%("args", fk.request.args))
+    html.append("<li><b>%s</b>: %s"%("base_url", fk.request.base_url))
+    html.append("<li><b>%s</b>: %s"%("date", fk.request.date))
+    html.append("<li><b>%s</b>: %s"%("endpoint", fk.request.endpoint))
+    html.append("<li><b>%s</b>: %s"%("full_path", fk.request.full_path))
+    html.append("<li><b>%s</b>: %s"%("host", fk.request.host))
+    html.append("<li><b>%s</b>: %s"%("host_url", fk.request.host_url))
+    html.append("<li><b>%s</b>: %s"%("method", fk.request.method))
+    html.append("<li><b>%s</b>: %s"%("remote_addr", fk.request.remote_addr))
+    html.append("<li><b>%s</b>: %s"%("remote_user", fk.request.remote_user))
+    html.append("<li><b>%s</b>: %s"%("scheme", fk.request.scheme))
+    html.append("<li><b>%s</b>: %s"%("url", fk.request.url))
+    html.append("<li><b>%s</b>: %s"%("url_root", fk.request.url_root))
+    html.append("<li><b>%s</b>: %s"%("user_agent", fk.request.user_agent))
+    req = '\n'.join(html)
+    return fk.render_template('environ.html', sede=CONFIG[SEDE], request=req, environ=env)
+
 @ACQ.route('/testmail', methods=('GET',))
 def testmail():
     "Invia messaggio di prova all'indirizzo di webmaster"
     user = ft.login_check(fk.session)
     if user:
-        if not _test_admin(user):
+        if not _test_developer(user):
             fk.session.clear()
             return fk.render_template('noaccess.html')
         thetime = time.asctime()
@@ -2045,7 +2082,7 @@ def force_excp():
     "Causa una eccezione"
     user = ft.login_check(fk.session)
     if user:
-        if not _test_admin(user):
+        if not _test_developer(user):
             fk.session.clear()
             return fk.render_template('noaccess.html')
         1/0                                 # pylint: disable=W0104
@@ -2060,14 +2097,13 @@ def initialize_me():
     logging.info('PKG_ROOT: %s', PKG_ROOT)
     logging.info('DATADIR: %s', DATADIR)
     logging.info('WORKDIR: %s', WORKDIR)
+    logging.info("URL: %s", THIS_URL)
 
     configname = os.path.join(DATADIR, 'config.json')
-    logging.info('Loading config from: %s', configname)
+    logging.info('Config loaded from: %s', configname)
 
     ft.latex.set_path(CONFIG.get("latex_path", ""))
     logging.info("LaTeX path: %s", ft.latex.PDFLATEX.cmd)
-
-    APPROV.testo = TESTO_APPROVAZIONE + DETTAGLIO_PRATICA
 
     update_lists()
     ft.init_helplist()
