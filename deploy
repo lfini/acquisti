@@ -11,7 +11,7 @@
 
 # Per attivare una delle versioni esistenti si usa la procedura: switch
 
-REMOTE=acquisti@ebe
+REMOTE=acquisti@sisifo
 
 VERSION=`python3 ./bin/acquisti.py vx`
 
@@ -22,7 +22,7 @@ rm -f bin/*.pyc           # clean bin directory
 rm -rf bin/__pycache__     # clean bin directory
 
 rsync -vrpz --delete switch $REMOTE:
-rsync -vrpz --exclude .git --exclude .pylintrc --delete bin/ $bin_target
+rsync -vrpz --exclude tmp --exclude .git --exclude .pylintrc --delete bin/ $bin_target
 rsync -vrpz --exclude .git --delete files/ $files_target
 
 echo

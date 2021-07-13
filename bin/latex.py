@@ -14,10 +14,11 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 # VERSION 3.0    05/01/2018  - Versione python3
 # VERSION 3.1    17/10/2019  - path pdflatex configurabile
 # VERSION 3.2    17/10/2019  - Corretto formato per inclusione 
+# VERSION 3.3    13/07/2021  - Corretto test offline
 
 __author__ = 'Luca Fini'
-__version__ = '3.2'
-__date__ = '10/5/2021'
+__version__ = '3.3'
+__date__ = '13/7/2021'
 
 class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
@@ -289,7 +290,6 @@ class PrintLogger:
         "Error output"
         print("ERR - ", fmt%d)
 
-
 def test():
     "Procedura di test"
 
@@ -297,13 +297,16 @@ def test():
     print("latex.py. %s - Version: %s, %s" % (__author__, __version__, __date__))
     print()
 
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
     templfile = '../files/ordine_italiano.tex'
     pdffile = 'test_document.pdf'
 
     BATCHMODE.on = False
     ret = makepdf('.', pdffile, templfile, attach=["include.pdf"], debug=True,
                   pratica=TEST_ACQUISTO, user=TEST_USER, sede=TEST_SEDE,
-                  indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
+                  logopath="../files/logofile.png", indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
 
     if ret:
         print("Created file: %s" % pdffile)

@@ -29,6 +29,7 @@ Uso da linea di comando:
 # VERSION 4.7    05/12/2020 Integrazioni per usere GMail come server di posta
 # VERSION 4.8    10/05/2021 Modifiche per inserimento logo in testa ai documenti
 #                           Attivazione di GMail come server di posta (anche per errori)
+# VERSION 4.8.1  12/07/2021 Aggiunta MyException per risolvere problema su stringa_valore
 
 import sys
 import os
@@ -61,8 +62,8 @@ import send_email as sm
 # pylint: disable=C0302, W0703
 
 __author__ = 'Luca Fini'
-__version__ = '4.8.0'
-__date__ = '28/4/2021'
+__version__ = '4.8.2'
+__date__ = '13/7/2021'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -90,6 +91,9 @@ def _setformatter():
     logger.fHandler.setFormatter(formatter)
     if hasattr(logger, 'eHandler'):
         logger.eHandler.setFormatter(formatter)
+
+class MyException(RuntimeError):
+    "Exception arricchita"
 
 class GMailHandler(StreamHandler):           # pylint: disable=R0903
     "Logging handler che usa GMail API"
@@ -283,10 +287,10 @@ def byinitial(inlist, key=lambda x: x, remove_empty=True):
 
 def stringa_valore(costo, lang):                         # pylint: disable=R0912
     "generazione specifica della stringa valore per il costo del bene"
-    importo = costo[IMPORTO].strip()
-    valuta = costo[VALUTA].strip()
-    iva = costo[IVA].strip()
-    iva_free = costo[IVAFREE].strip()
+    importo = costo.get(IMPORTO, "").strip()
+    valuta = costo.get(VALUTA, "").strip()
+    iva = costo.get(IVA, "").strip()
+    iva_free = costo.get(IVAFREE, "").strip()
 
     if not importo:
         return ""
