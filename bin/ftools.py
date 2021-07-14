@@ -287,10 +287,10 @@ def byinitial(inlist, key=lambda x: x, remove_empty=True):
 
 def stringa_valore(costo, lang):                         # pylint: disable=R0912
     "generazione specifica della stringa valore per il costo del bene"
-    importo = costo.get(IMPORTO, "").strip()
-    valuta = costo.get(VALUTA, "").strip()
-    iva = costo.get(IVA, "").strip()
-    iva_free = costo.get(IVAFREE, "").strip()
+    importo = costo[IMPORTO] if costo[IMPORTO] is not None else ""
+    valuta = costo[VALUTA] if costo[VALUTA] is not None else ""
+    iva = costo[IVA] if costo[IVA] is not None else ""
+    iva_free = costo[IVAFREE] if costo[IVAFREE] is not None else ""
 
     if not importo:
         return ""
