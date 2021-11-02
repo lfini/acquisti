@@ -698,7 +698,8 @@ def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **
     else:
         attach_list = None
     ndata = data.copy()
-    ndata["logopath"] = os.path.join(pkg_root, "files", "logofile.png")
+    ndata["headerpath"] = os.path.join(pkg_root, "files", "header.png")
+    ndata["footerpath"] = os.path.join(pkg_root, "files", "footer.png")
     latex.makepdf(destdir, pdfname, tfile, attach=attach_list, debug=debug, **ndata)
 
 def get_user(userid):

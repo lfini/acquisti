@@ -24,17 +24,35 @@ class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
     cmd = '/usr/bin/pdflatex'
 
-_NOTA = 'Il prezzo '+chr(232)+' specificato in Euro ('+chr(8364)+ \
-        ')  *** '+chr(192)+chr(233)+chr(197)+' ***'
+_NOTA1 = 'Il prezzo '+chr(232)+' specificato in Euro ('+chr(8364)+')'
+_NOTA2 = """
+
+Prolungamento della nota con lo scopo di generare un documento di almeno due pagine.
+
+Si va quindi sovente a capo e si cerca di aggiungere testo
+senza particolare significato, con il solo scopo di occupare spazio.
+
+Come promemoria questo test dovrebbe anche includere un allegato per verificare
+il funzionamento del meccanismo degli allegati.
+
+Aggiungo ancora qualche linea, in modo che si vada a capo con un po' di testo
+e non solo con la firma.
+
+Ma siccome ancora non basta aggiungo altro testo. Se non basta ancora dovrò rivolgermi 
+a brani letterari.
+
+Sembra che questo sia sufficiente a mandare a capo almeno un po' della nota.
+"""
 
 TEST_ACQUISTO = {'data_richiesta': '19/7/1952',
                  'nome_richiedente': 'Luca Fini',
+                 'dettaglio_ordine': 1,
                  'str_costo_ord_it': '100 € + I.V.A. 22%, incluso trasporto',
                  'cig': '01-234',
                  'cup': "234-01",
                  'capitolo': '12.345.67',
                  'iva': '22% esclusa',
-                 'note': _NOTA,
+                 'note_ordine': _NOTA1+_NOTA2,
                  'numero_pratica': 132,
                  'nome_fornitore': 'Esselunga',
                  'ind_fornitore': 'Via Lupo, 6',
@@ -163,10 +181,10 @@ HEADER_PAGINA = """
 \\newpage
 \\quad
 \\begin{flushright}
-\\vspace{-20mm}
+\\vspace{-25mm}
 {\\small Allegato %d / Pag. %d}
 \\end{flushright}
-\\vspace{-15mm}
+%%\\vspace{-15mm}
 """
 
 INSERISCI_PAGINA = """\\makebox[\\textwidth]{\\includegraphics[height=0.9\\textheight]{%s}}
@@ -304,9 +322,12 @@ def test():
     pdffile = 'test_document.pdf'
 
     BATCHMODE.on = False
-    ret = makepdf('.', pdffile, templfile, attach=["include.pdf"], debug=True,
+    ret = makepdf('.', pdffile, templfile, debug=True,
                   pratica=TEST_ACQUISTO, user=TEST_USER, sede=TEST_SEDE,
-                  logopath="../files/logofile.png", indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
+                  headerpath="../files/header.png",
+                  footerpath="../files/footer.png",
+                  attach=["../files/test_attach.pdf"],
+                  indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
 
     if ret:
         print("Created file: %s" % pdffile)

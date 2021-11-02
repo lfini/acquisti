@@ -58,10 +58,11 @@ import table as tb
 # Versione 4.7   5/2021:     Rimossa approvazione per e-mail e sostituito mailserver
 #                            con server google
 # Versione 4.8   6/2021:     Corretto bug nella generazione dei messaggi di richiesta approvazione
+# Versione 4.9  11/2021:     Modificato layout pagine PDF generate (per effetto "carta intestata")
 
 __author__ = 'Luca Fini'
-__version__ = '4.8'
-__date__ = '16/6/2021'
+__version__ = '4.9'
+__date__ = '2/11/2021'
 
 __start__ = time.asctime(time.localtime())
 
