@@ -13,7 +13,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 
 # VERSION 3.0    05/01/2018  - Versione python3
 # VERSION 3.1    17/10/2019  - path pdflatex configurabile
-# VERSION 3.2    17/10/2019  - Corretto formato per inclusione 
+# VERSION 3.2    17/10/2019  - Corretto formato per inclusione
 # VERSION 3.3    13/07/2021  - Corretto test offline
 
 __author__ = 'Luca Fini'

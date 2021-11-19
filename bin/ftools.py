@@ -30,6 +30,8 @@ Uso da linea di comando:
 # VERSION 4.8    10/05/2021 Modifiche per inserimento logo in testa ai documenti
 #                           Attivazione di GMail come server di posta (anche per errori)
 # VERSION 4.8.1  12/07/2021 Aggiunta MyException per risolvere problema su stringa_valore
+# VERSION 4.8.2  18/11/2021 Aggiunta funzione _last_resort_log() e modificata funzione
+#                           di autenticazione
 
 import sys
 import os
@@ -63,7 +65,7 @@ import send_email as sm
 
 __author__ = 'Luca Fini'
 __version__ = '4.8.2'
-__date__ = '13/7/2021'
+__date__ = '18/11/2021'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -92,6 +94,12 @@ def _setformatter():
     if hasattr(logger, 'eHandler'):
         logger.eHandler.setFormatter(formatter)
 
+def _last_resort_log(message):
+    "funzione chamata quando c'è un errore nel logger"
+    fname = os.path.join(WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
+    with open(fname, "a") as f_out:
+        print(message, file=f_out)
+
 class MyException(RuntimeError):
     "Exception arricchita"
 
@@ -102,12 +110,15 @@ class GMailHandler(StreamHandler):           # pylint: disable=R0903
         self.fromaddr = fromaddr
         self.dest = [toaddr]
         self.subject = subject
-        print("GMailHandler init:", self.dest)
+#       print("GMailHandler init:", self.dest)
 
     def emit(self, record):
-        "Invia messaggio di log vis GMail"
-        sm.send("", None, self.fromaddr, self.dest, self.subject, self.format(record))
-        print("GMailHandler emit:", record)
+        "Invia messaggio di log via GMail"
+        try:
+            sm.send("", None, self.fromaddr, self.dest, self.subject, self.format(record))
+        except Exception as excp:
+            _last_resort_log("Errore invio email a: %s\n- %s"%(self.dest, str(excp)))
+#       print("GMailHandler emit:", record)
 
 def set_file_logger(path):
     "imposta logger su file"
@@ -770,31 +781,33 @@ def randstr(lng):
     "Genera stringa casuale di linghezzadata"
     return ''.join([random.choice(CHARS) for i in range(lng)])
 
-ABILITATO = "Utente abilitato, "
-NON_ABILITATO = "Utente non abilitato, "
+NON_ABILITATO = """
+non sei abilitato all'uso della procedura come "%s".
+Per ottenere l'abilitazione devi rivolgerti all'amministrazione
+"""
 
 def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
-    abilitato = bool(user)
+    auth_ok = False
     ret = ldap_authenticate(userid, password, ldap_host, ldap_port)
     if ret < 0:
         logging.error("Errore di connessione al server LDAP")
     elif ret > 0:
-        auth_msg = "autenticazione LDAP OK"
-        if abilitato:
-            return True, ABILITATO+auth_msg
-        return False, NON_ABILITATO+auth_msg
-    if PAM_AUTH(userid, password):
-        auth_msg = 'autenticazione PAM OK'
-        if abilitato:
-            return True, ABILITATO+auth_msg
-        return False, NON_ABILITATO+auth_msg
-    if abilitato:
+        auth_ok = True
+        logging.info("autenticazione LDAP OK")
+    if not auth_ok:
+        auth_ok = PAM_AUTH(userid, password)
+        logging.info('autenticazione PAM OK')
+    if not auth_ok:
         if crypt.crypt(password, userid) == user['pw']:
-            return True, ABILITATO+'autenticazione locale OK'
-        return False, ABILITATO+"ID/Password errati"
-    return False, NON_ABILITATO+"ID/Password errati"
+            auth_ok = True
+            logging.info('autenticazione locale OK')
+    if not auth_ok:
+        return False, "ID/password errati"
+    if user:
+        return True, "Accesso autorizzato"
+    return False, NON_ABILITATO%userid
 
 def checkdir():
     "Verifica esistenza della directory per dati e riporta il path"
