@@ -32,6 +32,7 @@ Uso da linea di comando:
 # VERSION 4.8.1  12/07/2021 Aggiunta MyException per risolvere problema su stringa_valore
 # VERSION 4.8.2  18/11/2021 Aggiunta funzione _last_resort_log() e modificata funzione
 #                           di autenticazione
+# VERSION 4.8.3  29/11/2021 Corretto errore in autenticazione
 
 import sys
 import os
@@ -64,8 +65,8 @@ import send_email as sm
 # pylint: disable=C0302, W0703
 
 __author__ = 'Luca Fini'
-__version__ = '4.8.2'
-__date__ = '18/11/2021'
+__version__ = '4.8.3'
+__date__ = '29/11/2021'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -799,7 +800,7 @@ def authenticate(userid, password, ldap_host, ldap_port):            # pylint: d
     if not auth_ok:
         auth_ok = PAM_AUTH(userid, password)
         logging.info('autenticazione PAM OK')
-    if not auth_ok:
+    if not auth_ok and 'pw' in user:
         if crypt.crypt(password, userid) == user['pw']:
             auth_ok = True
             logging.info('autenticazione locale OK')
