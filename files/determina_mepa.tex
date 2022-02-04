@@ -77,7 +77,7 @@ DETERMINA
             ((( pratica.descrizione_acquisto )))
 \end{quote}
 
-((* if pratica.mod_acquisto == 'mepa' *))
+((* if pratica.modalita_acquisto == 'mepa' *))
 tramite ordine diretto di acquisizione (OdA) in favore della ditta:
 \begin{quote}
 ((( pratica.nome_fornitore ))) \\
@@ -86,7 +86,7 @@ tramite ordine diretto di acquisizione (OdA) in favore della ditta:
 di cui si allega offerta.
 ((* endif *))
 
-((* if pratica.mod_acquisto == 'consip' *))
+((* if pratica.modalita_acquisto == 'consip' *))
 tramite adesione alla Convenzione Consip.
 ((* endif *))
 
