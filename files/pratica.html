@@ -6,7 +6,7 @@
 <script src="/files/overlay.js"></script>
 </head>
 <body>
-<!-- template: pratica.html. Vers. 1.0 -->
+<!-- template: pratica.html. Vers. 1.1 -->
 {% from "_common.html" import start_page, end_page, tobottom %}
 {% macro getval(value) %}
 Pratica N. {{ value }}
@@ -17,7 +17,9 @@ Pratica N. {{ value }}
    <h4> <font color=red>Modo debug</font>: invia email a webmaster </h4>
 {% endif %}
 {% if info.developer %}
-<h4><font color=red>Modo developer</font>: &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a></h4> 
+<h4><font color=red>Modo developer</font>:<br>
+&nbsp; &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a><br> 
+&nbsp; &rightarrow;&nbsp;<a href=/show_checks onclick="window.open('/show_checks','newwindow','width=800,height=600,scrollbar=yes'); return false;">visualizza checks</a></h4> 
    <b>Info:</b> {{ info }}
    <hr>
 {% endif %}
