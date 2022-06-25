@@ -4,7 +4,7 @@
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
-%% Template: determina_manif.tex - vers. 2.4
+%% Template: determina_manif.tex - vers. 2.5
 
 ((* include 'header.tex' *))
 
@@ -22,39 +22,12 @@ Determina n. ((( pratica.numero_determina )))
 Determina a contrattare del ((( pratica.data_determina ))) - Fornitura/Servizio/Lavoro di: ((( pratica.descrizione_acquisto ))).
 
 Motivazione: ((( pratica.motivazione_acquisto )))
-\vspace{0.5cm}
 
-\begin{center}
-Il Direttore
-\end{center}
+((* include 'determina_common.tex' *))
 
-\vspace{0.5 cm}
-
-\begin{list}{VALUTATA}{}
-\item[VISTO] il Decreto Legislativo 4 giugno 2003, n. 138 di riordino dell'INAF;
-\item[VISTO] il Decreto Legislativo 25 novembre 2016 n. 218 ed in particolare l'Art. 10;
-\item[VISTA] la L. 244 del 24 dicembre 2007 recante ``Disposizioni per la formazione 
-        del bilancio annuale e pluriennale dello Stato (legge finanziaria 2008)''; 
-\item[VISTO]  il Decreto Legislativo n. 50/2016 del 18 aprile 2016 ed in particolare
-      l'Art. 36;
-\item[VISTO] il D.P.R. n. 207 del 5 ottobre 2010 recante ``Regolamento di esecuzione 
-        ed attuazione del D.Lgs. 163/2006'' nelle parti ancora in vigore; 
-\item[PRESO ATTO] delle linee guida dell'ANAC;
-\item[VISTA] la L. 241/1990 che stabilisce che: ``L'attività amministrativa persegue i 
-        fini determinati dalla legge ed à retta da criteri di economicità, di 
-        efficacia, di pubblicità e di trasparenza'';
-\item[VISTO] il D.L. n. 52 del 7 maggio 2012, trasformato in Legge n. 94 del 6 luglio 2012 
-        recante "Disposizioni urgenti per la razionalizzazione della spesa pubblica 
-        e la successiva Legge 135 del 7 agosto 2012 "Disposizioni urgenti per la 
-        revisione della spesa pubblica"; 
-\item[VISTO] il Disciplinare di Organizzazione e Funzionamento dell'INAF, approvato
-        con delibera del C.D.A. n. 44/2012 del 21/06/2012;
-\item[VISTO] il Regolamento sull'Amministrazione, sulla Contabilità e sull'Attività 
-        Contrattuale dell'INAF, pubblicato sul S.O. n. 185 alla G.U. Serie Generale 
-        n. 300 del 23 dicembre 2004;   
 \item[VISTA] la richiesta motivata presentata da ((( pratica.nome_responsabile )))
 	con la quale chiede di individuare i soggetti da invitare a presentare offerta
-	attraverso la pubblicazione di un avviso per acquisire manifestazione
+	attraverso la pubblicazione di un avviso di manifestazione
 	di interesse ai sensi dell'Art.216 comma 9
         del D.Lgs. n. 50/2016 e s.m.i., per Fornitura/Servizio/Lavoro:
 	((( pratica.descrizione_acquisto ))), da affidare con il criterio %
@@ -63,16 +36,21 @@ del prezzo più basso;
    ((* else *)) %
 dell'offerta più vantaggiosa;
    ((* endif *))
-\item[VISTA] la Legge 136 Art. 3 del 13/8/10 e il D.L. n. 187/2010 convertito
-	nella Legge n. 217 del 17.12.2010, che introducono l'obbligo di
-	tracciabilità dei flussi finanziari relativi alle commesse pubbliche; 
+
+\item[VISTA] la Legge 136 Art. 3 del 13/8/10 e il D.L. n. 187/2010 convertito nella Legge
+        n. 217 del 17.12.2010, che introducono l'obbligo di tracciabilità dei flussi
+        finanziari relativi alle commesse pubbliche; 
+
 \item[VISTA] la disponibilità sul Ob. Fu. (Funzione-Obiettivo) ((( pratica.stringa_codf ))); 
+
 \item[VALUTATO] congruo l'importo presunto di gara;
+
 ((* if pratica.str_oneri_it *))
 \item[RILEVATO] che nel caso di specie gli oneri per la sicurezza sono pari
 	a ((( pratica.str_oneri_it )));
 ((* endif *))
-\item[VALUTATA] la necessità di provvedere all'acquisizione come indicato in oggetto;
+
+\item[VALUTATA] la necessità di provvedere all'acquisizione di quanto richiesto;
 \end{list}
 
 \begin{center}
@@ -83,6 +61,7 @@ DETERMINA
 \item[Art.~1:] di nominare, quale responsabile unico del procedimento, in base 
            all'Art. 31 del D.Lgs 50/2016 e s.m.i. il Dr./Sig. ((( pratica.rup ))),
            il quale possiede le competenze necessarie a svolgere tale ruolo; 
+
 \item[Art.~2:] di autorizzare la pubblicazione della manifestazione di interesse
 	ai sensi dell’Art. 216 comma 9 del D.Lgs. 50/2016 e s.m.i.
         per la Fornitura/Servizio/Lavoro: ((( pratica.descrizione_acquisto )));
@@ -93,11 +72,12 @@ DETERMINA
 ((* endif *));
 
 \item[Art.~4:] di approvare il Capitolato d'Oneri;
-
+\end{list}
+\begin{minipage}{\linewidth}
+\begin{list}{VALUTATA}{}
 \item[Art.~5:] di dare atto che l'importo necessario è a carico della/e Funzione-Obiettivo ((( pratica.stringa_codf ))), ((* if pratica.cup *)) CUP ((( pratica.cup ))), ((* endif *)) Cap. ((( pratica.capitolo ))).
 \end{list}
-
-\vspace{0.5cm}
+\vspace{10mm}
 
 \begin{flushright}
 \begin{minipage}[t]{6cm}
@@ -107,4 +87,5 @@ Il Direttore \\
 \end{center}
 \end{minipage}
 \end{flushright}
+\end{minipage}
 \end{document}
