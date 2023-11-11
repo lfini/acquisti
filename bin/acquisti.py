@@ -59,11 +59,10 @@ import table as tb
 #                            con server google
 # Versione 4.8   6/2021:     Corretto bug nella generazione dei messaggi di richiesta approvazione
 # Versione 4.9  11/2021:     Modificato layout pagine PDF generate (per effetto "carta intestata")
-# Versione 4.10  5/2022:     Aggiunta verifica stato pratica in modo developer
 
 __author__ = 'Luca Fini'
-__version__ = '4.10'
-__date__ = '3/5/2022'
+__version__ = '4.9'
+__date__ = '2/11/2021'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1696,51 +1695,6 @@ def vedijson(fname):
 def files(name):
     "download file"
     return  ACQ.send_static_file(name)
-
-@ACQ.route('/show_checks')
-def show_checks():
-    "Mostra risultato checks"
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
-    the_user, basedir, d_prat = ret
-    if _test_developer(the_user):
-        text = "<h4>Checks su pratica N. "+d_prat[NUMERO_PRATICA]+"</h4><pre>\n"
-        text += "  - pratica apribile: "+ \
-                str(check_pratica_apribile(the_user, d_prat))+"\n"
-        text += "  - pratica annullabile: "+ \
-                str(check_pratica_annullabile(the_user, d_prat))+"\n"
-        text += "  - pratica chiudibile: "+ \
-                str(check_pratica_chiudibile(the_user, basedir, d_prat))+"\n"
-        text += "  - richiesta approvabile: "+ \
-                str(check_richiesta_approvabile(the_user, basedir, d_prat))+"\n"
-        text += "  - richiesta modificabile: "+ \
-                str(check_richiesta_modificabile(the_user, basedir, d_prat))+"\n"
-        text += "  - richiesta inviabile: "+ \
-                str(check_richiesta_inviabile(the_user, basedir, d_prat))+"\n"
-        text += "  - rdo modificabile: "+ \
-                str(check_rdo_modificabile(the_user, basedir, d_prat))+"\n"
-        text += "  - determina (fase A) cancellabile: "+ \
-                str(check_determina_cancellabile(the_user, basedir, d_prat, "A"))+"\n"
-        text += "  - determina (fase B) cancellabile: "+ \
-                str(check_determina_cancellabile(the_user, basedir, d_prat, "B"))+"\n"
-        text += "  - determina (fase A) modificabile: "+ \
-                str(check_determina_modificabile(the_user, basedir, d_prat, "A"))+"\n"
-        text += "  - determina (fase B) modificabile: "+ \
-                str(check_determina_modificabile(the_user, basedir, d_prat, "B"))+"\n"
-        text += "  - allegati allegabili: "+ \
-                str(check_allegati_allegabili(d_prat))+"\n"
-        text += "  - allegati cancellabili: "+ \
-                str(check_allegati_cancellabili(the_user, d_prat))+"\n"
-        text += "  - ordine (fase A) modificabile: "+ \
-                str(check_ordine_modificabile(the_user, basedir, d_prat, "A"))+"\n"
-        text += "  - ordine (fase A) modificabile: "+ \
-                str(check_ordine_modificabile(the_user, basedir, d_prat, "A"))+"\n"
-        text += "</pre>"
-        return text
-    logging.error('Visualizzazione checks() non autorizzata. Utente: %s', the_user['userid'])
-    fk.session.clear()
-    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
 
 @ACQ.route('/email_approv/<_unused>')
 def email_approv(_unused):
