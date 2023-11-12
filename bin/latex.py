@@ -1,7 +1,22 @@
 """
 Generazione documenti PDF da LaTeX con templates jinja2
+
+Uso per test:
+
+    python3 latex.py [-h] [anno pratica]
+
+Dove:
+
+    -h: mostra questa pagina ed esce
+
+    Senza argomenti: genera un file da dati preordinati
+
+    Se sono specificati anno e pratica (es: 2022/127): viene generato il file
+    relativo alla richiesta della pratica specificata
+
 """
 
+import sys
 import os
 import subprocess
 import logging
@@ -11,14 +26,17 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from PyPDF2 import PdfFileReader, PdfFileWriter
 
+import ftools as ft   # Necessario per test
+
 # VERSION 3.0    05/01/2018  - Versione python3
 # VERSION 3.1    17/10/2019  - path pdflatex configurabile
 # VERSION 3.2    17/10/2019  - Corretto formato per inclusione
 # VERSION 3.3    13/07/2021  - Corretto test offline
+# VERSION 3.3    28/2/2021   - Migliorato test offline
 
 __author__ = 'Luca Fini'
-__version__ = '3.3'
-__date__ = '13/7/2021'
+__version__ = '3.4'
+__date__ = '28/2/2023'
 
 class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
@@ -152,9 +170,9 @@ class SplittedAttachment:
     "Genera pagine PDF per allegato"
     def __init__(self, destdir, pdffile, debug=False):
         self.debug = debug
-        pdfa = PdfFileReader(open(pdffile, mode='rb'))
+        pdfa = PdfFileReader(open(pdffile, mode='rb'))     # pylint: disable=R1732
         npages = pdfa.getNumPages()
-        self.pagefiles = [os.path.join(destdir, "atc_page-%d.pdf"%np) \
+        self.pagefiles = [os.path.join(destdir, f"atc_page-{np}.pdf") \
                          for np in range(npages)]
         for npage, pgfile in enumerate(self.pagefiles):
             output = PdfFileWriter()
@@ -207,7 +225,7 @@ def do_attachments(fname, atcs, debug=False):
     bname, ext = os.path.splitext(fname)
     sfname = bname+'_tmp'+ext
     os.rename(fname, sfname)
-    with open(sfname, 'r') as src, open(fname, 'w') as dst:
+    with open(sfname, 'r', encoding='utf8') as src, open(fname, 'w', encoding='utf8') as dst:
         while True:
             line = src.readline()
             if not line:
@@ -268,8 +286,8 @@ def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):  #pyl
         cmd.extend(['-interaction', 'batchmode'])
     cmd.extend(['-output-directory', tpath, tmplatex])
     logging.info('LaTeX cmd: %s', ' '.join(cmd))
-    subp = subprocess.Popen(cmd, stderr=subprocess.PIPE)
-    errors = subp.stderr.readlines()
+    with subprocess.Popen(cmd, stderr=subprocess.PIPE) as subp:
+        errors = subp.stderr.readlines()
     for err in errors:
         logging.error("LaTeX stderr: %s", err.strip())
     pdffile = os.path.join(destdir, pdfname)
@@ -308,13 +326,35 @@ class PrintLogger:
         "Error output"
         print("ERR - ", fmt%d)
 
-def test():
+ARGERR = 'Errore argomenti: usa -h per help'
+
+def main():
     "Procedura di test"
-
     print()
-    print("latex.py. %s - Version: %s, %s" % (__author__, __version__, __date__))
+    print(f'latex.py. {__author__} - Version: {__version__}, {__date__}')
     print()
 
+    if '-h' in sys.argv:
+        print(__doc__)
+        sys.exit()
+
+    if len(sys.argv) == 1:
+        test1()
+        sys.exit()
+
+    if len(sys.argv) == 3:
+        try:
+            anno = int(sys.argv[1])
+            pratica = int(sys.argv[2])
+        except:                          # pylint: disable=W0702
+            print(ARGERR)
+            sys.exit()
+        test2(anno, pratica)
+        sys.exit()
+    print(ARGERR)
+
+def test1():
+    'test rapido'
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
@@ -330,9 +370,32 @@ def test():
                   indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
 
     if ret:
-        print("Created file: %s" % pdffile)
+        print("Created file:", pdffile)
     else:
         print("Some error")
 
+def test2(anno, nprat):
+    'generazione vera richiesta pratica'
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    pratica = ft.get_pratica(anno, nprat)
+
+    templfile = '../files/richiesta.tex'
+    pdffile = 'test_document.pdf'
+
+    BATCHMODE.on = False
+    ret = makepdf('.', pdffile, templfile, debug=True,
+                  pratica=pratica, user=TEST_USER, sede=TEST_SEDE,
+                  headerpath="../files/header.png",
+                  footerpath="../files/footer.png",
+                  attach=["../files/test_attach.pdf"],
+                  indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
+
+    if ret:
+        print("creato file:", pdffile)
+    else:
+        print("Verifica errori")
+
 if __name__ == '__main__':
-    test()
+    main()

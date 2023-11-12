@@ -132,22 +132,22 @@ def creadirs():
 
     print()
     if os.path.exists(DATADIR):
-        print("Directory %s già esistente"%DATADIR)
+        print(f"Directory {DATADIR} già esistente")
     else:
         os.makedirs(DATADIR)
-        print("Creata directory %s"%DATADIR)
+        print(f"Creata directory {DATADIR}")
 
     if os.path.exists(approvdir):
-        print("Directory %s già esistente"%approvdir)
+        print(f"Directory {approvdir} già esistente")
     else:
         os.makedirs(approvdir)
-        print("Creata directory %s"%approvdir)
+        print(f"Creata directory {approvdir}")
 
     if os.path.exists(WORKDIR):
-        print("Directory %s già esistente"%WORKDIR)
+        print(f"Directory {WORKDIR} già esistente")
     else:
         os.makedirs(WORKDIR)
-        print("Creata directory %s"%WORKDIR)
+        print(f"Creata directory {WORKDIR}")
     print()
 
 def ask_one(name, old_config, new_config, help_text):
@@ -185,7 +185,7 @@ def show(config, filename):
     print()
     print("File di configurazione:", filename)
     for key in keys:
-        print("   %s:"%key, config[key])
+        print(f"   {key}:", config[key])
 
 def main():
     "Procedura"

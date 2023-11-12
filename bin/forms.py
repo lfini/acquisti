@@ -18,12 +18,12 @@ def radio_widget(field, **kwargs):
     field_id = kwargs.pop('id', field.id)
     html = []
     for value, label, checked in field.iter_choices():
-        choice_id = '%s-%s'%(field_id, value)
+        choice_id = f'{field_id}-{value}'
         options = dict(kwargs, name=field.name, value=value, id=choice_id)
         if checked:
             options['checked'] = 'checked'
-        html.append('<input %s />'%ft.html_params(options))
-        html.append('<label for="%s">%s</label><br>'%(field_id, label))
+        html.append(f'<input {ft.html_params(options)} />')
+        html.append(f'<label for="{field_id}">{label}</label><br>')
     return ''.join(html)
 
 def _has(hspec):
@@ -33,13 +33,13 @@ def _has(hspec):
 
 def popup(url, text, size=(700, 500)):
     "Genera codice HTML per popup"
-    return '<a href="%s"  onclick="window.open(\'%s\', \'newwindow\', \'width=%d, height=%d, '\
-           'scrollbars=yes\'); return false;">%s</a>'%(url, url, size[0], size[1], text)
+    return f'<a href="{url}"  onclick="window.open(\'{url}\', \'newwindow\', \'width={size[0]}, '\
+           f'height={size[1]}, scrollbars=yes\'); return false;">{text}</a>'
 
 def render_field(field, oneline=False, **kw):
     "Rendering di un campo"
     if field.help_spec:
-        help_url = fk.Markup('/files/%s'%field.help_spec)
+        help_url = fk.Markup(f'/files/{field.help_spec}')
         hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
     else:
         hlink = ''
@@ -48,14 +48,21 @@ def render_field(field, oneline=False, **kw):
     else:
         sep = "<br />"
     if field.is_required:
-        lab = fk.Markup('<u>%s</u>%s%s'%(str(field.a_label), hlink, sep))
+        lab = fk.Markup(f'<u>{field.a_label:s}</u>{hlink}{sep}')
     else:
-        lab = fk.Markup('%s%s%s'%(str(field.a_label), hlink, sep))
+        lab = fk.Markup(f'{field.a_label}{hlink}{sep}')
     if isinstance(field, MyFormField):
         ret = fk.Markup(field.form.renderme(**kw))
     else:
         ret = fk.Markup(field(**kw))
     return lab+ret
+
+def nota_debug(modi, debug):
+    'introduce nota di Debug'
+    if debug:
+        text = ','.join(modi)
+        return f'<font size=1> solo per {text}<br></font>'
+    return ''
 
 B_TRTD = fk.Markup('<tr><td>')
 E_TRTD = fk.Markup('</td></tr>')
@@ -81,8 +88,8 @@ class MyRadioField(wt.RadioField):
         "Override la pre validation per modificare il messaggio"
         return True
 
-class MyTextField(wt.TextField):
-    "La mia versione del TextField"
+class MyTextField(wt.StringField):
+    "La mia versione del StringField"
     def __init__(self, label, required, *f, **kw):
         super().__init__(label, *f, **kw)
         self.help_spec = _has(self.short_name)
@@ -120,9 +127,9 @@ class MyAttachField(wt.Field):
     "Field per attachments"
     def set(self, choices):
         "Imposta scelte del menù"
-        self.choices = choices
+        self.choices = choices             #pylint: disable=W0201
 
-    def __call__(self, *_unused):
+    def __call__(self, **_unused):
         ret = "<table><tr>"
         for atch in self.choices:
             if atch[2] == ALL_SPEC:
@@ -177,7 +184,7 @@ class MyUpload(FormWErrors):
     "Form per upload di files"
     upload_file = wt.FileField('Aggiungi allegato', [wt.validators.Optional()])
     tipo_allegato = MyAttachField()
-    sigla_ditta = wt.TextField('')
+    sigla_ditta = wt.StringField('')
 
     def __init__(self, choices, *p, **kw):
         super().__init__(*p, **kw)
@@ -185,10 +192,10 @@ class MyUpload(FormWErrors):
 
 class ImportoPiuIva(FormWErrors):
     "Form per importo più I.V.A."
-    importo = wt.TextField("Importo", [wt.validators.Optional()])
+    importo = wt.StringField("Importo", [wt.validators.Optional()])
     valuta = wt.SelectField("Valuta", choices=MENU_VALUTA)
     iva = wt.SelectField("Iva", choices=MENU_IVA)
-    iva_free = wt.TextField("", [wt.validators.Optional()])
+    iva_free = wt.StringField("", [wt.validators.Optional()])
 
     def validate(self, *_unused1, **_unused2):
         "Validazione dati"
@@ -223,10 +230,10 @@ class CostoPiuTrasporto(FormWErrors):
 
 class MyLoginForm(FormWErrors):
     "Form per login"
-    userid = wt.TextField('Username')
+    userid = wt.StringField('Username')
     password = wt.PasswordField('Password')
 
-    def __init__(self, thedir, us, pw, ldap_host, ldap_port, **kwargs):
+    def __init__(self, thedir, us, pw, ldap_host, ldap_port, **kwargs):    #pylint: disable=R0913
         "Costruttore"
         self._dd = thedir
         self._us = us
@@ -235,7 +242,7 @@ class MyLoginForm(FormWErrors):
         self._ldap_port = ldap_port
         super().__init__(**kwargs)
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione specifica"
         if not self.userid.data:
             self.errlist.append("Devi specificare il nome utente")
@@ -275,7 +282,7 @@ class RichiestaAcquisto(FormWErrors):
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def validate(self):
+    def validate(self, extra_validators=None):                                   #pylint: disable=R0912
         if not ft.date_to_time(self.data_richiesta.data):
             self.errlist.append("Errore specifica data")
         if not self.descrizione_acquisto.data:
@@ -318,10 +325,9 @@ class RichiestaAcquisto(FormWErrors):
             if self.modalita_acquisto.data in (SUPER_5000, SUPER_1000, PROC_NEG):
                 html += B_TRTD+render_field(self.giustificazione, rows=3, cols=80)+E_TRTD
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
-            html += B_TRTD+fk.Markup('<div align=right> &rightarrow; %s</div>'% \
-                                     popup(fk.url_for('vedicodf'),
-                                           'Vedi lista Codici fondi e responsabili',
-                                           size=(1100, 900)))
+            pop =popup(fk.url_for('vedicodf'),
+                       'Vedi lista Codici fondi e responsabili', size=(1100, 900))
+            html += B_TRTD+fk.Markup(f'<div align=right> &rightarrow; {pop}</div>')
             html += render_field(self.email_responsabile)
             html += BRK+render_field(self.lista_codf)+E_TRTD
 
@@ -354,7 +360,7 @@ class DeterminaA(FormWErrors):
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione specifica per il form"
         if not self.numero_determina.data:
             self.errlist.append("Manca numero determina")
@@ -370,13 +376,14 @@ class DeterminaA(FormWErrors):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = B_TRTD+fk.Markup('Richiesta del %(data_richiesta)s. Resp.Fondi:'\
-                                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s'%d_prat)
-        html += fk.Markup('<p><b>%(descrizione_acquisto)s'%d_prat)+E_TRTD
+        html = B_TRTD+fk.Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
+        html += fk.Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_determina)+BRK
         html += render_field(self.data_determina)+BRK
         html += render_field(self.nome_direttore)+E_TRTD
-        html += B_TRTD+fk.Markup("Codici Fondi: %s<p>"%d_prat[STR_CODF])
+        html += B_TRTD+fk.Markup(f"Codici Fondi: {d_prat[STR_CODF]}<p>")
         html += render_field(self.capitolo)+BRK
         html += render_field(self.cup)+BRK
 #       html.append(render_field(self.email_rup)+'</td></tr><tr><td>')
@@ -400,7 +407,7 @@ class DeterminaB(FormWErrors):
         super().__init__(*pw, **kw)
         self._vinc = vincitore
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione specifica per il form"
         if not self.numero_determina_b.data:
             self.errlist.append("Manca numero determina")
@@ -412,23 +419,24 @@ class DeterminaB(FormWErrors):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = B_TRTD+fk.Markup('Richiesta del %(data_richiesta)s. Resp.Fondi: '\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s'%d_prat)
-        html += fk.Markup('<p><b>%(descrizione_acquisto)s'%d_prat)+E_TRTD
+        html = B_TRTD+fk.Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
+        html += fk.Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_determina_b)+BRK
         html += render_field(self.data_determina_b)+BRK
         html += render_field(self.nome_direttore_b)+E_TRTD
-        html += B_TRTD+fk.Markup("<b>Modalità acquisto:</b> %s<br>"%d_prat[STR_MOD_ACQ])
-        html += fk.Markup("<b>Criterio di assegnazione:</b> %s<br>"%d_prat[STR_CRIT_ASS])
-        html += fk.Markup("<b>Codici Fondi:</b> %s<br>" % d_prat[STR_CODF])
-        html += fk.Markup("<b>Capitolo:</b> %s<br>"%d_prat[CAPITOLO])
+        html += B_TRTD+fk.Markup(f"<b>Modalità acquisto:</b> {d_prat[STR_MOD_ACQ]}<br>")
+        html += fk.Markup(f"<b>Criterio di assegnazione:</b> {d_prat[STR_CRIT_ASS]}<br>")
+        html += fk.Markup(f"<b>Codici Fondi:</b> {d_prat[STR_CODF]}<br>")
+        html += fk.Markup(f"<b>Capitolo:</b> {d_prat[CAPITOLO]}<br>")
         cup = d_prat.get(CUP).strip()
         if cup:
-            html += fk.Markup("<b>CUP:</b> %s<br>"%cup)
-        html += fk.Markup("<b>RUP:</b> %s<br>"%d_prat[RUP])
+            html += fk.Markup(f"<b>CUP:</b> {cup}<br>")
+        html += fk.Markup(f"<b>RUP:</b> {d_prat[RUP]}<br>")
         if self._vinc:
-            html += fk.Markup("<b>Vincitore:</b> %s - %s"%(d_prat[VINCITORE][NOME_DITTA],
-                                                           d_prat[VINCITORE][SEDE_DITTA]))+E_TRTD
+            html += fk.Markup(f"<b>Vincitore:</b> {d_prat[VINCITORE][NOME_DITTA]} "\
+                              f"- {d_prat[VINCITORE][SEDE_DITTA]}")+E_TRTD
         else:
             html += fk.Markup('<b>Vincitore:</b> nessun vincitore')+E_TRTD
             html += B_TRTD+render_field(self.art_2, cols=100)+E_TRTD
@@ -451,7 +459,7 @@ class Ordine(FormWErrors):
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione specifica per il form"
         if not self.numero_ordine.data:
             self.errlist.append("Manca numero ordine")
@@ -467,11 +475,12 @@ class Ordine(FormWErrors):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = B_TRTD+fk.Markup('Richiesta del %(data_richiesta)s. Resp.Fondi: '\
-                '%(nome_responsabile)s. Richiedente: %(nome_richiedente)s'%d_prat)
-        html += fk.Markup('<p><b>%(descrizione_acquisto)s</b></p>'%d_prat)
-        html += fk.Markup('<p>Presso la ditta:<blockquote>%(nome_fornitore)s<br>'\
-                    '%(ind_fornitore)s</blockquote>'%d_prat)+E_TRTD
+        html = B_TRTD+fk.Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
+        html += fk.Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')
+        html += fk.Markup(f'<p>Presso la ditta:<blockquote>{d_prat[NOME_FORNITORE]}<br>'\
+                          f'{d_prat[IND_FORNITORE]}</blockquote>')+E_TRTD
         html += B_TRTD+fk.Markup('<table width=100%><tr><td align=left>')+ \
                     render_field(self.numero_ordine)+fk.Markup('</td>')
         html += fk.Markup('<td align=right>')+render_field(self.lingua_ordine)+ \
@@ -578,12 +587,12 @@ class PraticaRDO(FormWErrors):
         "Rendering del form"
         html = B_TRTD+render_field(self.inizio_gara)+BRK
         html += render_field(self.fine_gara)+E_TRTD
-        html += B_TRTD+fk.Markup("<b>%s</b><br>"%self.lista_ditte.a_label)
+        html += B_TRTD+fk.Markup(f"<b>{self.lista_ditte.a_label}</b><br>")
         html += fk.Markup("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
                           "<th>Indirizzo</th><th>Vincitore</th><th>"\
                           "<img src=/files/del-20.png></th></tr></td></tr>")
         for idx, ditta in enumerate(self.lista_ditte):
-            html += B_TRTD+fk.Markup("%d</td>"%(idx+1))+ \
+            html += B_TRTD+fk.Markup(f"{(idx+1)}</td>")+ \
                                      ditta.renderme(number=idx, **kw)+fk.Markup("</tr>")
         html += E_TRTD+fk.Markup("</table><br>")
         html += fk.Markup("<div align=right>")+self.T_more()+fk.Markup("</div>")+E_TRTD
@@ -592,7 +601,7 @@ class PraticaRDO(FormWErrors):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione"
         tt0 = ft.date_to_time(self.inizio_gara.data)
         if tt0 is None:
@@ -627,7 +636,7 @@ class CodfForm(FormWErrors):
     annulla = wt.SubmitField('Annulla')
     cancella = wt.SubmitField('Cancella record')
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione"
         ret = True
         if not self.Codice.data:
@@ -656,7 +665,7 @@ class UserForm(FormWErrors):
     annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
     cancella = wt.SubmitField('Cancella record', [wt.validators.Optional()])
 
-    def validate(self):
+    def validate(self, extra_validators=None):
         "Validazione"
         if not (self.userid.data and self.name.data \
                 and self.surname.data and self.email.data):

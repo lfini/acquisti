@@ -3,7 +3,6 @@ Tools per la procedura acquisti.py
 
 Uso da linea di comando:
     python ftools.py access     - test username/password
-    python ftools.py adm        - Assegna privilegi di amministratore a utente
     python ftools.py ndet       - Visualizza ultimo num. determina
     python ftools.py nprat      - Visualizza ultimo num. pratica
     python ftools.py plist      - Visualizza elenco pratiche
@@ -33,6 +32,7 @@ Uso da linea di comando:
 # VERSION 4.8.2  18/11/2021 Aggiunta funzione _last_resort_log() e modificata funzione
 #                           di autenticazione
 # VERSION 4.8.3  29/11/2021 Corretto errore in autenticazione
+# VERSION 4.9    11/11/2023 passato con pylint
 
 import sys
 import os
@@ -57,7 +57,7 @@ import ldap3
 from Crypto.Cipher import AES
 import pam
 
-from constants import *       # pylint: disable=W0401
+from constants import *       # pylint: disable=W0614,W0401
 import table as tb
 import latex
 import send_email as sm
@@ -65,8 +65,8 @@ import send_email as sm
 # pylint: disable=C0302, W0703
 
 __author__ = 'Luca Fini'
-__version__ = '4.8.3'
-__date__ = '29/11/2021'
+__version__ = '4.9'
+__date__ = '11/11/2023'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -83,7 +83,7 @@ USER_DN = 'uid=%s,ou=people,dc=inaf,dc=it'
 
 def version():
     "Riporta versione del modulo"
-    return "ftools.py. Versione %s - %s, %s"%(__version__, __author__, __date__)
+    return f"ftools.py. Versione {__version__} - {__author__}, {__date__}"
 
 def _setformatter():
     logger = logging.getLogger()
@@ -98,7 +98,7 @@ def _setformatter():
 def _last_resort_log(message):
     "funzione chamata quando c'è un errore nel logger"
     fname = os.path.join(WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
-    with open(fname, "a") as f_out:
+    with open(fname, "a", encoding='utf8') as f_out:
         print(message, file=f_out)
 
 class MyException(RuntimeError):
@@ -118,7 +118,7 @@ class GMailHandler(StreamHandler):           # pylint: disable=R0903
         try:
             sm.send("", None, self.fromaddr, self.dest, self.subject, self.format(record))
         except Exception as excp:
-            _last_resort_log("Errore invio email a: %s\n- %s"%(self.dest, str(excp)))
+            _last_resort_log(f"Errore invio email a: {self.dest}\n- {excp}")
 #       print("GMailHandler emit:", record)
 
 def set_file_logger(path):
@@ -197,7 +197,7 @@ Ritorno: -1 (errore LDAP), 0 id/pw non validi, 1 id/pw validi"""
 def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # pylint: disable=R0913
     "Invio messaggio e-mail"
     if debug_addr:
-        warning = "MODO DEBUG - destinatari originali: %s\n\n"%', '.join(recipients)
+        warning = f"MODO DEBUG - destinatari originali: {', '.join(recipients)}\n\n"
         message = warning+body
         dest = [debug_addr]
         subjd = subj+' (DEBUG)'
@@ -210,7 +210,7 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # py
     try:
         sm.send(mailhost, None, sender, dest, subjd, message)
     except Exception as excp:
-        errmsg = "Mail to: %s - "%', '.join(recipients)+str(excp)
+        errmsg = f"Mail to: {', '.join(recipients)} - "+str(excp)
         logging.error(errmsg)
         return False
     return True
@@ -344,18 +344,17 @@ def stringa_costo(costo, lang):
     "Generazione della stringa per il costo del bene"
     ret = stringa_valore(costo[COSTO], lang)
     if costo[MODO_TRASP] == SPECIFICARE:
-        trasp = "(più trasporto: " if lang == "it" else "(plus shipping: "
+        trasp = " (più trasporto: " if lang == "it" else "(plus shipping: "
         ret += trasp+stringa_valore(costo["costo_trasporto"], lang)+")"
     elif costo[MODO_TRASP] == TRASP_INC:   # trasporto incluso
         ret += ", incluso trasporto" if lang == "it" else ', shipping included'
     return ret
 
-
 def find_max_prat(year=None):
     "Cerca il massimo valore del numero pratica"
     if not year:
         year = thisyear()
-    yys = '%d'%year
+    yys = f'{year}'
     dpath = os.path.join(DATADIR, yys)
     if not os.path.exists(dpath):
         return 0
@@ -375,7 +374,7 @@ def _find_max_field(what, year=None):
         year = thisyear()
     if not isinstance(what, (list, tuple)):
         what = (what,)
-    yys = '%d'%year
+    yys = f'{year}'
     dpath = os.path.join(DATADIR, yys)
     try:
         plist = os.listdir(dpath)
@@ -433,21 +432,21 @@ class FTable(tb.Table):
         "HTML rendering di un campo per uso in un form"
         html = [TABLE_HEADER]
         if title:
-            html.append('<h1> %s </h1>'%title)
+            html.append(f'<h1> {title} </h1>')
         if errors:
             html.append("<hr><b><font color=red>Attenzione:</font></b><br />")
             for err in errors:
                 html.append("&nbsp;&nbsp; - "+err+"<br />")
             html.append("<hr>")
-        html.append('<form method="POST" action="%s">'%action)
+        html.append(f'<form method="POST" action="{action}">')
         if nrow > 0:
-            html.append('<b>Record N. %d</b><p>'%nrow)
+            html.append(f'<b>Record N. {nrow}</b><p>')
         html.append('<dl>')
         for fname in self.header[1:]:
             if fname in ignore:
                 continue
             val = str(form[fname])
-            html.append('<dt> %s <dd> %s'%(form[fname].label, val))
+            html.append(f'<dt> {form[fname].label} <dd> {val}')
         html.append('</dl>')
         html.append(str(form['annulla']) + '&nbsp;&nbsp;' + str(form['avanti']))
         if nrow > 0:
@@ -459,17 +458,17 @@ class FTable(tb.Table):
         "HTML rendering di un campo"
         html = [TABLE_HEADER]
         if title:
-            html.append('<h1> %s </h1>'%title)
+            html.append(f'<h1> {title} </h1>')
         if index:
             fields = self.header
         else:
             fields = self.header[1:]
         row = self.get_row(nrow, index=index, as_dict=True)
-        html.append('<b>Record N. %d</b><p>'%nrow)
+        html.append(f'<b>Record N. {nrow}</b><p>')
         html.append('<dl>')
         for fld in fields:
             val = row[fld]
-            html.append('<dt> %s <dd> %s'%(fld, val))
+            html.append(f'<dt> {fld} <dd> {val}')
         html.append('</dl>')
         return '\n'.join(html)
 
@@ -479,7 +478,7 @@ class FTable(tb.Table):
         "HTML rendering della tabella"
         def _formrow(row):
             dname = row[0]
-            ret = '<tr><td><a href="%s/%d">%s</a></td><td>'%(select_url[0], dname, edit_symb)
+            ret = f'<tr><td><a href="{select_url[0]}/{dname}">{edit_symb}</a></td><td>'
             return ret+'</td><td>'.join([str(r) for r in row[1:]])+'</td></tr>'
         def _fullrow(row):
             return '<tr><td>'+'</td><td>'.join([str(r) for r in row])+'</td></tr>'
@@ -493,19 +492,19 @@ class FTable(tb.Table):
 
         html = [TABLE_HEADER]
         if title:
-            html.append('<h1> %s </h1>'%title)
+            html.append(f'<h1> {title} </h1>')
         if messages:
             html.append('<hr>')
             for msg in messages:
-                html.append('<p> %s </p>'%msg)
+                html.append(f'<p> {msg} </p>')
             html.append('<hr>')
         render_menu = []
         for mnu in menu:
-            render_menu.append('<a href="%s">%s</a>'%tuple(mnu))
+            render_menu.append(f'<a href="{mnu[0]}">{mnu[1]}</a>')
         if render_menu:
-            html.append('%s'%'&nbsp;|&nbsp'.join(render_menu))
+            html.append('&nbsp;|&nbsp'.join(render_menu))
         if select_url:
-            html.append('<hr>%s'%select_url[1])
+            html.append(f'<hr>{select_url[1]}')
         if select_url:
             dorow = _formrow
             fields = ['&nbsp;'] + self.header[1:]
@@ -526,8 +525,7 @@ class FTable(tb.Table):
             html.append(dorow(row))
         html.append('</table>')
         if footer:
-            html.append('<center><font size=1>%s</font></center>'%footer)
-
+            html.append(f'<center><font size=1>{footer}</font></center>')
         return '\n'.join(html)
 
 ########################################## End table support
@@ -552,7 +550,7 @@ def html_params(params, escape=True):
         filt = lambda x: x
     parlist = []
     for key, value in params.items():
-        parlist.append('%s="%s"'%(key, filt(value)))
+        parlist.append(f'{key}={filt(value)}')
     return ' '.join(parlist)
 
 def login_check(session):
@@ -597,7 +595,7 @@ def internal_error(msg=''):
     "Riporta errore in formato HTML"
     ret = "<h1>Errore interno</h1>"
     if msg:
-        ret += "<h3>%s</h3>"%msg
+        ret += f"<h3>{msg}</h3>"
     return ret
 
 def thisyear():
@@ -651,9 +649,9 @@ def newdir(thedir):
 
 def spawn(command, inp=None):
     "Lancia comando dato"
-    sbp = subprocess.Popen(command, stdin=subprocess.PIPE,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdoutdata, stderrdata = sbp.communicate(inp)
+    with subprocess.Popen(command, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE) as sbp:
+        stdoutdata, stderrdata = sbp.communicate(inp)
     return (stdoutdata, stderrdata)
 
 def procinfo():
@@ -662,15 +660,15 @@ def procinfo():
     pyv = sys.version_info
     ret = [('User', pwd.getpwuid(os.getuid())[0]),
            ('PID', str(os.getpid())),
-           ('OS', '%s-%s %s'%(unm[0], unm[4], unm[2])),
-           ('Python', '%d.%d.%d'%(pyv[0], pyv[1], pyv[2]))]
+           ('OS', f'{unm[0]}-{unm[4]} {unm[2]}'),
+           ('Python', f'{pyv[0]}.{pyv[1]}.{pyv[2]}')]
     return ret
 
 def swapname(name):
     "Scambia 'cognome, nome' e riporta 'nome, cognome'"
     spn = name.split(', ')
     if len(spn) == 2:
-        ret = '%s %s'%(spn[1].strip(), spn[0].strip())
+        ret = f'{spn[1].strip()} {spn[0].strip()}'
     else:
         ret = name
     return ret
@@ -736,7 +734,7 @@ def _read_userlist():
     if GlobLists.USERLIST.empty():
         logging.error("Errore lettura userlist: %s", GlobLists.USERLIST.filename)
     user_sn = GlobLists.USERLIST.columns((2, 3))
-    user_fn = ['%s %s'%(x[0], x[1]) for x in user_sn]
+    user_fn = [f'{x[0]} {x[1]}' for x in user_sn]
     GlobLists.USERLIST.add_column(6, 'fullname', column=user_fn)
     logging.info("Lista utenti aggiornata")
 
@@ -815,7 +813,7 @@ def checkdir():
     thedir = DATADIR
     if not os.path.exists(thedir):
         print()
-        print("Directory %s inesistente"%thedir)
+        print(f"Directory {thedir} inesistente")
         print("\nDevi creare le directory di lavoro\n")
         sys.exit()
     return thedir
@@ -832,18 +830,18 @@ def makeuser(userid):                         # pylint: disable=R0912,R0915
         user = user[0]
         print()
         print("Dati per l'utente:", userid)
-        print(" -                    Nome: '%s'"%user[2])
-        print(" -                 Cognome: '%s'"%user[1])
-        print(" -                   Email: '%s'"%user[3])
-        print(" - Password ('-': usa PAM): '%s'"%user[5])
-        print(" -               Privilegi: '%s'"%user[4])
+        print(" -                    Nome: "+user[2])
+        print(" -                 Cognome: "+user[1])
+        print(" -                   Email: "+user[3])
+        print(" - Password ('-': usa PAM): "+user[5])
+        print(" -               Privilegi: "+user[4])
         print()
         print("Legenda privilegi: A, amministrazione; D, developer; L, modifica LDAP")
         print()
         ans = input('Modificare/Cancellare utente [m/c]? ')
         ans = ans[:1].lower()
         if ans == "c":
-            ans = input("Confermi cancellazione utente %s %s [%s]? "%(user[2], user[1], userid))
+            ans = input(f"Confermi cancellazione utente {user[2]} {user[1]}, [{userid}]? ")
             ans = ans[:1].lower()
             if ans == "s":
                 rec = uls.where('userid', userid, index=True)
@@ -851,21 +849,21 @@ def makeuser(userid):                         # pylint: disable=R0912,R0915
                     pos = rec[0][0]
                     uls.delete_row(pos)
                     uls.save()
-                    print("Record utente %s cancellato"%userid)
+                    print(f"Record utente {userid} cancellato")
             return
         if ans != "m":
             return
     else:
         user = ["", "", "", "", "", ""]
         print("Definizione dati per utente:", userid)
-    name = input(" -                      Nome [%s]: "%user[2])
-    surname = input(" -                   Cognome [%s]: "%user[1])
-    email = input(" -                     Email [%s]: "%user[3])
+    name = input(f" -                      Nome [{user[2]}]: ")
+    surname = input(f" -                   Cognome [{user[1]}]: ")
+    email = input(f" -                     Email [{user[3]}]: ")
     while True:
         password = input(" - Password ('-': usa PAM/LDAP): ")
         if password:
             break
-    flags = input(" -                 Privilegi (ALD) [%s]: "%user[4])
+    flags = input(f" -                 Privilegi (ALD) [{user[4]}]: ")
     if not name:
         name = user[2]
     else:
@@ -908,7 +906,7 @@ def makeuser(userid):                         # pylint: disable=R0912,R0915
                     'pw': pwcrypt, 'flags': flags})
         uls.insert_row(row, pos)
         uls.save()
-        print("Record utente %s modificato"%userid)
+        print(f"Record utente {userid} modificato")
     else:
         print("Nessuna modifica")
 
@@ -917,11 +915,10 @@ def signature(path):
     fname = os.path.join(*path)
     shsum = hashlib.sha256()
     try:
-        fds = open(fname, mode='rb')
+        with open(fname, mode='rb') as fds:
+            shsum.update(fds.read())
     except Exception:
         return ''
-    shsum.update(fds.read())
-    fds.close()
     return shsum.hexdigest()
 
 def setfield(thedir, userid, field, value):
@@ -933,16 +930,9 @@ def setfield(thedir, userid, field, value):
         user[field] = value
         uls.insert_row(user, pos=0)
         uls.save()
-        print("Utente %s. campo %s fatto uguale a: %s"%(userid, field, str(value)))
+        print(f"Utente {userid}. campo {field} fatto uguale a: {value}")
     else:
-        print("L'utente %s non esiste"%userid)
-
-def setadmin():
-    "assegna ad utente orivilegio di amministratore"
-    thedir = checkdir()
-    userid = input('Userid: ')
-    if userid:
-        setfield(thedir, userid, 'admin', 1)
+        print(f"L'utente {userid} non esiste")
 
 def is_year(year):
     "verifica numero anno corretto"
@@ -951,6 +941,11 @@ def is_year(year):
     except Exception:
         return False
     return 2000 < nyr < 3000
+
+def get_pratica(anno, num):
+    'riporta la pratica indicata come dict'
+    basedir = namebasedir(anno, num)
+    return tb.jload((basedir, PRAT_JFILE))
 
 def get_years(ddate):
     "trova elenco anni definiti"
@@ -962,8 +957,8 @@ def get_years(ddate):
 
 def namebasedir(anno, num):
     "genera path directory per nuova pratica"
-    stanno = '%4.4d' % int(anno)
-    stnum = '%6.6d' % int(num)
+    stanno = f'{int(anno):04d}'
+    stnum = f'{int(num):06d}'
     basedir = os.path.join(DATADIR, stanno, stanno+'_'+stnum)
     return basedir
 
@@ -1062,9 +1057,9 @@ def testlogin():
         return
     ret, why = authenticate(userid, psw, ldap_host, ldap_port)
     if ret:
-        print(' - Accesso: OK [%s]'%why)
+        print(f' - Accesso: OK [{why}]')
     else:
-        print(' - Accesso: NO [%s]'%why)
+        print(f' - Accesso: NO [{why}]')
 
 def show64file(filename):
     "Mostra file json codificato"
@@ -1106,14 +1101,14 @@ def showmaxdet():
     year = input_anno()
     ndet, prat = find_max_det(year)
     print()
-    print("Ultima determina anno %d: %d (pratica: %s)"%(year, ndet, prat))
+    print(f"Ultima determina anno {year}: {ndet} (pratica: {prat})")
 
 def showmaxprat():
     "Trova massimo numero di pratica"
     year = input_anno()
     prat = find_max_prat(year)
     print()
-    print("Ultima pratica anno %d: %s"%(year, prat))
+    print(f"Ultima pratica anno {year}: {prat}")
 
 _EXTRACT = (NUMERO_PRATICA, DATA_RICHIESTA, NOME_RICHIEDENTE,
             NOME_RESPONSABILE, DESCRIZIONE_ACQUISTO)
@@ -1158,8 +1153,8 @@ def showusers():
     uls.sort("surname")
 
     for usr in uls:
-        fname = "%s, %s [%s]"%(usr[2], usr[3], usr[1])
-        print("%-42s %-30s  %s"%(fname, usr[4], usr[5]))
+        fname = f"{usr[2]}, {usr[3]} [{usr[1]}]"
+        print(f"{fname:>42} {usr[4]:>30}  {usr[5]}")
 
 def showvalues():
     "Elenca tutti i valori nei campi delle pratiche"
@@ -1171,7 +1166,7 @@ def showvalues():
             break
         fields.append(field)
     vals = allfieldvals(fields, year)
-    print("Elenco combinazioni valori nei campi: %s per l'anno %d"%(", ".join(fields), year))
+    print(f"Elenco combinazioni valori nei campi: {', '.join(fields)} per l'anno {year}")
     for val in vals:
         print(" -", val)
 
@@ -1224,9 +1219,9 @@ def showpratiche():
     print("Elenco pratiche per l'anno", year)
     elenco = DocList(DATADIR, 'pratica.json', year=year, extract=_EXTRACT)
     for rec in elenco.records:
-        print(" - %s %s %s/%s"%(rec[NUMERO_PRATICA], rec[DATA_RICHIESTA],
-                                rec[NOME_RICHIEDENTE], rec[NOME_RESPONSABILE]))
-        print("   %s"%rec[DESCRIZIONE_ACQUISTO])
+        print(f" - {rec[NUMERO_PRATICA]} {rec[DATA_RICHIESTA]}",
+              f"{rec[NOME_RICHIEDENTE]}/{rec[NOME_RESPONSABILE]}")
+        print(f"   {rec[DESCRIZIONE_ACQUISTO]}")
     if elenco.errors:
         print("Errori di accesso alle pratiche:")
         for err in elenco.errors:
@@ -1245,8 +1240,6 @@ def main():                                           # pylint: disable=R0912
 
     if verb == 'ac':
         testlogin()
-    elif verb == 'ad':
-        setadmin()
     elif verb == 'al':
         showallfields()
     elif verb == 'nd':

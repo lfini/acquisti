@@ -1,6 +1,16 @@
 """
 Procedura CGI per gestione acquisti
+
+Uso:
+    python acquisti.py [-h] [-v]
+
+Dove:
+    -h   mostra aiuto
+    -v   mostra versione ed esce
+
+Lanciato senza argomenti, attiva il modo debug
 """
+
 import sys
 import time
 import os
@@ -59,10 +69,11 @@ import table as tb
 #                            con server google
 # Versione 4.8   6/2021:     Corretto bug nella generazione dei messaggi di richiesta approvazione
 # Versione 4.9  11/2021:     Modificato layout pagine PDF generate (per effetto "carta intestata")
+# Versione 4.10  11/2023:    introdotto logging delle URL. Passato con pylint
 
 __author__ = 'Luca Fini'
-__version__ = '4.9'
-__date__ = '2/11/2021'
+__version__ = '4.10'
+__date__ = '11/11/2023'
 
 __start__ = time.asctime(time.localtime())
 
@@ -427,13 +438,13 @@ def _nome_da_email(embody, prima_nome=True):
     row = ft.GlobLists.USERLIST.where('email', embody.strip())
     if row:
         if prima_nome:
-            return '{} {}'.format(row[0][2], row[0][1])
-        return '{}, {}'.format(row[0][1], row[0][2])
+            return f'{row[0][2]} {row[0][1]}'
+        return f'{row[0][1]}, {row[0][2]}'
     return '??, ??'
 
 def _hrecord(username, rec):
     "generazione line di storia della pratica"
-    return '{} il {} ({})'.format(rec, ft.today(), username)
+    return f'{rec} il {ft.today()} ({username})'
 
 def _make_mail_body(testo, d_prat):
     "generazione testo messaggio email"
@@ -458,11 +469,11 @@ def _email_approv(d_prat, ritrasm):
         if DEBUG.local:
             webm = CONFIG[EMAIL_WEBMASTER]
             recipients = [webm]
-            info = "Modo debug: invio e-mail a: {}. Pratica {}".format(webm, prat)
+            info = f"Modo debug: invio e-mail a: {webm}. Pratica {prat}"
         else:
             recipients = [eresp]
-            info = "Invio richiesta approvazione a: {}. " \
-                   "Pratica {}. Subj: {}".format(eresp, prat, subj)
+            info = f"Invio richiesta approvazione a: {eresp}. " \
+                   f"Pratica {prat}. Subj: {subj}"
         ret = ft.send_email(CONFIG.get(SMTP_HOST), sender, recipients,
                             subj, body, debug_addr=DEBUG.email)
         if ret:
@@ -511,8 +522,8 @@ def _approva_richiesta(username, basedir, d_prat, sgn):
     d_prat[STATO_PRATICA] = hist
     d_prat[STORIA_PRATICA].append(_hrecord(username, hist))
     tb.jsave((basedir, PRAT_JFILE), d_prat)
-    fk.flash("L'approvazione della richiesta {} è stata correttamente "
-             "registrata".format(d_prat[NUMERO_PRATICA]), category="info")
+    fk.flash(f"L'approvazione della richiesta {d_prat[NUMERO_PRATICA]} è stata"
+             "correttamente registrata", category="info")
 
     sender = d_prat[EMAIL_RESPONSABILE]
     prat = d_prat[NUMERO_PRATICA]
@@ -799,8 +810,8 @@ def _pratica_ascendente(item):
 def _render_richiesta(form, d_prat):
     "rendering del form richiesta di acquisto"
     ddp = {'title': 'Richiesta di acquisto',
-           'subtitle': 'Pratica N. %(numero_pratica)s<br><br>'
-                       'Richiedente: %(nome_richiedente)s'%d_prat,
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}<br><br>"
+                       f"Richiedente: {d_prat['nome_richiedente']}",
            'before': '<form method=POST action=/modificarichiesta '
                      'accept-charset="utf-8" novalidate>',
            'after': '</form>',
@@ -827,14 +838,14 @@ def filename_allegato(model, prefix, origname, ext, spec, d_prat):    # pylint: 
         if spec:
             cspec = spec.strip("/\\?!;,><|#*\"'$%&£()`§")
             cspec = cspec.replace(" ", "_")
-            name = "%s_(%s)%s"%(prefix, cspec, ext)
+            name = f"{prefix}_({cspec}){ext}"
         else:
             name = ""
     elif model == ALL_NAME:
         name = prefix+origname+ext
     elif model == ALL_PRAT:
         nprat = d_prat[NUMERO_PRATICA].replace("/", "-")
-        name = "%s_%s%s"%(prefix, nprat, ext)
+        name = f"{prefix}_{nprat}{ext}"
     else:
         raise ILL_ATCH
     return name
@@ -855,7 +866,7 @@ def _rdo_validate(dati_pratica):
 
 def _errore_basedir(user):
     "Segnala errore sessione"
-    return "basedir assente in sessione. user: %s"%user
+    return "basedir assente in sessione. User: "+user['userid']
 
 def _errore_accesso(basedir):
     "Segnala errore di accesso"
@@ -863,28 +874,28 @@ def _errore_accesso(basedir):
 
 def _errore_doclist(anno):
     "segnala errore lista documenti"
-    return "Errore DocList, anno %d. Forse una directory per pratica vuota?"%anno
+    return f"Errore DocList, anno {anno}. Forse una directory per pratica vuota?"
 
 def _menu_scelta_utente(topline):
     "genera menù per acelta utente"
     menulist = [(x[4], x[6]) for  x in ft.GlobLists.USERLIST.rows]
     menulist.sort(key=lambda x: x[1])
-    menulist.insert(0, ('', '-- %s --'%topline))
+    menulist.insert(0, ('', f'-- {topline} --'))
     return menulist
 
 def _nome_resp(ulist, eaddr, prima_nome=True):
     if prima_nome:
-        return '%s %s'%(ulist.get(eaddr, ['', '', '??', '??'])[3],
-                        ulist.get(eaddr, ['', '??', '??'])[2])
-    return '%s, %s'%(ulist.get(eaddr, ['', '', '??', '??'])[2],
-                     ulist.get(eaddr, ['', '??', '??'])[3])
+        return f"{ulist.get(eaddr, ['', '', '??', '??'])[3]} " \
+               f"{ulist.get(eaddr, ['', '??', '??'])[2]}"
+    return f"{ulist.get(eaddr, ['', '', '??', '??'])[2]}, " \
+           f"{ulist.get(eaddr, ['', '??', '??'])[3]}"
 
 def modificadetermina_a(user, basedir, d_prat):
     "pagina: modifica determina fase A"
     if NUMERO_DETERMINA_A not in d_prat:
         year = ft.thisyear()
         ndet = ft.find_max_det(year)[0]+1
-        d_prat[NUMERO_DETERMINA_A] = "%d/%4.4d" % (ndet, year)
+        d_prat[NUMERO_DETERMINA_A] = f"{ndet}/{year:4d}"
         d_prat[DATA_DETERMINA_A] = ft.today(False)
         d_prat[NOME_DIRETTORE] = CONFIG[NOME_DIRETTORE]
         logging.info("Nuovo num. determina: %s", d_prat[NUMERO_DETERMINA_A])
@@ -917,7 +928,7 @@ def modificadetermina_a(user, basedir, d_prat):
         logging.debug("Errori form DeterminaA: %s", "; ".join(errors))
 
     ddp = {'title': 'Immissione dati per determina',
-           'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
            'before': '<form method=POST action=/modificadetermina/A '
                      'accept-charset="utf-8" novalidate>',
            'after': "</form>",
@@ -937,7 +948,7 @@ def modificadetermina_b(user, basedir, d_prat):
     if NUMERO_DETERMINA_B not in d_prat:
         year = ft.thisyear()
         ndet = ft.find_max_det(year)[0]+1
-        d_prat[NUMERO_DETERMINA_B] = "%d/%4.4d" % (ndet, year)
+        d_prat[NUMERO_DETERMINA_B] = f"{ndet}/{year:4d}"
         d_prat[DATA_DETERMINA_B] = ft.today(False)
         d_prat[NOME_DIRETTORE_B] = d_prat[NOME_DIRETTORE]
         logging.info("Nuovo num. determina B: %s", d_prat[NUMERO_DETERMINA_B])
@@ -969,7 +980,7 @@ def modificadetermina_b(user, basedir, d_prat):
         logging.debug("Errori form DeterminaB: %s", "; ".join(errors))
 
     ddp = {'title': 'Immissione dati per determina',
-           'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
            'before': '<form method=POST action=/modificadetermina/B '
                      'accept-charset="utf-8" novalidate>',
            'after': "</form>",
@@ -989,13 +1000,13 @@ def before():
 @ACQ.route("/")
 def start():
     "pagina: iniziale"
+    logging.info('URL: /')
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
     fk.session[BASEDIR_STR] = ''
     rooturl = ft.host(fk.request.url_root)
-    status = {'url0': rooturl, 'footer': "Procedura acquisti.py. Vers. "
-                                         "{} - Luca Fini, {}".format(__version__, __date__)}
+    status = {'url0': rooturl, 'footer': 'Procedura '+long_version()}
     if _test_admin(user):
         status['admin'] = 1
     if _test_developer(user):
@@ -1005,6 +1016,7 @@ def start():
 @ACQ.route("/about")
 def about():                                 # pylint: disable=R0915
     "pagina: informazioni sulle procedure"
+    logging.info('URL: /about')
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1013,9 +1025,9 @@ def about():                                 # pylint: disable=R0915
     html.append('<tr><th colspan=2> Parametri di sistema </th></tr>')
     pinfo = ft.procinfo()
     for pinf in pinfo:
-        html.append('<tr><td><b>{}</b></td><td> {} </td></tr>'.format(*pinf))
-    html.append('<tr><td><b>Root path</b></td><td> {} </td></tr>'.format(PKG_ROOT))
-    html.append('<tr><td><b>Start</b></td><td> {} </td></tr>'.format(__start__))
+        html.append(f'<tr><td><b>{pinf[0]}</b></td><td> {pinf[1]} </td></tr>')
+    html.append(f'<tr><td><b>Root path</b></td><td> {PKG_ROOT} </td></tr>')
+    html.append(f'<tr><td><b>Start</b></td><td> {__start__} </td></tr>')
     html.append('</table></td></tr>')
     html.append('<tr><td><table cellpadding=3 border=1>')
     html.append('<tr><th colspan=4> Informazioni sui moduli </td></tr>')
@@ -1034,12 +1046,20 @@ def about():                                 # pylint: disable=R0915
                            'Vedi: <a href=https://wtforms.readthedocs.org>WtForms home</a>'))
     html.append('</table></td></tr>')
     if _test_admin(user):
+        html.append('<tr><td><table cellpadding=3 border=1>')
+        html.append('<tr><th colspan=2> Path rilevanti </th></tr>')
+        html.append(f'<tr><td><b>PKG_ROOT</b></td><td>{PKG_ROOT}</td></tr>')
+        html.append(f'<tr><td><b>DATADIR</b></td><td>{DATADIR}</td></tr>')
+        html.append(f'<tr><td><b>WORKDIR</b></td><td>{WORKDIR}</td></tr>')
+        html.append(f'<tr><td><b>FILEDIR</b></td><td>{FILEDIR}</td></tr>')
+        html.append('</table></td></tr>')
+
         cks = list(CONFIG.keys())
         cks.sort()
         html.append('<tr><td><table cellpadding=3 border=1>')
         html.append('<tr><th colspan=2> File di configurazione </th></tr>')
         for key in cks:
-            html.append('<tr><td><b>{}</b></td><td>{}</td></tr>'.format(key, str(CONFIG[key])))
+            html.append(f'<tr><td><b>{key}</b></td><td>{CONFIG[key]}</td></tr>')
         html.append('</table></td></tr>')
 
         html.append('<tr><td><table cellpadding=3 border=1>')
@@ -1047,30 +1067,20 @@ def about():                                 # pylint: disable=R0915
         html.append('<tr><td>'+', '.join(ft.GlobLists.HELPLIST)+'</td></tr>')
         html.append('</table></td></tr>')
 
-#       html.append('<tr><td><table cellpadding=3 border=1>')
-#       html.append('<tr><th colspan=2> Verifica crontab</th></tr>')
-#       out, err = ft.spawn(LISTCRONTAB)
-#       if err:
-#           html.append("<tr><td><font color=red>Errore</font></td>"
-#                       "<td><pre>{}</pre></td</tr>".format(err))
-#       if out:
-#           txt = '<pre>{}</pre>'.format(out)
-#       else:
-#           txt = '&nbsp;'
-#       html.append('<tr><td>Output</td><td>{}</td</tr>'.format(txt))
-#       html.append('</table></td></tr>')
     body = '\n'.join(html)
     return fk.render_template('about.html', sede=CONFIG[SEDE], data=body)
 
 @ACQ.route("/clearsession")
 def clearsession():
     "pagina: logout"
+    logging.info('URL: /clearsession')
     fk.session.clear()
     return fk.redirect(fk.url_for('login'))
 
 @ACQ.route("/login", methods=['GET', 'POST'])
 def login():
     "pagina: login"
+    logging.info('URL: /login')
     uid = fk.request.form.get('userid')
     pwd = fk.request.form.get('password')
     form = fms.MyLoginForm(DATADIR, uid, pwd, CONFIG.get(LDAP_HOST),
@@ -1081,13 +1091,14 @@ def login():
             fk.session['userid'] = fk.request.form['userid']
             return fk.redirect(fk.url_for('start'))
         logging.error('Accesso negato: userid: "%s" (%s)', uid, why)
-        fk.flash('Accesso negato: {}'.format(why), category="error")
+        fk.flash(f'Accesso negato: {why}', category="error")
     return fk.render_template('login.html', form=form, sede=CONFIG[SEDE],
                               title='Procedura per acquisti')
 
 @ACQ.route('/modificarichiesta', methods=('GET', 'POST'))
 def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
     "pagina: modifica richiesta"
+    logging.info('URL: /modificarichiesta')
     ret = _check_access(user_only=True)
     if not isinstance(ret, tuple):
         return ret
@@ -1125,7 +1136,7 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
                 basedir = ft.namebasedir(year, number)
                 fk.session[BASEDIR_STR] = basedir
                 ft.newdir(basedir)
-                d_prat.update({NUMERO_PRATICA: '%d/%4.4d'%(number, year),
+                d_prat.update({NUMERO_PRATICA: f'{number}/{year:4d}',
                                STORIA_PRATICA: [_hrecord(user['fullname'],
                                                          'Richiesta generata')],
                                DATA_RICHIESTA: ft.today(False)})
@@ -1168,6 +1179,7 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
 @ACQ.route('/verificaallegati/<fase>')
 def verificaallegati(fase):
     "Emette avviso sullo stato degli allegati"
+    logging.info(f'URL: /verificaallegati/{fase}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1180,6 +1192,7 @@ def verificaallegati(fase):
 @ACQ.route('/inviarichiesta')
 def inviarichiesta():
     "pagina: invia richiesta"
+    logging.info('URL: /inviarichiesta')
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1192,10 +1205,9 @@ def inviarichiesta():
             if d_prat[MOD_ACQUISTO] in (MEPA, CONSIP):
                 fk.flash("Ricorda di trasmettere la bozza d'ordine MEPA al "
                          "\"Punto Ordinante\"", category="info")
-            fk.flash("Richiesta di approvazione per  la pratica {} inviata a: "
-                     "{}".format(d_prat[NUMERO_PRATICA],
-                                 d_prat.get(EMAIL_RESPONSABILE,
-                                            'IND.NON DISPONIBILE')), category="info")
+            fk.flash("Richiesta di approvazione per  la pratica "
+                     f"{d_prat[NUMERO_PRATICA]} inviata a: "
+                     f"{d_prat.get(EMAIL_RESPONSABILE, 'IND.NON DISPONIBILE')}", category="info")
             d_prat[RICHIESTA_INVIATA] = 1
             d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
@@ -1216,6 +1228,7 @@ def inviarichiesta():
 @ACQ.route('/aggiornaformato', methods=('GET', 'POST'))
 def aggiornaformato():
     "pagina: Aggiornamento formato pratica"
+    logging.info('URL: /aggiornaformato')
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1245,7 +1258,7 @@ def aggiornaformato():
             fk.flash(msg0, category="info")
             return pratica_common(user, basedir, d_prat)
         fk.flash("Errore specifica costo o trasporto", category="error")
-    ddp = {'title': 'Aggiornamento formato pratica N. %s'%d_prat[NUMERO_PRATICA],
+    ddp = {'title': f'Aggiornamento formato pratica N. {d_prat[NUMERO_PRATICA]}',
            'subtitle': "Per l'aggiornamento occorre specificare nuovamente i costi "
                        "del bene/servizio e del trasporto, nonché la modalità di acquisto",
            'before': '<form method=POST action=/aggiornaformato accept-charset="utf-8" novalidate>',
@@ -1256,6 +1269,7 @@ def aggiornaformato():
 @ACQ.route('/approvarichiesta')
 def approvarichiesta():
     "pagina: approva richiesta"
+    logging.info('URL: /approvarichiesta')
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1275,6 +1289,7 @@ def approvarichiesta():
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
 def cancella(name):
     "pagina: cancella allegato"
+    logging.info(f'URL: /cancella/{name}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1282,8 +1297,7 @@ def cancella(name):
     _clear_conferma_chiusura(basedir, d_prat)
     is_canc, msg = check_allegati_cancellabili(user, d_prat)
     if is_canc:
-        d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                               'Rimosso allegato {}'.format(name)))
+        d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], f'Rimosso allegato {name}'))
         ft.remove((basedir, name))
     else:
         for amsg in msg:
@@ -1296,21 +1310,24 @@ def cancella(name):
 @ACQ.route('/vedicodf')
 def vedicodf():
     "pagine: visualizza lista codici fondo"
+    logging.info('URL: /vedicodf')
     return ft.GlobLists.CODFLIST.render(title="Lista Codici fondi e responsabili")
 
 @ACQ.route('/vedifile/<filename>')
 def vedifile(filename):
     "pagina: visualizza file PDF"
+    logging.info(f'URL: /vedifile/{filename}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     basedir, d_prat = ret[1:]
     _clear_conferma_chiusura(basedir, d_prat)
-    return fk.send_from_directory(basedir, filename, cache_timeout=0, as_attachment=True)
+    return fk.send_from_directory(basedir, filename, as_attachment=True)
 
 @ACQ.route('/pratiche/<stato>/<anno>/<ascendente>')
 def lista_pratiche(stato, anno, ascendente):
     "pagina: lista pratiche"
+    logging.info(f'URL: /pratiche/{stato}/{anno}/{ascendente}')     #pylint: disable=W1203
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1359,6 +1376,7 @@ def lista_pratiche(stato, anno, ascendente):
 @ACQ.route('/trovapratica', methods=('POST', 'GET'))
 def trovapratica():               # pylint: disable=R0912,R0914,R0915
     "pagina: trova pratica"
+    logging.info('URL: /trovapratica')
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1379,7 +1397,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
         prf.trova_anno.choices = year_menu
         if fk.request.method == 'POST':
             theyear = prf.data['trova_anno']
-            ricerca = ' anno={} + (pratiche '.format(prf.data['trova_anno'])
+            ricerca = f" anno={prf.data['trova_anno']} + (pratiche "
             vaperta = int(prf.data.get('trova_prat_aperta', '-1'))
             if vaperta == 1:
                 ricerca += 'aperte)'
@@ -1394,20 +1412,20 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
             if nome_resp:
                 resp_func = lambda x: word_match(nome_resp,
                                                  x.get(NOME_RESPONSABILE, ''))
-                ricerca += ' + (resp.={})'.format(nome_resp)
+                ricerca += f' + (resp.={nome_resp})'
             else:
                 resp_func = lambda x: True
             nome_rich = prf.data['trova_richiedente']
             if nome_rich:
                 rich_func = lambda x: word_match(nome_rich,
                                                  x.get(NOME_RICHIEDENTE, ''))
-                ricerca += ' + (richied.={})'.format(nome_rich)
+                ricerca += f' + (richied.={nome_rich})'
             else:
                 rich_func = lambda x: True
             if prf.data['trova_parola']:
                 parola_func = lambda x: word_match(prf.data.get('trova_parola', ''),
                                                    x.get(DESCRIZIONE_ACQUISTO, ''))
-                ricerca += ' + (contiene parola={})'.format(prf.data['trova_parola'])
+                ricerca += f" + (contiene parola={prf.data['trova_parola']})"
             else:
                 parola_func = lambda x: True
             selector = lambda x: aperta_func(x) and rich_func(x) and resp_func(x) and parola_func(x)
@@ -1426,7 +1444,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
                 return fk.redirect(fk.url_for('start'))
             title = 'Trova Pratiche'
             subtitle = 'Risultato per ricerca: '+ricerca+'<br>'+ \
-                       'N. pratiche selezionate: %d'%len(lista)
+                       f'N. pratiche selezionate: {len(lista)}'
             return fk.render_template('lista_pratiche_per_anno.html', stato='', pre=[],
                                       post=[], year=theyear, dlist=lista.records, title=title,
                                       sede=CONFIG[SEDE], subtitle=subtitle)
@@ -1444,6 +1462,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
     "pagina: accesso a pratica indicata"
+    logging.info(f'URL: /pratica0/{num}/{year}')     #pylint: disable=W1203
     basedir = ft.namebasedir(year, num)
     fk.session[BASEDIR_STR] = basedir
     ret = _check_access()
@@ -1463,6 +1482,7 @@ def get_tipo_allegato():
 @ACQ.route('/pratica1', methods=('GET', 'POST'))
 def pratica1():               # pylint: disable=R0914
     "pagina: pratica, modo 1 (iterazione modifica)"
+    logging.info('URL: /pratica1')
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1486,10 +1506,10 @@ def pratica1():               # pylint: disable=R0914
             origname = secure_filename(origname)
             ext = ext.lower()
             if ext not in UPLOAD_TYPES:
-                fk.flash("Tipo allegato non valido: '{}'".format(fle.filename), category="error")
+                fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
             elif tipo_allegato in (LISTA_DETTAGLIATA_A, LISTA_DETTAGLIATA_B) and \
                  ext not in PDF_TYPES:
-                fk.flash("L'allegato non è in formato PDF: '%s'"%fle.filename, category="error")
+                fk.flash(f"L'allegato non è in formato PDF: {fle.filename}", category="error")
             else:
                 prefix, mod_allegato = (TAB_ALLEGATI[tipo_allegato][0],
                                         TAB_ALLEGATI[tipo_allegato][2])
@@ -1500,7 +1520,7 @@ def pratica1():               # pylint: disable=R0914
                     return pratica_common(user, basedir, d_prat)
                 fpath = os.path.join(basedir, name)
                 if os.path.exists(fpath):
-                    fk.flash('File "%s"  già esistente!'%name, category='error')
+                    fk.flash(f'File "{name}" già esistente!'%name, category='error')
                     fk.flash('Devi modificare il nome del file '
                              '(o rimuovere quello esistente)', category="error")
                     return pratica_common(user, basedir, d_prat)
@@ -1516,6 +1536,7 @@ def pratica1():               # pylint: disable=R0914
 @ACQ.route('/togglestoria', methods=('GET', 'POST', ))
 def togglestoria():
     "pagina: abilita/disabilita storia pratica"
+    logging.info('URL: /togglestoria')
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1532,6 +1553,7 @@ def togglestoria():
 @ACQ.route('/modificadetermina/<fase>', methods=('GET', 'POST', ))
 def modificadetermina(fase):
     "pagina: modifica determina"
+    logging.info(f'URL: /modificadetermina/{fase}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1558,6 +1580,7 @@ def modificadetermina(fase):
 @ACQ.route('/cancelladetermina/<fase>', methods=('GET', ))
 def cancelladetermina(fase):
     "pagina: cancella determina"
+    logging.info(f'URL: /cancelladetermina/{fase}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1591,6 +1614,7 @@ def cancelladetermina(fase):
 @ACQ.route('/modificaordine/<fase>', methods=('GET', 'POST'))
 def modificaordine(fase):               # pylint: disable=R0912,R0914
     "pagina: modifica ordine"
+    logging.info(f'URL: /modificaordine/{fase}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1643,9 +1667,9 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
                 fk.flash(err, category="error")
             logging.debug("Errori form Ordine: %s", "; ".join(errors))
         ddp = {'title': 'Immissione dati per ordine',
-               'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
-               'before': '<form method=POST action=/modificaordine/%s '
-                         'accept-charset="utf-8" novalidate>'%fase,
+               'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+               'before': f'<form method=POST action=/modificaordine/{fase} ' \
+                         'accept-charset="utf-8" novalidate>',
                'after': "</form>",
                'note': OBBLIGATORIO,
                'body': orn.renderme(d_prat)}
@@ -1661,21 +1685,25 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
 @ACQ.route('/chiudipratica')
 def chiudipratica():
     "pagina: chiudi pratica"
+    logging.info('URL: /chiudipratica')
     return _modifica_pratica('chiudi')
 
 @ACQ.route('/apripratica')
 def apripratica():
     "pagina: apri pratica"
+    logging.info('URL: /apripratica')
     return _modifica_pratica('apri')
 
 @ACQ.route('/annullapratica')
 def annullapratica():
     "pagina: annulla pratica"
+    logging.info('URL: /annullapratica')
     return _modifica_pratica('null')
 
 @ACQ.route('/vedijson/<fname>')
 def vedijson(fname):
     "pagina: mostra contenuto di file json"
+    logging.info(f'URL: /vedijson/{fname}')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1683,7 +1711,7 @@ def vedijson(fname):
     if _test_developer(user):
         ffn = fname+'.json'
         data = tb.jload((basedir, ffn), {})
-        text = '<h4>{}</h4>'.format(os.path.join(basedir, ffn))
+        text = f'<h4>{os.path.join(basedir, ffn)}</h4>'
         ppt = PrettyPrinter(indent=4)
         text += '<pre>'+ ppt.pformat(data)+'</pre>'
         return text
@@ -1694,17 +1722,66 @@ def vedijson(fname):
 @ACQ.route('/files/<name>')
 def files(name):
     "download file"
+#   logging.info(f'URL: /files/{name}')     #pylint: disable=W1203
     return  ACQ.send_static_file(name)
+
+@ACQ.route('/show_checks')
+def show_checks():
+    "Mostra risultato checks"
+    logging.info('URL: /show_checks')
+    ret = _check_access()
+    if not isinstance(ret, tuple):
+        return ret
+    the_user, basedir, d_prat = ret
+    if _test_developer(the_user):
+        text = "<h4>Checks su pratica N. "+d_prat[NUMERO_PRATICA]+"</h4><pre>\n"
+        text += "  - pratica apribile: "+ \
+                str(check_pratica_apribile(the_user, d_prat))+"\n"
+        text += "  - pratica annullabile: "+ \
+                str(check_pratica_annullabile(the_user, d_prat))+"\n"
+        text += "  - pratica chiudibile: "+ \
+                str(check_pratica_chiudibile(the_user, basedir, d_prat))+"\n"
+        text += "  - richiesta approvabile: "+ \
+                str(check_richiesta_approvabile(the_user, basedir, d_prat))+"\n"
+        text += "  - richiesta modificabile: "+ \
+                str(check_richiesta_modificabile(the_user, basedir, d_prat))+"\n"
+        text += "  - richiesta inviabile: "+ \
+                str(check_richiesta_inviabile(the_user, basedir, d_prat))+"\n"
+        text += "  - rdo modificabile: "+ \
+                str(check_rdo_modificabile(the_user, basedir, d_prat))+"\n"
+        text += "  - determina (fase A) cancellabile: "+ \
+                str(check_determina_cancellabile(the_user, basedir, d_prat, "A"))+"\n"
+        text += "  - determina (fase B) cancellabile: "+ \
+                str(check_determina_cancellabile(the_user, basedir, d_prat, "B"))+"\n"
+        text += "  - determina (fase A) modificabile: "+ \
+                str(check_determina_modificabile(the_user, basedir, d_prat, "A"))+"\n"
+        text += "  - determina (fase B) modificabile: "+ \
+                str(check_determina_modificabile(the_user, basedir, d_prat, "B"))+"\n"
+        text += "  - allegati allegabili: "+ \
+                str(check_allegati_allegabili(d_prat))+"\n"
+        text += "  - allegati cancellabili: "+ \
+                str(check_allegati_cancellabili(the_user, d_prat))+"\n"
+        text += "  - ordine (fase A) modificabile: "+ \
+                str(check_ordine_modificabile(the_user, basedir, d_prat, "A"))+"\n"
+        text += "  - ordine (fase A) modificabile: "+ \
+                str(check_ordine_modificabile(the_user, basedir, d_prat, "A"))+"\n"
+        text += "</pre>"
+        return text
+    logging.error('Visualizzazione checks() non autorizzata. Utente: %s', the_user['userid'])
+    fk.session.clear()
+    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
 
 @ACQ.route('/email_approv/<_unused>')
 def email_approv(_unused):
     "pagina lanciata dall'apposito cliente attivato dal filtro e-mail"
+    logging.info('URL: /email_approv')
     logging.error("la URL /email_approv non dovrebbe essere più utilizzata. Fermare il crontab!")
     return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
 
 @ACQ.route('/user')
 def user_tbd():
     "pagina T.B.D."
+    logging.info('URL: /user')
     return fk.render_template('tbd.html', goto='/', sede=CONFIG[SEDE])
 
 def remove_prefix(adict, prefix):
@@ -1719,6 +1796,7 @@ def remove_prefix(adict, prefix):
 @ACQ.route('/procedura_rdo', methods=('GET', 'POST'))
 def procedura_rdo():
     "Trattamento pagina per procedura RDO"
+    logging.info('URL: /procedura_rdo')
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1734,7 +1812,7 @@ def procedura_rdo():
             if MORE in fk.request.form:
                 m_entries = len(rdo.data[LISTA_DITTE])+2
 # Trucco per rendere variabile la dimensione del form per lista ditte
-                class LocalForm(fms.PraticaRDO): pass     # pylint: disable=C0115,C0321
+                class LocalForm(fms.PraticaRDO): pass     # pylint: disable=C0115,C0321,R0903
                 LocalForm.lista_ditte = fms.new_lista_ditte("Lista ditte", m_entries)
 # Fine trucco
                 logging.debug("Richiesto incremento numero ditte: %d", m_entries)
@@ -1758,7 +1836,7 @@ def procedura_rdo():
         else:
             rdo = fms.PraticaRDO(**d_prat)
         ddp = {'title': 'Immissione dati per RDO su MEPA',
-               'subtitle': 'Pratica N. %(numero_pratica)s' % d_prat,
+               'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
                'before': '<form method=POST action=/procedura_rdo '\
                          'accept-charset="utf-8" novalidate>',
                'after': "</form>",
@@ -1777,10 +1855,11 @@ def procedura_rdo():
 @ACQ.route('/housekeeping')
 def housekeeping():
     "Inizio procedura housekeeping"
+    logging.info('URL: /housekeeping')
     user = ft.login_check(fk.session)
     if user:
-        status = {'footer': "Procedura housekeeping.py. Vers. %s - "
-                            "L. Fini, %s"%(__version__, __date__),
+        status = {'footer': f"Procedura housekeeping.py. Vers. {__version__} - " \
+                            f"L. Fini, {__date__}",
                   'host': ft.host(fk.request.url_root)}
 
         if _test_admin(user):
@@ -1795,6 +1874,7 @@ def housekeeping():
 @ACQ.route("/sortcodf/<field>")
 def sortcodf(field):
     "Riporta codici fondi con ordine specificato"
+    logging.info(f'URL: /sortcodf/{field}')     #pylint: disable=W1203
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -1810,8 +1890,8 @@ def sortcodf(field):
                                       ('/housekeeping', 'Torna')),
                                 sort_on=field,
                                 messages=msgs,
-                                footer="Procedura housekeeping.py. Vers. %s. &nbsp;-&nbsp; "
-                                       "L. Fini, %s" % (__version__, __date__))
+                                footer=f"Procedura housekeeping.py. Vers. {__version__}. "\
+                                       f"&nbsp;-&nbsp; L. Fini, {__date__}")
         return fk.render_template('noaccess.html').encode('utf8')
     return fk.redirect(fk.url_for('login'))
 
@@ -1819,12 +1899,14 @@ def sortcodf(field):
 @ACQ.route("/codf")
 def codf():
     "Riporta codici fondi"
+    logging.info('URL: /codf')
     return sortcodf('')
 
 
 @ACQ.route('/addcodf', methods=('GET', 'POST'))
 def addcodf():
     "Aggiungi codice fondo"
+    logging.info('URL: /addcodf')
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -1843,7 +1925,7 @@ def addcodf():
                     data.update(cfr.data)
                     ncodf.insert_row(data)
                     ncodf.save()
-                    msg = 'Aggiunto Codice fondo: %s' % data['Codice']
+                    msg = f"Aggiunto Codice fondo: {data['Codice']}"
                     logging.info(msg)
                     fk.flash(msg)
                     return fk.redirect(fk.url_for('codf'))
@@ -1857,6 +1939,7 @@ def addcodf():
 @ACQ.route('/editcodf/<nrec>', methods=('GET', 'POST'))
 def editcodf(nrec):
     "Modifica tabella codici fondi"
+    logging.info(f'URL: /editcodf/{nrec}')     #pylint: disable=W1203
     nrec = int(nrec)
     user = ft.login_check(fk.session)
     if user:
@@ -1877,8 +1960,8 @@ def editcodf(nrec):
                     ncodf.delete_row(nrec)
                     ncodf.sort(1)
                     ncodf.save()
-                    msg = 'Cancellato Codice fondo: %s (%s)'%(row['Codice'],
-                                                              row['email_Responsabile'])
+                    msg = "Cancellato Codice fondo: " \
+                          f"{row['Codice']} ({row['email_Responsabile']})"
                     fk.flash(msg)
                     logging.info(msg)
                     return fk.redirect(fk.url_for('codf'))
@@ -1891,8 +1974,8 @@ def editcodf(nrec):
                         ncodf.insert_row(row, nrec)
                         print("row:", row, "   nrec:", nrec)
                         ncodf.save()
-                        msg = 'Modificato Codice fondo: %s (%s)'%(row['Codice'],
-                                                                  row['email_Responsabile'])
+                        msg = "Modificato Codice fondo: " \
+                              f"{row['Codice']} ({row['email_Responsabile']})"
                         fk.flash(msg)
                         logging.info(msg)
                     return fk.redirect(fk.url_for('codf'))
@@ -1906,11 +1989,13 @@ def editcodf(nrec):
 @ACQ.route('/downloadcodf', methods=('GET', 'POST'))
 def downloadcodf():
     "Download tabella codici fondi"
+    logging.info('URL: /downloadcodf')
     return download('codf')
 
 @ACQ.route('/downloadutenti', methods=('GET', 'POST'))
 def downloadutenti():
     "Download tabella utenti"
+    logging.info('URL: /downloadutenti')
     return download('utenti')
 
 def download(_unused):
@@ -1923,6 +2008,7 @@ def download(_unused):
 @ACQ.route("/utenti")
 def utenti():
     "Genera lista utenti"
+    logging.info('URL: /utenti')
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -1930,15 +2016,15 @@ def utenti():
             msgs = fk.get_flashed_messages()
             return users.render("Lista utenti",
                                 select_url=("/edituser",
-                                            "Per modificare, clicca sul simbolo: "
+                                            "Per modificare, clicca sul simbolo: "\
                                             "<font color=red><b>&ofcir;</b></font>"),
                                 menu=(('/adduser', "Aggiungi utente"),
                                       ('/downloadutenti', "Scarica CSV"),
                                       ('/housekeeping', 'Torna')),
                                 sort_on="surname",
                                 messages=msgs,
-                                footer="Procedura housekeeping.py. Vers. %s "
-                                       "- L. Fini, %s"%(__version__, __date__))
+                                footer=f"Procedura housekeeping.py. Vers. {__version__} "\
+                                       f"- L. Fini, {__date__}")
         return fk.render_template('noaccess.html').encode('utf8')
     return fk.redirect(fk.url_for('login'))
 
@@ -1946,6 +2032,7 @@ def utenti():
 @ACQ.route('/adduser', methods=('GET', 'POST'))
 def adduser():
     "Aggiungi utente"
+    logging.info('URL: /adduser')
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -1961,7 +2048,7 @@ def adduser():
                     data['pw'] = '-'
                     users.insert_row(data)
                     users.save()
-                    msg = 'Aggiunto Utente: %s %s' % (data['surname'], data['name'])
+                    msg = f"Aggiunto Utente: {data['surname']} {data['name']}"
                     logging.info(msg)
                     fk.flash(msg)
                     return fk.redirect(fk.url_for('utenti'))
@@ -1976,6 +2063,7 @@ def adduser():
 @ACQ.route('/edituser/<nrec>', methods=('GET', 'POST'))
 def edituser(nrec):
     "Modifica dati utente"
+    logging.info(f'URL: /edituser/{nrec}')     #pylint: disable=W1203
     nrec = int(nrec)
     user = ft.login_check(fk.session)
     if user:
@@ -1997,7 +2085,7 @@ def edituser(nrec):
                     users.delete_row(nrec)
                     users.sort(3)
                     users.save()
-                    msg = "Cancellato utente N. %d: %s %s" %(nrec, row['name'], row['surname'])
+                    msg = f"Cancellato utente N. {nrec}: {row['name']} {row['surname']}"
                     logging.info(msg)
                     fk.flash(msg)
                     return fk.redirect(fk.url_for('utenti'))
@@ -2008,7 +2096,7 @@ def edituser(nrec):
                         users.insert_row(row, nrec)
                         users.sort(3)
                         users.save()
-                        msg = 'Modificato utente: %s %s' % (row['name'], row['surname'])
+                        msg = f"Modificato utente: {row['name']} {row['surname']}"
                         logging.info(msg)
                         fk.flash(msg)
                     return fk.redirect(fk.url_for('utenti'))
@@ -2023,6 +2111,7 @@ def edituser(nrec):
 @ACQ.route('/environ', methods=('GET',))
 def environ():
     "Mostra informazioni su environment"
+    logging.info('URL: /environ')
     user = ft.login_check(fk.session)
     if user:
         if not _test_developer(user):
@@ -2032,30 +2121,31 @@ def environ():
     keys = list(os.environ.keys())
     keys.sort()
     for key in keys:
-        html.append("<li><b>%s</b>: %s"%(key, os.environ[key]))
+        html.append(f"<li><b>{key}</b>: {os.environ[key]}")
     html.append("</ul>")
     env = '\n'.join(html)
     html = ["<ul>"]
-    html.append("<li><b>%s</b>: %s"%("args", fk.request.args))
-    html.append("<li><b>%s</b>: %s"%("base_url", fk.request.base_url))
-    html.append("<li><b>%s</b>: %s"%("date", fk.request.date))
-    html.append("<li><b>%s</b>: %s"%("endpoint", fk.request.endpoint))
-    html.append("<li><b>%s</b>: %s"%("full_path", fk.request.full_path))
-    html.append("<li><b>%s</b>: %s"%("host", fk.request.host))
-    html.append("<li><b>%s</b>: %s"%("host_url", fk.request.host_url))
-    html.append("<li><b>%s</b>: %s"%("method", fk.request.method))
-    html.append("<li><b>%s</b>: %s"%("remote_addr", fk.request.remote_addr))
-    html.append("<li><b>%s</b>: %s"%("remote_user", fk.request.remote_user))
-    html.append("<li><b>%s</b>: %s"%("scheme", fk.request.scheme))
-    html.append("<li><b>%s</b>: %s"%("url", fk.request.url))
-    html.append("<li><b>%s</b>: %s"%("url_root", fk.request.url_root))
-    html.append("<li><b>%s</b>: %s"%("user_agent", fk.request.user_agent))
+    html.append(f"<li><b>args</b>: {fk.request.args}")
+    html.append(f"<li><b>base_url</b>: {fk.request.base_url}")
+    html.append(f"<li><b>date</b>: {fk.request.date}")
+    html.append(f"<li><b>endpoint</b>: {fk.request.endpoint}")
+    html.append(f"<li><b>full_path</b>: {fk.request.full_path}")
+    html.append(f"<li><b>host</b>: {fk.request.host}")
+    html.append(f"<li><b>host_url</b>: {fk.request.host_url}")
+    html.append(f"<li><b>method</b>: {fk.request.method}")
+    html.append(f"<li><b>remote_addr</b>: {fk.request.remote_addr}")
+    html.append(f"<li><b>remote_user</b>: {fk.request.remote_user}")
+    html.append(f"<li><b>scheme</b>: {fk.request.scheme}")
+    html.append(f"<li><b>url</b>: {fk.request.url}")
+    html.append(f"<li><b>url_root</b>: {fk.request.url_root}")
+    html.append(f"<li><b>user_agent</b>: {fk.request.user_agent}")
     req = '\n'.join(html)
     return fk.render_template('environ.html', sede=CONFIG[SEDE], request=req, environ=env)
 
 @ACQ.route('/testmail', methods=('GET',))
 def testmail():
     "Invia messaggio di prova all'indirizzo di webmaster"
+    logging.info('URL: /testmail')
     user = ft.login_check(fk.session)
     if user:
         if not _test_developer(user):
@@ -2066,12 +2156,12 @@ def testmail():
         recipients = [CONFIG.get(EMAIL_WEBMASTER)]
         sender = CONFIG.get(EMAIL_UFFICIO, "")
         subj = "Messaggio di prova da procedura 'acquisti'"
-        body = """
+        body = f"""
 Invio messaggio di prova per verifica funzionamento del server.
 
 Messaggio inviato all'indirizzo corrispondente al Webmaster tramite
-server: %s (se indicato come "-", l'invio avviene tramite GMail API)
-""" % host
+server: {host} (se indicato come "-", l'invio avviene tramite GMail API)
+"""
         ret = ft.send_email(host, sender, recipients, subj, body)
         return fk.render_template('testmail.html', time=thetime, sender=sender,
                                   recipients=", ".join(recipients),
@@ -2081,6 +2171,7 @@ server: %s (se indicato come "-", l'invio avviene tramite GMail API)
 @ACQ.route('/force_excp', methods=('GET',))
 def force_excp():
     "Causa una eccezione"
+    logging.info('URL: /force_excp')
     user = ft.login_check(fk.session)
     if user:
         if not _test_developer(user):
@@ -2094,7 +2185,7 @@ def force_excp():
 
 def initialize_me():
     "inizializza tutto il necessario"
-    logging.info('Starting acquisti.py - Vers. %s, %s. %s', __version__, __date__, __author__)
+    logging.info('Starting %s', long_version())
     logging.info('PKG_ROOT: %s', PKG_ROOT)
     logging.info('DATADIR: %s', DATADIR)
     logging.info('WORKDIR: %s', WORKDIR)
@@ -2119,8 +2210,15 @@ def short_version():
     vvv = __version__.split('.')
     return '.'.join(vvv[:2])
 
+def long_version():
+    'riporta versione'
+    return f'acquisti.py. Vers. {__version__} - L. Fini, {__date__}'
+
 def localtest():
     "lancia la procedura come test in locale"
+    if '-h' in sys.argv:
+        print(__doc__)
+        sys.exit()
     if len(sys.argv) > 1:
         print(short_version(), end='')
         sys.exit()
