@@ -29,7 +29,7 @@ class TableException(Exception):
 class LockException(Exception):
     "Exception when file is locked"
     def __init__(self, filename, owner):
-        Exception.__init__(self, "File %s locked by: %s" %(filename, owner))
+        Exception.__init__(self, f"File {filename} locked by: {owner}")
 
 class CsvFile:
     "CSV file management class"
@@ -120,12 +120,12 @@ Table class:
 
     def _fromcsv(self, csvfile):
         "Import table data from CSV file"
-        filed = open(csvfile)
-        reader = csv.DictReader(filed)
-        self.header = ['_IND_'] + reader.fieldnames
-        self.ncols = len(self.header)
-        for row in reader:
-            self.insert_row(row)
+        with open(csvfile, encoding='utf8') as filed:
+            reader = csv.DictReader(filed)
+            self.header = ['_IND_'] + reader.fieldnames
+            self.ncols = len(self.header)
+            for row in reader:
+                self.insert_row(row)
 
     def _index(self, pos):
         "Return row index of row with main key pos"
@@ -170,8 +170,8 @@ Table class:
                 pos = row[self.header[0]]
         try:
             srow = [row[k] for k in self.header[1:]]
-        except:
-            raise Exception('Table row format mismatch')
+        except Exception as excp:
+            raise TableException(f'Table row format mismatch [{str(excp)}]') from None
         return self._insert_list(srow, pos)
 
     def has_duplicates(self):
@@ -187,7 +187,7 @@ Table class:
             try:
                 row[rix] = func(row[rix])
             except:
-                raise Exception('Cannot convert row: %d' % row[0])
+                raise Exception(f'Cannot convert row: {row[0]}') from None
 
     def needs_update(self):
         "Returns true if file has been written since it has been read"
@@ -278,7 +278,7 @@ Table class:
         elif isinstance(row, dict):
             self._insert_dict(row, pos)
         else:
-            raise Exception("Illegal type for row (%s)"%type(row))
+            raise Exception(f"Illegal type for row ({row})")
 
     def get_row(self, npos, as_dict=False, index=False, default=None):
         "Return row with index npos"
@@ -303,9 +303,9 @@ Table class:
     def add_column(self, pos, label, value='', column=None):
         "Add a column to a table"
         if label in self.header:
-            raise Exception('Duplicate column label: %s' % label)
+            raise Exception('Duplicate column label: '+label)
         if pos < 1 or pos > len(self.header):
-            raise Exception('Illegal column index: %d [len(header):%d]' % (pos, len(self.header)))
+            raise Exception(f'Illegal column index: {pos} [len(header):{len(self.header)}]')
         self.header.insert(pos, label)
         colid = 0
         for row in self.rows:
@@ -320,7 +320,7 @@ Table class:
         "Remove a column"
         indx = self._field(field)
         if indx < 1 or indx >= len(self.header):
-            raise Exception('Illegal column index: %d'%indx)
+            raise Exception(f'Illegal column index: {indx}')
         del self.header[indx]
         for row in self.rows:
             del row[indx]
@@ -398,7 +398,7 @@ def _islocked(name):
     "Returns lock info if file is locked"
     lockname = name+'.lock'
     try:
-        with open(lockname, 'r') as jfd:
+        with open(lockname, 'r', encoding='utf8') as jfd:
             lkinfo = json.load(jfd)
     except IOError:
         lkinfo = None
@@ -411,23 +411,23 @@ def _getlock(name, ident):
         fno = os.open(lockname, os.O_CREAT|os.O_EXCL|os.O_RDWR, 0o664)
     except OSError as excp:
         if excp.errno == errno.EEXIST:
-            with open(lockname, 'r') as jfd:
+            with open(lockname, 'r', encoding='utf8') as jfd:
                 lkinfo = json.load(jfd)
-            raise LockException(name, lkinfo[2])
+            raise LockException(name, lkinfo[2]) from None
         raise
     lkinfo = (uuid.uuid4().hex, time.time(), ident)
-    filed = os.fdopen(fno, 'w')
+    filed = os.fdopen(fno, 'w', encoding='utf8')
     json.dump(lkinfo, filed)
     filed.close()
     return lkinfo
 
 def _jload(name, nofile=None):
     try:
-        with open(name) as jfd:
+        with open(name, encoding='utf8') as jfd:
             ret = json.load(jfd)
     except Exception as excp:                       # pylint: disable=W0703
         if nofile is None:
-            raise TableException("Errore jload(%s) [%s]"%(name, str(excp)))
+            raise TableException(f"Errore jload({name}) [{str(excp)}]") from None
         ret = nofile
     return ret
 
@@ -448,10 +448,10 @@ def jsave(path, data, lockinfo=None):
         if (not lockinfo) or (lkinfo[0] != lockinfo[0]):
             raise LockException(name, lkinfo[2])
     try:
-        with open(name, mode='w') as jfd:
+        with open(name, mode='w', encoding='utf8') as jfd:
             json.dump(data, jfd, indent=2)
-    except TableException as excp:
-        raise TableException("Error jsave(%s) [%s]"%(name, str(excp)))
+    except Exception as excp:
+        raise TableException(f"Error jsave({name}) [{str(excp)}]") from None
     finally:
         fpath = _junlock(path)
         os.chmod(fpath, 0o600)
@@ -461,13 +461,13 @@ def jsave_b64(ppath, theobj):
     "base64 encoding of dict saved to jfile"
     name = getpath(ppath)
     b64obj = base64.b64encode(json.dumps(theobj).encode("utf-8")).decode("ascii")
-    with open(name, "w") as fds:
+    with open(name, "w", encoding='utf8') as fds:
         fds.write(b64obj)
 
 def jload_b64(ppath):
     "Jload and base64 decode"
     name = getpath(ppath)
-    with open(name, "r") as fds:
+    with open(name, "r", encoding='utf8') as fds:
         b64obj = fds.read()
     return json.loads(base64.b64decode(b64obj).decode("utf-8"))
 
@@ -476,7 +476,7 @@ def jload_b64(ppath):
 def usage():
     "Help function"
     print()
-    print("table.py.  %s - Version: %s, %s" % (__author__, __version__, __date__))
+    print(f"table.py.  {__author__} - Version: {__version__}, {__date__}")
     print(__doc__)
 
 def main():                        # pylint: disable=R0914,R0915

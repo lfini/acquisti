@@ -52,7 +52,7 @@ def get_users(select=None, arcetri=True):
     if select:
         filt = basefilt%select
     else:
-        filt = basefilt%"*"
+        filt = basefilt%"*"      #pylint: disable=C0209
     if HOOK.connection.search(PEOPLE_DN, filt, attributes="*"):
         return [x['attributes'] for x in HOOK.connection.response]
     return []
@@ -66,9 +66,9 @@ def show_users(filt, arcetri):
             keys = list(user.keys())
             keys.sort()
             for key in keys:
-                print(" %s:"%key, user[key])
+                print(f" {key}: {user[key]}")
     else:
-        print('No user matching: %s' % filt)
+        print('No user matching:', filt)
 
 def main():
     "Test procedure"

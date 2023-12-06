@@ -13,7 +13,7 @@
 
 REMOTE=acquisti@sisifo
 
-VERSION=`python3 ./bin/acquisti.py vx`
+VERSION=`python3 ./bin/acquisti.py -v`
 
 bin_target=$REMOTE:bin-$VERSION
 files_target=$REMOTE:files-$VERSION
