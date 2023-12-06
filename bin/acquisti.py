@@ -71,7 +71,7 @@ import table as tb
 # Versione 4.8   6/2021:     Corretto bug nella generazione dei messaggi di richiesta approvazione
 # Versione 4.9  11/2021:     Modificato layout pagine PDF generate (per effetto "carta intestata")
 # Versione 4.10  11/2023:    introdotto logging delle URL. Passato con pylint
-# Versione 4.10.1  11/2023:  Corretto bug alla linea 1524
+# Versione 4.10.1  11/2023:  Corretto bug alla linea 1525
 
 __author__ = 'Luca Fini'
 __version__ = '4.10.1'
