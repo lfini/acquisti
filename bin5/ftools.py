@@ -65,8 +65,8 @@ import send_email as sm
 # pylint: disable=C0302, W0703
 
 __author__ = 'Luca Fini'
-__version__ = '4.9'
-__date__ = '11/11/2023'
+__version__ = '5.0'
+__date__ = '6/3/2024'
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -214,66 +214,6 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # py
         logging.error(errmsg)
         return False
     return True
-
-#def _clean_resp_codes(rcod):
-#    "Rimuove codici approvazione scaduti"
-#    dpath = tb.getpath(rcod)
-#    try:
-#        files = os.listdir(dpath)
-#    except Exception:
-#        return
-#    for fname in files:
-#        fpt = os.path.join(dpath, fname)
-#        ctime = os.path.getmtime(fpt)
-#        if time.time()-ctime > APPROVAL_EXPIRATION:
-#            logging.info("Rimosso file codice approvazione scaduto: %s", fname)
-#            os.unlink(fpt)
-
-#def get_resp_codes(thedir):
-#    "Crea lista codici di approvazione"
-#    dpath = os.path.join(thedir, 'approv')
-#    ret = {}
-#    try:
-#        ldir = os.listdir(dpath)
-#    except OSError:
-#        return ret
-#    for fname in ldir:
-#        code = os.path.splitext(fname)[0]
-#        fpath = os.path.join(dpath, fname)
-#        respdata = tb.jload(fpath)
-#        ret[code] = respdata
-#    return ret
-
-#def set_resp_code(thedir, key, userid, prat, sgn):
-#    "Crea file con codice approvazione"
-#    dpath = [thedir, 'approv']
-#    dname = tb.getpath(dpath)
-#    if not os.path.exists(dname):
-#        os.makedirs(dname)
-#    _clean_resp_codes(dname)
-#    fname = key+'.json'
-#    dpath.append(fname)
-#    ttm = time.asctime(time.localtime())
-#    tb.jsave(dpath, [userid, prat, sgn, ttm])
-#    logging.info("Creato file codice approvazione: %s", fname)
-
-#def get_resp_code(thedir, key):
-#    "Trova codice di approvazione"
-#    tpath = [thedir, 'approv']
-#    _clean_resp_codes(tpath)
-#    fname = key+'.json'
-#    tpath.append(fname)
-#    return tb.jload(tpath, [])
-
-#def del_resp_code(thedir, key):
-#    "Cancella codice di approvazione"
-#    fname = os.path.join(thedir, 'approv', key+'.json')
-#    try:
-#        os.unlink(fname)
-#    except Exception:
-#        pass
-#    else:
-#        logging.info("rimosso file codice approvazione: %s", fname)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ'
 
@@ -695,9 +635,9 @@ def modello_determinaa(mod_acquisto):                  # pylint: disable=R0911
         return "determina_manif"
     return ""
 
-def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **data):   # pylint: disable=R0913
+def makepdf(destdir, templ_name, pdf_name, debug=False, include="", **data):   # pylint: disable=R0913
     "Crea documento PDF da template LaTeX e dict di termini"
-    tfile = os.path.join(pkg_root, 'files', templ_name)+'.tex'
+    tfile = os.path.join(FILEDIR, templ_name)+'.tex'
     pdfname = pdf_name+'.pdf'
     logging.info("Creazione documento da: %s come: %s/%s", tfile, destdir, pdfname)
     logging.info("Dati documento: %s", ', '.join(list(data.keys())))
@@ -708,8 +648,8 @@ def makepdf(pkg_root, destdir, templ_name, pdf_name, debug=False, include="", **
     else:
         attach_list = None
     ndata = data.copy()
-    ndata["headerpath"] = os.path.join(pkg_root, "files", "header.png")
-    ndata["footerpath"] = os.path.join(pkg_root, "files", "footer.png")
+    ndata["headerpath"] = os.path.join(FILEDIR, "header.png")
+    ndata["footerpath"] = os.path.join(FILEDIR, "footer.png")
     latex.makepdf(destdir, pdfname, tfile, attach=attach_list, debug=debug, **ndata)
 
 def get_user(userid):
@@ -766,7 +706,7 @@ def update_codflist():
         _read_codflist()
 
 def init_helplist():
-    "Genera una lista dei files di nome 'help_*.html' nella directory dei file ausiliari"
+    "Genera una lista dei file di nome 'help_*.html' nella directory dei file ausiliari"
     _helpfilt = re.compile('help_.+[.]html')
     try:
         flst = os.listdir(FILEDIR)

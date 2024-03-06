@@ -73,9 +73,11 @@ import table as tb
 # Versione 4.10  11/2023:    introdotto logging delle URL. Passato con pylint
 # Versione 4.10.1  11/2023:  Corretto bug alla linea 1525
 
+# Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
+
 __author__ = 'Luca Fini'
-__version__ = '4.10.1'
-__date__ = '6/12/2023'
+__version__ = '5.0'
+__date__ = '6/03/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -914,7 +916,7 @@ def modificadetermina_a(user, basedir, d_prat):
             logging.info('Genera determina: %s/%s', basedir, DETA_PDF_FILE)
             det_template = ft.modello_determinaa(d_prat[MOD_ACQUISTO])
             det_name = os.path.splitext(DETA_PDF_FILE)[0]
-            ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
+            ft.makepdf(basedir, det_template, det_name, sede=CONFIG[SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user)
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Determina generata'))
@@ -971,7 +973,7 @@ def modificadetermina_b(user, basedir, d_prat):
             logging.info('Genera determina: %s/%s', basedir, DETB_PDF_FILE)
             det_template = os.path.splitext(DETB_PDF_FILE)[0]
             det_name = det_template
-            ft.makepdf(PKG_ROOT, basedir, det_template, det_name, sede=CONFIG[SEDE],
+            ft.makepdf(basedir, det_template, det_name, sede=CONFIG[SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user)
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Generata determina B'))
@@ -991,7 +993,7 @@ def modificadetermina_b(user, basedir, d_prat):
     return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
 
 
-ACQ = fk.Flask(__name__, template_folder='../files', static_folder='../files')
+ACQ = fk.Flask(__name__, template_folder=FILEDIR, static_folder=FILEDIR)
 
 @ACQ.before_request
 def before():
@@ -1164,7 +1166,7 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
             tb.jsave((basedir, PRAT_JFILE), d_prat)
             logging.info('Salvati dati pratica: %s/%s', basedir, PRAT_JFILE)
             ric_name = os.path.splitext(RIC_PDF_FILE)[0]
-            ft.makepdf(PKG_ROOT, basedir, ric_name, ric_name,
+            ft.makepdf(basedir, ric_name, ric_name,
                        debug=DEBUG.local, pratica=d_prat, sede=CONFIG[SEDE])
             ft.remove((basedir, DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, DETB_PDF_FILE), show_error=False)
@@ -1657,7 +1659,7 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
                     include = ""
                     d_prat[DETTAGLIO_ORDINE] = 0
                 pdf_name = os.path.splitext(ORD_PDF_FILE)[0]
-                ft.makepdf(PKG_ROOT, basedir, ord_name, pdf_name, debug=DEBUG.local,
+                ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local,
                            include=include, pratica=d_prat, sede=CONFIG[SEDE])
                 d_prat[PDF_ORDINE] = ORD_PDF_FILE
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))

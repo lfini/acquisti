@@ -4,8 +4,8 @@ Definizione delle costanti per procedura acquisti
 
 import os.path
 
-__version__ = "2.1"
-__date__ = "16/6/2021"
+__version__ = "2.2"
+__date__ = "6/3/2024"
 __author__ = "Luca Fini"
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
@@ -334,6 +334,8 @@ La richiesta di acquisto N. {numero_pratica}:
 BINDIR = os.path.dirname(os.path.abspath(__file__))  # Path della directory eseguibili
 PKG_ROOT = os.path.abspath(os.path.join(BINDIR, ".."))  # Path della root del package
 
-DATADIR = os.path.join(PKG_ROOT, "data")   # path della directory per i dati"
-FILEDIR = os.path.join(PKG_ROOT, "files")  # path della directory dei files ausiliari"
-WORKDIR = os.path.join(PKG_ROOT, "work")   # path della directory di lavoro"
+AUXFILEDIR = "files5"          # nome directory per file ausiliari
+
+DATADIR = os.path.join(PKG_ROOT, "data")      # path della directory per i dati"
+FILEDIR = os.path.join(PKG_ROOT, AUXFILEDIR)  # path della directory dei files ausiliari"
+WORKDIR = os.path.join(PKG_ROOT, "work")      # path della directory di lavoro"

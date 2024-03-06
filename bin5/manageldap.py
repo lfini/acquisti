@@ -22,14 +22,15 @@ from constants import *     # pylint: disable=W0401
 #  VERSION  2.1  12/03/2019: Bug fix
 #  VERSION  2.2  26/03/2019: Bug fix
 #  VERSION  2.3  10/12/2020: Un po' di pulizia nel codice
+#  VERSION  3.0  06/03/2024: Piccola modifica per compatibilità nel periodo di
+#                            test della versione 5. Passato con pylint
 
 __author__ = 'Luca Fini'
-__version__ = '2.3'
-__date__ = '10/12/2020'
+__version__ = '3.0'
+__date__ = '6/3/2024'
 
 ALLPEOPLE = ll.get_people_table(real=False)
 PEOPLE = [x for x in ALLPEOPLE if x.get('employeeType')]
-
 
 SELECTOR_EMPL = list({x.get('employeeType')[0] for x in PEOPLE})
 SELECTOR_EMPL.sort()
@@ -52,7 +53,7 @@ class LdapForm(wt.Form):
     ldap_stanza = MyTextField('Numero di stanza', False)
 
     ldap_posizione = MySelectField('Posizione', True,
-                                   [wt.validators.Required()],
+                                   [wt.validators.InputRequired()],
                                    choices=list(zip(SELECTOR_EMPL, SELECTOR_EMPL)))
 
     avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
@@ -67,7 +68,7 @@ class LdapForm(wt.Form):
         html.append('<tr><td>'+self.annulla()+' &nbsp; '+self.avanti()+'</td></tr>')
         return '\n'.join(html)
 
-MLP = fk.Flask(__name__, template_folder='../files', static_folder='../files')
+MLP = fk.Flask(__name__, template_folder=FILEDIR, static_folder=FILEDIR)
 MLP.secret_key = PWFILE['secret_key']
 
 def _test_authorization(user):
@@ -90,7 +91,7 @@ def test_people(people):
             anlist.append('Posizione mancante')
         if anlist:
             ret.append((pers['uid'],
-                        '%s, %s'%(pers['sn'], pers.get('givenName', '~')),
+                        f'{pers["sn"]}, {pers.get("givenName", "~")}',
                         ', '.join(anlist)))
     return ret
 
@@ -113,7 +114,7 @@ def login():
         if ret:
             fk.session['userid'] = fk.request.form['userid']
             return fk.redirect(fk.url_for('start'))
-        msg = 'Login negato per %s (%s)' % (usr, why)
+        msg = f'Login negato per {usr} ({why})'
         fk.flash(msg)
         logging.error(msg)
     return fk.render_template('login.html', form=form,
@@ -128,14 +129,14 @@ def modifica_ldap(uid):
             try:
                 urecord = ll.get_people_record(uid)
             except Exception as excp:                # pylint: disable=W0703
-                msg = "Errore: %s"%str(excp)
+                msg = "Errore: "+str(excp)
                 fk.flash(msg)
                 logging.error(msg)
                 return fk.redirect(fk.url_for("start"))
             udata = {'ldap_tel': urecord.get('telephoneNumber', [''])[0],
                      'ldap_stanza': urecord.get('roomNumber', [''])[0],
                      'ldap_posizione': urecord.get('employeeType', [''])[0]}
-            fullname = '%s, %s' % (urecord.get('sn')[0], urecord.get('givenName')[0])
+            fullname = f'{urecord.get("sn")[0]}, {urecord.get("givenName")[0]}'
             cform = LdapForm(formdata=fk.request.form, **udata)
             if fk.request.method == 'POST':
                 if 'annulla' in fk.request.form:
@@ -154,10 +155,10 @@ def modifica_ldap(uid):
                         tel = 0
                     update.append(('telephoneNumber', tel))
                     ll.update_people_items(uid, update, PWFILE['manager_pw'])
-                    fk.flash('Aggiornato utente: %s' % fullname)
+                    fk.flash('Aggiornato utente: '+fullname)
                     return fk.redirect(fk.url_for('start'))
-            ddd = {'title': 'Aggiornamento dati utente: %s' % fullname,
-                   'before':"<form method=POST action=/modificaldap/%s>" % uid,
+            ddd = {'title': 'Aggiornamento dati utente: '+fullname,
+                   'before':f"<form method=POST action=/modificaldap/{uid}>",
                    'after':"</form>",
                    'note':'<b>N.B.:</b> I campi sottolineati sono obbligatori',
                    'body': cform.render()}
