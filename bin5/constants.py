@@ -28,6 +28,8 @@ MORE = "T_more"
 
 TEMPORARY_KEY_PREFIX = "T_"
 
+CONFIG_NAME = 'config.json'      # nome file di configurazione
+
 NOME_DITTA = "nome_ditta"
 SEDE_DITTA = "sede_ditta"
 
@@ -54,6 +56,7 @@ DETB_PDF_FILE = "determinaB.pdf"
 DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
 DOLLAR = "dollar"                               # MENU_VALUTA
+DIRETTORE_M = 'dir_is_m'                        # dati_pratica
 EMAIL_DIRETTORE = 'email_direttore'             # config
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
 EMAIL_RICHIEDENTE = 'email_richiedente'         # dati_pratica
@@ -67,6 +70,7 @@ FINE_GARA_GIORNO = "fine_gara_giorno"           # dati pratica
 FINE_GARA_ORE = "fine_gara_ore"                 # dati pratica
 FIRMA_APPROVAZIONE = 'firma_approvazione'       # dati_pratica
 FLASK_KEY = 'flask_key'                         # config
+GENDER_DIRETTORE = 'gender_dir'                 # config
 GIUSTIFICAZIONE = 'giustificazione'             # dati_pratica
 IMPORTO = 'importo'
 INDIRIZZO = "indirizzo"                         # config
@@ -163,8 +167,6 @@ VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica
 VERSIONE = 'versione'                           # dati_pratica
 VINCITORE = 'ditta_vincitrice'                  # dati_pratica
-WEB_HOST = 'web_host'                           # config
-WEB_PORT = 'web_port'                           # config
 WEBSITE = 'website'                             # config, sede
 
 # Chiavi da rinominare in dati_pratica per versione 1 del file
@@ -321,7 +323,8 @@ Per approvarla puoi accedere alla procedura per la gestione degli ordini:
 
      %s
 
-e selezionare: Elenco richieste aperte"""
+e selezionare: Elenco richieste aperte
+"""
 
 TESTO_NOTIFICA_APPROVAZIONE = """
 La richiesta di acquisto N. {numero_pratica}:

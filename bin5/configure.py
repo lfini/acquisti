@@ -34,14 +34,6 @@ per inviare i messaggi automatici [es: smtp.arcetri.astro.it]
 altrimenti usare un indirizzo e-mail valido per il server SMTP)
 """
 
-WEB_PORT_DESC = """Port IP assegnato alla procedura
-[es: 4000)
-"""
-
-WEB_HOST_DESC = """Indirizzo IP del server che ospita la procedura
-[es: www.arcetri.inaf.it]
-"""
-
 LATEX_PATH_DESC = """Directory di installazione di pdflatex
 [es: /usr/local/bin]
 """
@@ -64,7 +56,12 @@ EMAIL_DIRETTORE_DESC = """Indirizzo e-mail del direttore
 """
 
 NOME_DIRETTORE_DESC = """Nome del direttore
-[es: Maria Sofia Randich
+[es: Simone Esposito]
+"""
+
+GENDER_DIRETTORE_DESC = """Genere direttore (per la personalizzazione dei testi)
+(indicare M o F)
+[es: M]
 """
 
 EMAIL_WEBMASTER_DESC = """Indirizzo e-mail del web master
@@ -110,6 +107,7 @@ SEDE = OrderedDict([(SEDE_IT, SEDE_DESC),
 PARAMS = OrderedDict([(NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (EMAIL_WEBMASTER, EMAIL_WEBMASTER_DESC),
                       (NOME_DIRETTORE, NOME_DIRETTORE_DESC),
+                      (GENDER_DIRETTORE, GENDER_DIRETTORE_DESC),
                       (EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
                       (TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
                       (TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
@@ -117,9 +115,7 @@ PARAMS = OrderedDict([(NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (LATEX_PATH, LATEX_PATH_DESC),
                      ])
 
-TECH = OrderedDict([(WEB_HOST, WEB_HOST_DESC),
-                    (WEB_PORT, WEB_PORT_DESC),
-                    (SMTP_HOST, SMTP_HOST_DESC),
+TECH = OrderedDict([(SMTP_HOST, SMTP_HOST_DESC),
                     (EMAIL_PROCEDURA, EMAIL_PROCEDURA_DESC),
                     (LDAP_HOST, LDAP_HOST_DESC),
                     (LDAP_PORT, LDAP_PORT_DESC),

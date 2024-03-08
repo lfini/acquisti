@@ -26,7 +26,8 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from PyPDF2 import PdfFileReader, PdfFileWriter
 
-import ftools as ft   # Necessario per test
+from constants import FILEDIR   # Necessario per test
+import ftools as ft             # Necessario per test
 
 # VERSION 3.0    05/01/2018  - Versione python3
 # VERSION 3.1    17/10/2019  - path pdflatex configurabile
@@ -358,15 +359,18 @@ def test1():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    templfile = '../files/ordine_italiano.tex'
+    templfile = os.path.join(FILEDIR, 'ordine_italiano.tex')
     pdffile = 'test_document.pdf'
+    headerpath=os.path.join(FILEDIR, "header.png")
+    footerpath=os.path.join(FILEDIR, "footer.png")
+    attach=[os.path.join(FILEDIR, "test_attach.pdf")]
 
     BATCHMODE.on = False
     ret = makepdf('.', pdffile, templfile, debug=True,
                   pratica=TEST_ACQUISTO, user=TEST_USER, sede=TEST_SEDE,
-                  headerpath="../files/header.png",
-                  footerpath="../files/footer.png",
-                  attach=["../files/test_attach.pdf"],
+                  headerpath=headerpath,
+                  footerpath=footerpath,
+                  attach=attach,
                   indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
 
     if ret:
@@ -381,15 +385,18 @@ def test2(anno, nprat):
 
     pratica = ft.get_pratica(anno, nprat)
 
-    templfile = '../files/richiesta.tex'
+    templfile = os.path.join(FILEDIR, 'richiesta.tex')
     pdffile = 'test_document.pdf'
+    headerpath=os.path.join(FILEDIR, "header.png")
+    footerpath=os.path.join(FILEDIR, "footer.png")
+    attach=[os.path.join(FILEDIR, "test_attach.pdf")]
 
     BATCHMODE.on = False
     ret = makepdf('.', pdffile, templfile, debug=True,
                   pratica=pratica, user=TEST_USER, sede=TEST_SEDE,
-                  headerpath="../files/header.png",
-                  footerpath="../files/footer.png",
-                  attach=["../files/test_attach.pdf"],
+                  headerpath=headerpath,
+                  footerpath=footerpath,
+                  attach=attach,
                   indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
 
     if ret:

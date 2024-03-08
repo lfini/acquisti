@@ -29,7 +29,13 @@ CUP: ((( pratica.cup )))
 
 PURCHASE ORDER N. ~~ ((( pratica.numero_ordine ))) ~~ DATED ~~ ((( pratica.data_ordine )))
 
-The undersigned ((( pratica.nome_direttore ))), in her capacity as Director of the ((( sede.sede_uk ))), hereby
+The undersigned ((( pratica.nome_direttore ))), in
+((* if pratica.dir_is_m *))
+his
+((* else *))
+her
+((* endif *))
+capacity as Director of the ((( sede.sede_uk ))), hereby
 awards this contract according to 
 article 36 of the Legislative Decree 50/2016
 and subsequent amendments and additons,

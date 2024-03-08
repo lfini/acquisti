@@ -81,7 +81,12 @@ __date__ = '6/03/2024'
 
 __start__ = time.asctime(time.localtime())
 
-CONFIG = tb.jload((DATADIR, 'config.json'))
+CONFIG_FILE = os.path.join(DATADIR, CONFIG_NAME)
+
+class CONFIG:                   # pylint: disable=R0903
+    'Dati di configurazione'
+    time = time.time()
+    config = tb.jload(CONFIG_FILE)
 
 THIS_URL = os.environ.get("REQUEST_SCHEME", "???")+"://"+ \
            os.environ.get("SERVER_NAME", "??.??.??")+":"+ \
@@ -108,7 +113,7 @@ ILL_ATCH = Exception("Modello allegato non previsto")
 def setdebug():
     "Determina modo DEBUG"
     DEBUG.local = True
-    DEBUG.email = CONFIG[EMAIL_WEBMASTER]
+    DEBUG.email = CONFIG.config[EMAIL_WEBMASTER]
 
 def update_lists():
     "Riinizializza tabelle"
@@ -450,15 +455,11 @@ def _hrecord(username, rec):
     "generazione line di storia della pratica"
     return f'{rec} il {ft.today()} ({username})'
 
-def _make_mail_body(testo, d_prat):
-    "generazione testo messaggio email"
-    return testo.format(web_host=CONFIG[WEB_HOST], web_port=CONFIG[WEB_PORT], **d_prat)
-
 def _email_approv(d_prat, ritrasm):
     "Invio mail di richiesta approvazione"
     ret = False
     if ritrasm:
-        sender = CONFIG[EMAIL_UFFICIO]
+        sender = CONFIG.config[EMAIL_UFFICIO]
     else:
         sender = d_prat[EMAIL_RICHIEDENTE]
     eresp = d_prat.get(EMAIL_RESPONSABILE)
@@ -469,16 +470,16 @@ def _email_approv(d_prat, ritrasm):
         else:
             subj = 'Trasmissione richiesta di acquisto.'
         testo = TESTO_APPROVAZIONE%fk.request.host_url + DETTAGLIO_PRATICA
-        body = _make_mail_body(testo, d_prat)
+        body = testo.format(**d_prat)
         if DEBUG.local:
-            webm = CONFIG[EMAIL_WEBMASTER]
+            webm = CONFIG.config[EMAIL_WEBMASTER]
             recipients = [webm]
             info = f"Modo debug: invio e-mail a: {webm}. Pratica {prat}"
         else:
             recipients = [eresp]
             info = f"Invio richiesta approvazione a: {eresp}. " \
                    f"Pratica {prat}. Subj: {subj}"
-        ret = ft.send_email(CONFIG.get(SMTP_HOST), sender, recipients,
+        ret = ft.send_email(CONFIG.config.get(SMTP_HOST), sender, recipients,
                             subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info(info)
@@ -533,24 +534,25 @@ def _approva_richiesta(username, basedir, d_prat, sgn):
     prat = d_prat[NUMERO_PRATICA]
     if sender:
         subj = 'Notifica approvazione richiesta di acquisto. Pratica: '+prat
-        body = _make_mail_body(TESTO_NOTIFICA_APPROVAZIONE, d_prat)
+        body = TESTO_NOTIFICA_APPROVAZIONE.format(**d_prat)
         if DEBUG.local:
             isdebug = 'Modo debug. '
         else:
             isdebug = ''
-        recipients = [CONFIG[EMAIL_UFFICIO]]
+        recipients = [CONFIG.config[EMAIL_UFFICIO]]
         if d_prat.get(EMAIL_RICHIEDENTE, '-') != d_prat.get(EMAIL_RESPONSABILE, ''):
             recipients.append(d_prat[EMAIL_RICHIEDENTE])
-        ret = ft.send_email(CONFIG.get(SMTP_HOST), CONFIG.get(EMAIL_UFFICIO),
+        ret = ft.send_email(CONFIG.config.get(SMTP_HOST), CONFIG.config.get(EMAIL_UFFICIO),
                             recipients, subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("Inviata richiesta approvazione a %s. "
                          "Pratica %s", ', '.join(recipients), prat)
         subj = 'Conferma ricevimento approvazione richiesta di acquisto. Pratica: '+prat
         hdr0 = HEADER_NOTIFICA_RESPONSABILE_WEB
-        body = _make_mail_body(hdr0+DETTAGLIO_PRATICA, d_prat)
+        body = (hdr0+DETTAGLIO_PRATICA).format(**d_prat)
+
         recipients = [sender]
-        ret = ft.send_email(CONFIG.get(SMTP_HOST), sender, recipients,
+        ret = ft.send_email(CONFIG.config.get(SMTP_HOST), sender, recipients,
                             subj, body, debug_addr=DEBUG.email)
         if ret:
             logging.info("%sInviata conferma approvazione a %s. "
@@ -690,7 +692,7 @@ def pratica_common(user, basedir, d_prat):
     info['rdo'] = 1 if d_prat.get(MOD_ACQUISTO) == RDO_MEPA else 0
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, uploadA=upla,
-                              uploadB=uplb, sede=CONFIG[SEDE])
+                              uploadB=uplb, sede=CONFIG.config[SEDE])
 
 def _modifica_pratica(what):               # pylint: disable=R0912,R0915
     "parte comune alle pagine di modifica pratica"
@@ -821,7 +823,7 @@ def _render_richiesta(form, d_prat):
            'after': '</form>',
            'note': OBBLIGATORIO,
            'body': form.renderme()}
-    return fk.render_template("form_layout.html", sede=CONFIG[SEDE], data=ddp)
+    return fk.render_template("form_layout.html", sede=CONFIG.config[SEDE], data=ddp)
 
 def _genera_pratica(user):
     "Genera pratica temporanea vuota"
@@ -901,7 +903,8 @@ def modificadetermina_a(user, basedir, d_prat):
         ndet = ft.find_max_det(year)[0]+1
         d_prat[NUMERO_DETERMINA_A] = f"{ndet}/{year:4d}"
         d_prat[DATA_DETERMINA_A] = ft.today(False)
-        d_prat[NOME_DIRETTORE] = CONFIG[NOME_DIRETTORE]
+        d_prat[NOME_DIRETTORE] = CONFIG.config[NOME_DIRETTORE]
+        d_prat[DIRETTORE_M] = CONFIG.config[GENDER_DIRETTORE][:1].lower() == 'm'
         logging.info("Nuovo num. determina: %s", d_prat[NUMERO_DETERMINA_A])
     det = fms.DeterminaA(fk.request.form, **d_prat)
     det.email_rup.choices = _menu_scelta_utente("Seleziona RUP")
@@ -912,11 +915,11 @@ def modificadetermina_a(user, basedir, d_prat):
             if not _test_pdf_dichiarazione_bollo(basedir, d_prat, "A"):
                 fk.flash("Manca dichiarazione sostitutiva di assolvimento Imposta Bollo",
                          category="info")
-            d_prat[TITOLO_DIRETTORE] = CONFIG[TITOLO_DIRETTORE]
+            d_prat[TITOLO_DIRETTORE] = CONFIG.config[TITOLO_DIRETTORE]
             logging.info('Genera determina: %s/%s', basedir, DETA_PDF_FILE)
             det_template = ft.modello_determinaa(d_prat[MOD_ACQUISTO])
             det_name = os.path.splitext(DETA_PDF_FILE)[0]
-            ft.makepdf(basedir, det_template, det_name, sede=CONFIG[SEDE],
+            ft.makepdf(basedir, det_template, det_name, sede=CONFIG.config[SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user)
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Determina generata'))
@@ -938,7 +941,7 @@ def modificadetermina_a(user, basedir, d_prat):
            'after': "</form>",
            'note': OBBLIGATORIO,
            'body': det.renderme(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 def modificadetermina_b(user, basedir, d_prat):
     "pagina: modifica determina fase B"
@@ -973,7 +976,7 @@ def modificadetermina_b(user, basedir, d_prat):
             logging.info('Genera determina: %s/%s', basedir, DETB_PDF_FILE)
             det_template = os.path.splitext(DETB_PDF_FILE)[0]
             det_name = det_template
-            ft.makepdf(basedir, det_template, det_name, sede=CONFIG[SEDE],
+            ft.makepdf(basedir, det_template, det_name, sede=CONFIG.config[SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user)
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Generata determina B'))
@@ -990,7 +993,7 @@ def modificadetermina_b(user, basedir, d_prat):
            'after': "</form>",
            'note': OBBLIGATORIO,
            'body': det.renderme(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 
 ACQ = fk.Flask(__name__, template_folder=FILEDIR, static_folder=FILEDIR)
@@ -1015,7 +1018,8 @@ def start():
         status['admin'] = 1
     if _test_developer(user):
         status['developer'] = 1
-    return fk.render_template('start_acquisti.html', sede=CONFIG[SEDE], user=user, status=status)
+    return fk.render_template('start_acquisti.html', sede=CONFIG.config[SEDE],
+                              user=user, status=status)
 
 @ACQ.route("/about")
 def about():                                 # pylint: disable=R0915
@@ -1058,12 +1062,12 @@ def about():                                 # pylint: disable=R0915
         html.append(f'<tr><td><b>FILEDIR</b></td><td>{FILEDIR}</td></tr>')
         html.append('</table></td></tr>')
 
-        cks = list(CONFIG.keys())
+        cks = list(CONFIG.config.keys())
         cks.sort()
         html.append('<tr><td><table cellpadding=3 border=1>')
         html.append('<tr><th colspan=2> File di configurazione </th></tr>')
         for key in cks:
-            html.append(f'<tr><td><b>{key}</b></td><td>{CONFIG[key]}</td></tr>')
+            html.append(f'<tr><td><b>{key}</b></td><td>{CONFIG.config[key]}</td></tr>')
         html.append('</table></td></tr>')
 
         html.append('<tr><td><table cellpadding=3 border=1>')
@@ -1072,7 +1076,7 @@ def about():                                 # pylint: disable=R0915
         html.append('</table></td></tr>')
 
     body = '\n'.join(html)
-    return fk.render_template('about.html', sede=CONFIG[SEDE], data=body)
+    return fk.render_template('about.html', sede=CONFIG.config[SEDE], data=body)
 
 @ACQ.route("/clearsession")
 def clearsession():
@@ -1085,10 +1089,14 @@ def clearsession():
 def login():
     "pagina: login"
     logging.info('URL: /login')
+    if os.stat(CONFIG_FILE).st_mtime > CONFIG.time:
+        CONFIG.time = time.time()
+        CONFIG.config = tb.jload(CONFIG_FILE)
+        logging.info('Riletta configurazione aggiornata')
     uid = fk.request.form.get('userid')
     pwd = fk.request.form.get('password')
-    form = fms.MyLoginForm(DATADIR, uid, pwd, CONFIG.get(LDAP_HOST),
-                           CONFIG.get(LDAP_PORT), formdata=fk.request.form)
+    form = fms.MyLoginForm(DATADIR, uid, pwd, CONFIG.config.get(LDAP_HOST),
+                           CONFIG.config.get(LDAP_PORT), formdata=fk.request.form)
     if fk.request.method == 'POST' and form.validate():
         ret, why = form.password_ok()
         if ret:
@@ -1096,7 +1104,7 @@ def login():
             return fk.redirect(fk.url_for('start'))
         logging.error('Accesso negato: userid: "%s" (%s)', uid, why)
         fk.flash(f'Accesso negato: {why}', category="error")
-    return fk.render_template('login.html', form=form, sede=CONFIG[SEDE],
+    return fk.render_template('login.html', form=form, sede=CONFIG.config[SEDE],
                               title='Procedura per acquisti')
 
 @ACQ.route('/modificarichiesta', methods=('GET', 'POST'))
@@ -1156,8 +1164,8 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
             d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, d_prat.get(MOD_ACQUISTO))
             d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, d_prat.get(CRIT_ASS))
             d_prat[NOME_RESPONSABILE] = _nome_da_email(d_prat[EMAIL_RESPONSABILE], True)
-            d_prat[SEDE] = CONFIG[SEDE]
-            d_prat[CITTA] = CONFIG[SEDE][CITTA]
+            d_prat[SEDE] = CONFIG.config[SEDE]
+            d_prat[CITTA] = CONFIG.config[SEDE][CITTA]
             d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
             d_prat[RICHIESTA_INVIATA] = 0
             d_prat[FIRMA_APPROVAZIONE] = ""
@@ -1167,7 +1175,7 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
             logging.info('Salvati dati pratica: %s/%s', basedir, PRAT_JFILE)
             ric_name = os.path.splitext(RIC_PDF_FILE)[0]
             ft.makepdf(basedir, ric_name, ric_name,
-                       debug=DEBUG.local, pratica=d_prat, sede=CONFIG[SEDE])
+                       debug=DEBUG.local, pratica=d_prat, sede=CONFIG.config[SEDE])
             ft.remove((basedir, DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, DETB_PDF_FILE), show_error=False)
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
@@ -1268,7 +1276,7 @@ def aggiornaformato():
            'before': '<form method=POST action=/aggiornaformato accept-charset="utf-8" novalidate>',
            'after': '</form>',
            'body': aggiornamento.renderme(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 @ACQ.route('/approvarichiesta')
 def approvarichiesta():
@@ -1348,7 +1356,7 @@ def lista_pratiche(stato, anno, ascendente):
     if stato[:3] == 'ALL' and not _test_admin(user):
         logging.error('Visualizzazione pratiche non autorizzata. Utente: %s', user['userid'])
         fk.session.clear()
-        return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+        return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
     if stato[-1] == 'A':
         filtac = lambda x: x.get(PRATICA_APERTA)
         title = 'Elenco pratiche aperte'
@@ -1374,7 +1382,7 @@ def lista_pratiche(stato, anno, ascendente):
     theyear = int(anno)
     years = [int(y) for y in doclist.years]
     return fk.render_template('lista_pratiche_per_anno.html', stato=stato,
-                              sede=CONFIG[SEDE], years=years, year=theyear,
+                              sede=CONFIG.config[SEDE], years=years, year=theyear,
                               dlist=doclist.records, title=title)
 
 @ACQ.route('/trovapratica', methods=('POST', 'GET'))
@@ -1396,7 +1404,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
         prf.trova_responsabile.choices = user_menu
         prf.trova_richiedente.choices = user_menu
         years = ft.get_years(DATADIR)
-        years.sort()
+        years.sort(reverse=True)
         year_menu = list(zip(years, years))
         prf.trova_anno.choices = year_menu
         if fk.request.method == 'POST':
@@ -1451,17 +1459,17 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
                        f'N. pratiche selezionate: {len(lista)}'
             return fk.render_template('lista_pratiche_per_anno.html', stato='', pre=[],
                                       post=[], year=theyear, dlist=lista.records, title=title,
-                                      sede=CONFIG[SEDE], subtitle=subtitle)
+                                      sede=CONFIG.config[SEDE], subtitle=subtitle)
         ddp = {'title': 'Trova pratiche',
                'subtitle': 'Specifica criteri di ricerca',
                'before': '<form method=POST action=/trovapratica '
                          'accept-charset="utf-8" novalidate>',
                'after': '</form>',
                'body': prf.renderme()}
-        return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
+        return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
     logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
     fk.session.clear()
-    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+    return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
 
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
@@ -1647,7 +1655,7 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
                     ord_name = ORD_NAME_IT
                 d_prat[STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "it")
                 d_prat[STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "uk")
-                d_prat[TITOLO_DIRETTORE_UK] = CONFIG[TITOLO_DIRETTORE_UK]
+                d_prat[TITOLO_DIRETTORE_UK] = CONFIG.config[TITOLO_DIRETTORE_UK]
                 logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, ORD_PDF_FILE)
                 file_lista_dettagliata = filename_allegato(ALL_SING,
                                                            TAB_ALLEGATI[LISTA_DETTAGLIATA_A][0],
@@ -1660,7 +1668,7 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
                     d_prat[DETTAGLIO_ORDINE] = 0
                 pdf_name = os.path.splitext(ORD_PDF_FILE)[0]
                 ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local,
-                           include=include, pratica=d_prat, sede=CONFIG[SEDE])
+                           include=include, pratica=d_prat, sede=CONFIG.config[SEDE])
                 d_prat[PDF_ORDINE] = ORD_PDF_FILE
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))
                 tb.jsave((basedir, PRAT_JFILE), d_prat)
@@ -1684,7 +1692,7 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
                       "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
         url = fk.url_for('pratica1')
         return fk.redirect(url)
-    return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 @ACQ.route('/chiudipratica')
 def chiudipratica():
@@ -1721,7 +1729,7 @@ def vedijson(fname):
         return text
     logging.error('Visualizzazione JSON non autorizzata. Utente: %s', user['userid'])
     fk.session.clear()
-    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+    return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
 
 @ACQ.route('/files/<name>')
 def files(name):
@@ -1773,20 +1781,20 @@ def show_checks():
         return text
     logging.error('Visualizzazione checks() non autorizzata. Utente: %s', the_user['userid'])
     fk.session.clear()
-    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+    return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
 
 @ACQ.route('/email_approv/<_unused>')
 def email_approv(_unused):
     "pagina lanciata dall'apposito cliente attivato dal filtro e-mail"
     logging.info('URL: /email_approv')
     logging.error("la URL /email_approv non dovrebbe essere più utilizzata. Fermare il crontab!")
-    return fk.render_template('noaccess.html', sede=CONFIG[SEDE])
+    return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
 
 @ACQ.route('/user')
 def user_tbd():
     "pagina T.B.D."
     logging.info('URL: /user')
-    return fk.render_template('tbd.html', goto='/', sede=CONFIG[SEDE])
+    return fk.render_template('tbd.html', goto='/', sede=CONFIG.config[SEDE])
 
 def remove_prefix(adict, prefix):
     "rimuove da dict tutte le chiavi che inizino per la stringa data"
@@ -1851,7 +1859,7 @@ def procedura_rdo():
             fk.flash(amsg, category="error")
         logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
                       "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
-    return fk.render_template('form_layout.html', sede=CONFIG[SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 #############################################################################
 ################### Pagine housekeeping #####################################
@@ -1869,7 +1877,7 @@ def housekeeping():
         if _test_admin(user):
             return fk.render_template('start_housekeeping.html',
                                       user=user,
-                                      sede=CONFIG[SEDE],
+                                      sede=CONFIG.config[SEDE],
                                       status=status).encode('utf8')
         fk.session.clear()
         return fk.render_template('noaccess.html')
@@ -2144,7 +2152,7 @@ def environ():
     html.append(f"<li><b>url_root</b>: {fk.request.url_root}")
     html.append(f"<li><b>user_agent</b>: {fk.request.user_agent}")
     req = '\n'.join(html)
-    return fk.render_template('environ.html', sede=CONFIG[SEDE], request=req, environ=env)
+    return fk.render_template('environ.html', sede=CONFIG.config[SEDE], request=req, environ=env)
 
 @ACQ.route('/testmail', methods=('GET',))
 def testmail():
@@ -2156,9 +2164,9 @@ def testmail():
             fk.session.clear()
             return fk.render_template('noaccess.html')
         thetime = time.asctime()
-        host = CONFIG.get(SMTP_HOST)
-        recipients = [CONFIG.get(EMAIL_WEBMASTER)]
-        sender = CONFIG.get(EMAIL_UFFICIO, "")
+        host = CONFIG.config.get(SMTP_HOST)
+        recipients = [CONFIG.config.get(EMAIL_WEBMASTER)]
+        sender = CONFIG.config.get(EMAIL_UFFICIO, "")
         subj = "Messaggio di prova da procedura 'acquisti'"
         body = f"""
 Invio messaggio di prova per verifica funzionamento del server.
@@ -2198,12 +2206,12 @@ def initialize_me():
     configname = os.path.join(DATADIR, 'config.json')
     logging.info('Config loaded from: %s', configname)
 
-    ft.latex.set_path(CONFIG.get("latex_path", ""))
+    ft.latex.set_path(CONFIG.config.get("latex_path", ""))
     logging.info("LaTeX path: %s", ft.latex.PDFLATEX.cmd)
 
     update_lists()
     ft.init_helplist()
-    ACQ.secret_key = CONFIG[FLASK_KEY]
+    ACQ.secret_key = CONFIG.config[FLASK_KEY]
 
     ft.clean_locks(DATADIR)
 
@@ -2232,8 +2240,8 @@ def localtest():
     logging.basicConfig(level=logging.DEBUG)
     initialize_me()
     setdebug()
-    ft.set_mail_logger(CONFIG[SMTP_HOST], CONFIG[EMAIL_PROCEDURA],
-                       CONFIG[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI (debug)')
+    ft.set_mail_logger(CONFIG.config[SMTP_HOST], CONFIG.config[EMAIL_PROCEDURA],
+                       CONFIG.config[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI (debug)')
     ACQ.run(host="0.0.0.0", port=4001, debug=True)
 
 def production():
@@ -2242,8 +2250,8 @@ def production():
 #   logging.basicConfig(level=logging.DEBUG)   # Più verboso
     initialize_me()
     ft.set_file_logger((WORKDIR, 'acquisti.log'))
-    ft.set_mail_logger(CONFIG[SMTP_HOST], CONFIG[EMAIL_PROCEDURA],
-                       CONFIG[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI')
+    ft.set_mail_logger(CONFIG.config[SMTP_HOST], CONFIG.config[EMAIL_PROCEDURA],
+                       CONFIG.config[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI')
 
 if __name__ == '__main__':
     localtest()

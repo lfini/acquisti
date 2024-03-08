@@ -31,7 +31,12 @@ Codice Univoco Ufficio (CUU): 14CVDG
 
 BUONO D'ORDINE N. ~~ ((( pratica.numero_ordine ))) ~~ DEL ~~ ((( pratica.data_ordine )))
 
-La sottoscritta ((( pratica.nome_direttore ))), 
+((* if pratica.dir_is_m *))
+Il sottoscritto
+((* else *))
+La sottoscritta
+((* endif *))
+((( pratica.nome_direttore ))), 
 nella veste di Direttore dell'INAF - Osservatorio Astrofisico di Arcetri,
 con il presente atto affida ai sensi dell'art. 50 del D.Lgs. 36/2023 e s.m.i.
 la fornitura~/~il servizio~/~il lavoro di seguito specificata/o:
