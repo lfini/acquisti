@@ -2,11 +2,11 @@
 <html>
 <head>
 <title>Gestione acquisti</title>
-<link rel="stylesheet" type="text/css" href="/files/overlay.css">
-<script src="/files/overlay.js"></script>
+<link rel="stylesheet" type="text/css" href="/files5/overlay.css">
+<script src="/files5/overlay.js"></script>
 </head>
 <body>
-<!-- template: start_acquisti.html  Vers. 1.1 -->
+<!-- template: start_acquisti.html  Vers. 5.0 -->
 
 {% from "_common.html" import start_page, end_page %}
 {{ start_page("",sede.sede_it,"Gestione acquisti") }}
@@ -15,13 +15,15 @@
 </td></tr>
 <tr><td>
 <ul>
-<li><b> <a href=/modificarichiesta>Nuova richiesta di acquisto</a></b>
+<li><b> <a href=/modificaprogetto>Nuovo progetto di acquisto</a></b>
 <p>
-<li><b> <a href=/pratiche/RIC_A/0/0>Elenco pratiche aperte (come richiedente)</a> </b>
-<li><b> <a href=/pratiche/RES_A/0/0>Elenco pratiche da approvare (come resp. fondi)</a></b>
+<li><b> <a href=/pratiche/RIC_A/0/0>Elenco pratiche aperte, come richiedente</a> </b>
+<li><b> <a href=/pratiche/RES_A/0/0>Elenco pratiche da approvare, come resp. fondi</a></b>
+<li><b> <a href=/pratiche/RUP_A/0/0>Elenco pratiche come RUP</a></b>
 <p>
-<li> <a href=/pratiche/RIC_C/0/0>Rivedi pratiche chiuse (come richiedente)</a>
-<li> <a href=/pratiche/RES_C/0/0>Rivedi pratiche chiuse (come resp. fondi)</a>
+<li> <a href=/pratiche/RIC_C/0/0>Rivedi pratiche chiuse, come richiedente</a>
+<li> <a href=/pratiche/RES_C/0/0>Rivedi pratiche approvate e chiuse, come resp. fondi</a>
+<li> <a href=/pratiche/RUP_C/0/0>Rivedi pratiche chiuse, come RUP</a>
 {# <li> <a href=/user>Dati personali</a></h4> #}
 </td></tr>
 
@@ -37,7 +39,7 @@
 <li><b><a href=/housekeeping>Gestione tabelle (Utenti e Codici fondi)</a></b>
 <p>
 <li> <a href=/about>Informazioni su procedura acquisti</tt></a>
-<li> <a href=/files/README.html>Documentazione tecnica</a>
+<li> <a href=/files5/README.html>Documentazione tecnica</a>
 </ul>
 </td></tr>
 {% endif %}

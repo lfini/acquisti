@@ -33,12 +33,13 @@ Uso da linea di comando:
 #                           di autenticazione
 # VERSION 4.8.3  29/11/2021 Corretto errore in autenticazione
 # VERSION 4.9    11/11/2023 passato con pylint
+# VERSION 5.0    8/4/2024 Nuova versione.
 
 import sys
 import os
 import time
 import re
-import crypt
+import base64
 import pwd
 import hashlib
 import string
@@ -164,20 +165,20 @@ def set_user_info(userid):
         logger.user_info = '----------'
     _setformatter()
 
-I16 = '1ZxqYcE4LjMc72oy'
+I16 = b'1ZxqYcE4LjMc72oy'
 P24 = 'xyCjhWT3fPtOel5MN02RDUYE'
 
-def encrypt(text, passw=""):
+def encrypt(plaintext, passw=""):
     "codifica una stringa con password"
     _pwd = (passw+P24).encode("utf8")[:24]
     obj = AES.new(_pwd, AES.MODE_CFB, I16)
-    return list(obj.encrypt(text))
+    return obj.encrypt(plaintext.encode('utf8'))
 
-def decrypt(text, passw=""):
+def decrypt(ciphertext, passw=""):
     "decodifica una stringa con password"
     _pwd = (passw+P24).encode("utf8")[:24]
     obj = AES.new(_pwd, AES.MODE_CFB, I16)
-    return obj.decrypt(bytes(text)).decode("utf8")
+    return obj.decrypt(bytes(ciphertext)).decode("utf8")
 
 def ldap_authenticate(userid, password, server_ip, server_port, timeout=10):
     """Autenticazione ID/Password da server LDAP.
@@ -212,8 +213,8 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # py
     except Exception as excp:
         errmsg = f"Mail to: {', '.join(recipients)} - "+str(excp)
         logging.error(errmsg)
-        return False
-    return True
+        return ''
+    return dest
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ'
 
@@ -615,25 +616,25 @@ def swapname(name):
 
 def modello_determinaa(mod_acquisto):                  # pylint: disable=R0911
     "Stabilisce il template per la determina, fase A"
-    if mod_acquisto in (MEPA, CONSIP):
+    if mod_acquisto == TRATT_MEPA_40:
         return "determina_mepa"
-    if mod_acquisto == INFER_5000:
-        return "determina_inf5000"
-    if mod_acquisto == INFER_1000:
-        return "determina_inf1000"
-    if mod_acquisto == TRATT_MEPA:
-        return "determina_trattmepa"
-    if mod_acquisto == SUPER_5000:
-        return "determina_sup5000"
-    if mod_acquisto == SUPER_1000:
-        return "determina_sup1000"
-    if mod_acquisto == RDO_MEPA:
-        return "determina_rdo"
-    if mod_acquisto == PROC_NEG:
-        return "determina_procneg"
-    if mod_acquisto == MANIF_INT:
-        return "determina_manif"
-    return ""
+#   if mod_acquisto == INFER_5000:
+#       return "determina_inf5000"
+#   if mod_acquisto == INFER_1000:
+#       return "determina_inf1000"
+#   if mod_acquisto == TRATT_MEPA_40:
+#       return "determina_trattmepa_40"
+#   if mod_acquisto == SUPER_5000:
+#       return "determina_sup5000"
+#   if mod_acquisto == SUPER_1000:
+#       return "determina_sup1000"
+#   if mod_acquisto == RDO_MEPA:
+#       return "determina_rdo"
+#   if mod_acquisto == PROC_NEG:
+#       return "determina_procneg"
+#   if mod_acquisto == MANIF_INT:
+#       return "determina_manif"
+    raise RuntimeError(f'Errore scelta modello determina (mod.acquisto: {mod_acquisto}')
 
 def makepdf(destdir, templ_name, pdf_name, debug=False, include="", **data):   # pylint: disable=R0913
     "Crea documento PDF da template LaTeX e dict di termini"
@@ -725,6 +726,10 @@ non sei abilitato all'uso della procedura come "%s".
 Per ottenere l'abilitazione devi rivolgerti all'amministrazione
 """
 
+def _crypt(username, passw):
+    'rimpiazzo di crypt.crypt (deprecato)'
+    return base64.b64encode(encrypt(username, passw)).decode('ascii')
+
 def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
@@ -739,7 +744,7 @@ def authenticate(userid, password, ldap_host, ldap_port):            # pylint: d
         auth_ok = PAM_AUTH(userid, password)
         logging.info('autenticazione PAM OK')
     if not auth_ok and 'pw' in user:
-        if crypt.crypt(password, userid) == user['pw']:
+        if _crypt(password, userid) == user['pw']:
             auth_ok = True
             logging.info('autenticazione locale OK')
     if not auth_ok:
@@ -831,8 +836,7 @@ def makeuser(userid):                         # pylint: disable=R0912,R0915
     if password == "-":
         pwcrypt = '-'
     else:
-        pwcrypt = crypt.crypt(password, userid)
-
+        pwcrypt = _crypt(password, userid)
     rec = uls.where('userid', userid, as_dict=True, index=True)
     if rec:
         pos = rec[0]['_IND_']
@@ -914,7 +918,7 @@ class DocList:               # pylint: disable=R0903
                  sort=None,
                  extract=None):
         self.years = get_years(thedir)  # Rendi noto quali altri
-        self.years.sort()           # anni sono disponibili
+        self.years.sort()               # anni sono disponibili
         if is_year(year):
             self.year = str(year)
         else:

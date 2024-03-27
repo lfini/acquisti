@@ -7,8 +7,8 @@
 <center>
 <h1>Procedure Web-based per la gestione degli acquisti</h1>
 
-<h4>  Luca Fini <br>    INAF - Osservatorio di Arcetri<br>
-Ottobre 2016 - Novembre 2020 </h4>
+<h4>  Luca Fini <br>
+Ottobre 2016 - Aprile 2024 </h4>
 </center>
 <a name=top>
 <table border=1>
@@ -50,8 +50,9 @@ poter utilizzare le procedure:
 
 <blockquote>
 python3-flask, python3-jinja2, python3-ldap3, python3-werkzeug, python3-wtforms 
-python3-pam (Ubuntu: python3-pampy), python3-pypdf2, PyCrypto, oauth2client,
-(i due ultimi installabili solo con <tt>pip3</tt>).
+python3-pam (Ubuntu: python3-pampy), python3-pypdf2, pycryptodome, oauth2client,
+google-api-python-client, google_auth_oauthlib,
+(gli ultimi quattro installabili solo con <tt>pip3</tt>).
 <p>
 Occorre poi installare il package per l'uso delle api di Google google-api-python-client (vedere
 <a href=#appendice>appendice</a>)
@@ -103,29 +104,29 @@ procedure, che negli esempi che seguono sar&agrave; indicato con:
 <p> L'account non necessita di particolari privilegi perch&eacute; il server
 web (gunicorn) viene lanciato con la UID dell'account.
 
-<p> Tutti i files necessari, sia di codice che di dati sono installati
+<p> Tutti i file necessari, sia di codice che di dati sono installati
 sulla HOME directory dell'account <tt>acquisti</tt> e sono di
 propriet&agrave; del relativo utente.  L'installazione e le operazioni
 di manutenzione vengono fatte mediante login su detto account.
 
-<h3>Installazione dei files</h3>
+<h3>Installazione dei file</h3>
 
 Per procedere all'installazione, dopo aver fatto login sull'account
-<tt>acquisti</tt> &egrave; sufficiente estrarre i files della
+<tt>acquisti</tt> &egrave; sufficiente estrarre i file della
 distribuzione dal <i>tarball</i> <tt><b>acquisti-n.n.n.tgz</b></tt>:
 
 <blockquote>
 <tt>[acquisti@polluce ~]$ tar xvfz acquisti-4.0.8.tgz</tt>
 </blockquote>
 
-Vengono estratti i seguenti files e directory:
+Vengono estratti i seguenti file e directory:
 <ul>
 <li> <tt>README</tt>, <tt>config-esempio.json</tt>, <tt>test-table.json</tt>: esempi e documentazione
 <p>
 <li> <tt>acquisti.service</tt>, <tt>manageldap.service</tt>: Procedure per start/stop del server Web con <tt>systemctl</tt>.
 <p>
-<li><tt>bin</tt>: directory per procedure python.
-<li><tt>files</tt>: directory per files di supporto (incluso questo file).
+<li><tt>bin5</tt>: directory per procedure python.
+<li><tt>files5</tt>: directory per file di supporto (incluso questo file).
 </ul>
 
 <b>NOTA:</b> la procedura <tt>manageldap</tt> è specifica per Arcetri a non deve essere utilizzata
@@ -141,7 +142,7 @@ di lavoro ed alcuni file di supporto, utilizzando la procedura
 esempio:
 
 <blockquote>
-<tt>[acquisti@polluce ~]$ <b>python3 bin/ftools.py init</b></tt>
+<tt>[acquisti@polluce ~]$ <b>python3 bin5/ftools.py init</b></tt>
 </blockquote>
 
 Vengono create le seguenti directory:
@@ -160,7 +161,7 @@ la sede.
 Il file viene creato con apposita procedura:
 
 <blockquote>
-<tt>[acquisti@polluce ~]$ <b>python3 bin/configure.py</b></tt>
+<tt>[acquisti@polluce ~]$ <b>python3 bin5/configure.py</b></tt>
 </blockquote>
 La procedura fornisce estese informazioni sui dati da immettere e in base alle risposte, genera il
 file:
@@ -172,7 +173,7 @@ file:
 Dopo aver terminato la configurazione è possibile riesaminarla con il comando:
 
 <blockquote>
-<tt>[acquisti@polluce ~]$ <b>python3 bin/ftools.py conf</b></tt>
+<tt>[acquisti@polluce ~]$ <b>python3 bin5/ftools.py conf</b></tt>
 </blockquote>
 
 <p> Il contenuto del file di configurazione &egrave; il seguente:
@@ -258,7 +259,7 @@ Tutti i documenti generati hanno il riproducono la carta intestata
 dell'istituto. Le immagini relative si trovano nei file:
 
 <blockquote>
-	<tt>.../files/header.png</tt>, <tt>.../files/footer.png</tt>
+	<tt>.../files5/header.png</tt>, <tt>.../files5/footer.png</tt>
 </blockquote>
 
 <p>
@@ -311,7 +312,7 @@ di accesso dall'esterno ad altri servizi.
 
 <p> Dato che la necessit&agrave; di accedere alle procedure per gli
 acquisti da siti esterni &egrave; principalmente connessa con l'operazione
-di approvazione di una richiesta di acquisto da parte del responsabile dei
+di approvazione di un progetto di acquisto da parte del responsabile dei
 fondi, &egrave; prevista la possibilit&agrave; di approvazione mediante
 e-mail (vedi: <a href=#email>risponditore e-mail</a>).
 
@@ -344,7 +345,7 @@ da parte del personale dell'amministrazione.
 <p> L'attivazione delle procedure viene effettuata utilizzando
 il meccanismo <b>systemd</b>, standard nelle versioni correnti di
 Linux. Nella home directory di <tt>acquisti</tt> si trovano esempi dei
-files di configurazione relativi facilmente modificabili per adattarli
+file di configurazione relativi facilmente modificabili per adattarli
 alla configurazione della sede.
 
 <ul>
@@ -361,16 +362,16 @@ Il risultato dovrebbe essere come nel seguente esempio:
 <blockquote>
 <pre>
 root     12998 12737  0 23:52 pts/1    00:00:00 grep --color=auto gunicorn
-acquisti 13732     1  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
-acquisti 13736 13732  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
-acquisti 13738 13732  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
-acquisti 13761     1  0 21:20 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
-acquisti 13764 13761  0 21:20 ?        00:00:00 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
-acquisti 20077 13732  0 21:51 ?        00:00:01 /usr/bin/python3.6 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13732     1  0 21:20 ?        00:00:01 /usr/bin/python3 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin5 -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13736 13732  0 21:20 ?        00:00:01 /usr/bin/python3 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin5 -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13738 13732  0 21:20 ?        00:00:01 /usr/bin/python3 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin5 -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
+acquisti 13761     1  0 21:20 ?        00:00:01 /usr/bin/python3 /usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin5 -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
+acquisti 13764 13761  0 21:20 ?        00:00:00 /usr/bin/python3 /usr/local/bin/gunicorn -w 1 -b 0.0.0.0:4010 --pythonpath=/home/public/acquisti/bin5 -D --log-file=/home/public/acquisti/work/httpd-manageldap.log --pid=/home/public/acquisti/work/manageldap.pid --user=acquisti manageldap:MLP
+acquisti 20077 13732  0 21:51 ?        00:00:01 /usr/bin/python3 /usr/local/bin/gunicorn -w 3 -b 0.0.0.0:4000 --pythonpath=/home/public/acquisti/bin5 -D --log-file=/home/public/acquisti/work/httpd-acquisti.log --pid=/home/public/acquisti/work/acquisti.pid --user=acquisti acquisti:ACQ
 </pre>
 </blockquote>
 
-Il differente numero di processi per ciascuna procedura risulta dalla configurazione nei files <tt>systemd</tt>.
+Il differente numero di processi per ciascuna procedura risulta dalla configurazione nei file <tt>systemd</tt>.
 <p>
 Per ogni server <tt>gunicorn</tt> occorre un processo principale pi&ugrave; un numero variabile
 di processi secondari che forniscono l'effettivo servizio; aumentando il numero di processi secondari
@@ -379,11 +380,11 @@ quattro processi server per <tt>acquisti</tt> ed uno solo per <tt>manageldap</tt
 
 <h3>Files di log e notifiche di errore</h3>
 
-I files di log sono registrati nella directory:
+I file di log sono registrati nella directory:
 <blockquote>
 <tt>~/work</tt>
 </blockquote>
-Attualmente la directory contiene i seguenti files:
+Attualmente la directory contiene i seguenti file:
 <p>
 <table cellpadding=3>
 <tr><td><tt>acquisti.log</tt></td><td> Log della procedura acquisti</td></tr>
@@ -420,7 +421,7 @@ utilizzando la procedura <tt>ftools.py</tt>, eseguita dalla directory HOME
 dell'utente proprietario della procedura <tt>acquisti</tt> come segue:
 
 <blockquote>
-<tt>[acquisti@server ~]$ <b>python3 bin/ftools.py user</b></tt>
+<tt>[acquisti@server ~]$ <b>python3 bin5/ftools.py user</b></tt>
 </blockquote>
 
 E naturalmente detto utente dovr&agrave; avere il privilegio di
@@ -481,7 +482,7 @@ href=/about>Informazioni su procedura acquisti</a>.
 <h2>5. Struttura dell'archivio  (<a href=#top>^</a>)</h2>
 </a>
 I dati generati nel corso dell'uso delle procedure vengono registrati
-sotto forma di files in formato JSON sotto la directory <tt>~/data</tt>,
+sotto forma di file in formato JSON sotto la directory <tt>~/data</tt>,
 come nel seguente esempio:
 
 <blockquote>
@@ -491,7 +492,7 @@ come nel seguente esempio:
 |   +-- <font color=blue>2014_000002</font>
 |   |   +-- ORDINE_1612763.pdf
 |   |   +-- pratica.json
-|   |   +-- richiesta.pdf
+|   |   +-- progetto.pdf
 |   +-- <font color=blue>2014_000009</font>
 |   |   +-- determina.pdf
 |   |   +-- ORDINE_1462630.pdf
@@ -502,13 +503,13 @@ come nel seguente esempio:
 
 La struttura &egrave; organizzata con una directory per anno al di sotto
 delle quali vengono create sottodirectory corrispondenti a ciascuna
-pratica. In sostanza i files relativi alla pratica n. 5 del 2014 stanno
+pratica. In sostanza i file relativi alla pratica n. 5 del 2014 stanno
 nella directory <tt>.../data/2014/2014_000005</tt>.
 
 <h3>Files per le tabelle</h3>
 Oltre al già citato file <tt>config.json</tt>,
 le procedure utilizzano dati ricavati da due tabelle (Codici fondi e utenti)
-I files relativi sono contenuti nella directory
+I file relativi sono contenuti nella directory
 </tt>.../data</tt>:
 
 <p>
@@ -525,7 +526,7 @@ mediante  le relative pagine presenti nella procedura <tt>acquisti</tt>.
 
 <h3>File per i dati della pratica</h3>
 Le informazioni relative a ciascuna pratica, utilizzate per la generazione
-dei files PDF sono contenute in un file in formato JSON:
+dei file PDF sono contenute in un file in formato JSON:
 
 <blockquote>
 <tt>pratica.json</tt>
@@ -535,12 +536,12 @@ I file di tipo PDF vengono generati nelle varie fasi della procedura ed
 hanno nome:
 
 <ul>
-<li><tt>richiesta.pdf</tt>
+<li><tt>progetto.pdf</tt>
 <li><tt>determina.pdf</tt>
 <li><tt>ordine.pdf</tt>
 </ul>
 
-<p> In ogni directory possono comparire altri files di tipo <tt>pdf</tt>
+<p> In ogni directory possono comparire altri file di tipo <tt>pdf</tt>
 corrispondenti agli allegati.
 
 <br>
@@ -671,28 +672,28 @@ approvazione dovr&agrave; pervenire entro cinque giorni dalla richiesta.
 <a name=varie>
 <h2>7. Note Varie  (<a href=#top>^</a>)</h2>
 <h3>7.1 Personalizzazione </h3>
-La directory <b><tt>files</tt></b> Contiene files HTML "statici" corrispondenti
-alle varie pagine di help. &Egrave; ovviamente possibile modificare i files 
+La directory <b><tt>files5</tt></b> Contiene file HTML "statici" corrispondenti
+alle varie pagine di help. &Egrave; ovviamente possibile modificare i file 
 per aggiornare le informazioni o renderle pi&ugrave; aderenti alle pratiche
 correnti.
 
-<p> In particolare tutti i files con nome della forma:
+<p> In particolare tutti i file con nome della forma:
 <tt>help_*.html</tt> vengono automaticamente associati al
 corrispondente elemento nei pannelli per la definizione di richieste,
 determine ed ordini. In altre parole, se esiste un file di nome:
 <tt>help_descrizione_acquisto.html</tt> nel campo corrispondente del
-pannello per la redazione della richiesta di acquisto compare un punto
+pannello per la redazione del progetto di acquisto compare un punto
 interrogativo che consente di aprire la finestra di aiuto.
 
 <p>Per aggiungere una finestra di aiuto relativa ad un particolare campo,
 &egrave; quindi sufficiente creare il file con il nome corrispondente
-nella directory <tt>files</tt>.  Per determinare il nome interno
+nella directory <tt>files5</tt>.  Per determinare il nome interno
 di ogni particolare campo &egrave; possibile esaminare uno dei files
 <tt>pratica.json</tt> nei quali i campi corrispondenti a elementi
 dei pannelli hanno il nome cercato. In alternativa gli stessi nomi
 compaiono come TAG <tt?id</tt> e <tt>name</tt> dei campi <i>input</i>
 nel codice HTML. Ad esempio visualizzando il codice HTML della pagina
-per la definizione della richiesta di acquisto, il secondo dei campi
+per la definizione del progetto di acquisto, il secondo dei campi
 del form, corrispondente alla descrizione dell'acquisto, risulta:
 
 <blockquote>

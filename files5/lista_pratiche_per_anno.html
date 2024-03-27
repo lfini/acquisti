@@ -4,7 +4,7 @@
 <title>Lista pratiche</title>
 </head>
 <body>
-<!-- template: lista_pratiche_per_anno.html -->
+<!-- template: lista_pratiche_per_anno.html v. 5.0 -->
 <style>
 /* Tooltip container */
 .tooltip {
@@ -46,7 +46,7 @@
 {% if years %}
 Seleziona: 
 {% for yy in years %}
-[<a href=/pratiche/{{ stato }}/{{ yy }}/0>{{ yy }}</a>&nbsp;<div class="tooltip"><a href=/pratiche/{{ stato }}/{{ yy }}/1><img src=/files/up-16.png><span class="tooltiptext">in ordine crescente</span></a></div>]&nbsp;&nbsp;
+[<a href=/pratiche/{{ stato }}/{{ yy }}/0>{{ yy }}</a>&nbsp;<div class="tooltip"><a href=/pratiche/{{ stato }}/{{ yy }}/1><img src=/files5/up-16.png><span class="tooltiptext">in ordine crescente</span></a></div>]&nbsp;&nbsp;
 {% endfor %}
 <hr>
 {% endif %}
@@ -54,7 +54,7 @@ Seleziona:
 
 <ul>
 {% for d in dlist %}
-<p>   <li> <em> {{ d.numero_pratica }}</em>. Richiesta del {{ d.data_richiesta }}. 
+<p>   <li> <em> {{ d.numero_pratica }}</em>. Progetto di acquisto del {{ d.data_richiesta }}. 
        Resp.fondi: {{ d.nome_responsabile }}. Richiedente: {{ d.nome_richiedente }}.<br>
        <b> {{ d.descrizione_acquisto }}.</b><br>Stato: {{ d.stato_pratica }}.&nbsp;&nbsp;&nbsp;&rightarrow; <a href=/pratica0/{{ d.numero_pratica }}>Vedi</a> </li>
 {% endfor %}

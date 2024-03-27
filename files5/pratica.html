@@ -2,11 +2,11 @@
 <html>
 <head>
 <title>Pratica</title>
-<link rel="stylesheet" type="text/css" href="/files/overlay.css">
-<script src="/files/overlay.js"></script>
+<link rel="stylesheet" type="text/css" href="/files5/overlay.css">
+<script src="/files5/overlay.js"></script>
 </head>
 <body>
-<!-- template: pratica.html. Vers. 1.1 -->
+<!-- template: pratica.html. v. 5.0 -->
 {% from "_common.html" import start_page, end_page, tobottom %}
 {% macro getval(value) %}
 Pratica N. {{ value }}
@@ -18,6 +18,7 @@ Pratica N. {{ value }}
 {% endif %}
 {% if info.developer %}
 <h4><font color=red>Modo developer</font>:<br>
+Template: pratica.html v 1.1 <br>
 &nbsp; &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a><br> 
 &nbsp; &rightarrow;&nbsp;<a href=/show_checks onclick="window.open('/show_checks','newwindow','width=800,height=600,scrollbar=yes'); return false;">visualizza checks</a></h4> 
    <b>Info:</b> {{ info }}
@@ -25,9 +26,10 @@ Pratica N. {{ value }}
 {% endif %}
 
 <table cellspacing=3>
-<tr><td><b>Richiesta del:</b></td><td> {{ pratica.data_richiesta }} </td></tr>
+<tr><td><b>Progetto del:</b></td><td> {{ pratica.data_richiesta }} </td></tr>
 <tr><td><b>Richiedente:</b></td><td> {{ pratica.nome_richiedente }} </td></tr>
 <tr><td><b>Resp. fondi:</b></td><td> {{ pratica.nome_responsabile }} </td></tr>
+<tr><td><b>RUP:</b></td><td> {{ pratica.nome_rup }} </td></tr>
 <tr><td><b>Mod. acquisto:</b></td><td> {{ pratica.str_mod_acq }} </td></tr>
 <tr><td><b>Stato:</b></td><td>  
 {% if info.alarm %}
@@ -53,7 +55,7 @@ Pratica N. {{ value }}
 {% if info.faseB %}
 <hr>
 <script type="text/javascript">
-fuction toBottom()
+function toBottom()
 {
 	window.scrollTo(0, document.body.scrollHeight);
 }

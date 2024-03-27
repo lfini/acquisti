@@ -1,20 +1,21 @@
+<!-- Template: pratiche_A.html v. 5.0 -->
 <table width=100%>
 <tr><td valign=top width=60% bgcolor=#f0f0f0>
-<b>Richiesta:</b>
-{% if info.pdf_richiesta %}
-   [<a href=/vedifile/richiesta.pdf>Vedi</a>]
-   {% if info.richiesta_modificabile %}
-      &nbsp;&nbsp;[<a href=/modificarichiesta>Modifica</a>]
+<b>Progetto:</b>
+{% if info.pdf_progetto %}
+   [<a href=/vedifile/progetto.pdf>Vedi</a>]
+   {% if info.progetto_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificaprogetto>Modifica</a>]
    {% endif %}
-   {% if info.richiesta_inviabile == 1 %}
-      &nbsp;&nbsp;[<a href=/inviarichiesta>Richiedi approvazione</a>]
+   {% if info.progetto_inviabile == 1 %}
+      &nbsp;&nbsp;[<a href=/inviaprogetto>Richiedi approvazione</a>]
    {% endif %}
-   {% if info.richiesta_approvabile %}
-      &nbsp;&nbsp;[<a href=/approvarichiesta>Approva</a>]
+   {% if info.progetto_approvabile %}
+      &nbsp;&nbsp;[<a href=/approvaprogetto>Approva</a>]
    {% endif %}
 {% else %}
-   {% if info.richiesta_modificabile %}
-      [<a href=/modificarichiesta>Genera</a>]
+   {% if info.progetto_modificabile %}
+      [<a href=/modificaprogetto>Genera</a>]
    {% endif %}
 {% endif %}
 <p>
@@ -67,7 +68,7 @@
 <form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
 <b> Allega documenti</b>
 <p>
-{{ uploadA.upload_file }} <a href="/files/help_upload.html"  onclick="window.open('/files/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files/qm-16.png></sup></a><br> 
+{{ uploadA.upload_file }} <a href="/files5/help_upload.html"  onclick="window.open('/files5/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files5/qm-16.png></sup></a><br> 
 
 <blockquote>
 {{ uploadA.tipo_allegato }}

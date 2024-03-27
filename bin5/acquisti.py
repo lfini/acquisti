@@ -76,12 +76,17 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0'
-__date__ = '6/03/2024'
+__version__ = '5.0.4'
+__date__ = '16/03/2024'
 
 __start__ = time.asctime(time.localtime())
 
 CONFIG_FILE = os.path.join(DATADIR, CONFIG_NAME)
+
+MODALITA_IMPLEMENTATE = [TRATT_MEPA_40]     # Lista modalità acquisto implementate
+
+class ToBeImplemented(RuntimeError):
+    'Eccezione per parti da implementare'
 
 class CONFIG:                   # pylint: disable=R0903
     'Dati di configurazione'
@@ -94,9 +99,7 @@ THIS_URL = os.environ.get("REQUEST_SCHEME", "???")+"://"+ \
 
 BASEDIR_STR = 'basedir'
 
-LISTCRONTAB = ['crontab', '-l']  # Command to list the crontab
-
-FILE_VERSION = 2    # Versione file pratica.json
+FILE_VERSION = 3    # Versione file pratica.json
 
 MAX_DETERMINA = 0
 START_YEAR = 0
@@ -110,10 +113,17 @@ FASE_ERROR = Exception("Manca specifica fase")
 NO_BASEDIR = Exception("Basedir non definita")
 ILL_ATCH = Exception("Modello allegato non previsto")
 
+MANCA_PREV_MEPA = "Manca preventivo MePA in allegato"
+
 def setdebug():
     "Determina modo DEBUG"
     DEBUG.local = True
     DEBUG.email = CONFIG.config[EMAIL_WEBMASTER]
+
+def print_debug(*args):
+    'scrive debug su stdout, solo in modo "locale"'
+    if DEBUG.local:
+        print('LOC_DBG>', *args)
 
 def update_lists():
     "Riinizializza tabelle"
@@ -129,14 +139,19 @@ def _test_developer(the_user):
     return 'D' in the_user.get('flags')
 
 def _test_richiedente(the_user, d_prat):
-    nomerich = d_prat.get(NOME_RICHIEDENTE, "")
-    nomeuser = the_user.get("surname", "")+" "+the_user.get("name", "")
-    return word_match(nomeuser, nomerich)
+    emailrich = d_prat.get(EMAIL_RICHIEDENTE, "R").lower()
+    emailuser = the_user.get("email", "U").lower()
+    return emailuser == emailrich
 
 def _test_responsabile(the_user, d_prat):
-    nomeresp = d_prat.get(NOME_RESPONSABILE, "")
-    nomeuser = the_user.get("surname", "")+" "+the_user.get("name", "")
-    return word_match(nomeuser, nomeresp)
+    emailresp = d_prat.get(EMAIL_RESPONSABILE, "R").lower()
+    emailuser = the_user.get("email", "U").lower()
+    return emailuser == emailresp
+
+def _test_rup(the_user, d_prat):
+    emailrup = d_prat.get(EMAIL_RUP, "R").lower()
+    emailuser = the_user.get("email", "U").lower()
+    return emailuser == emailrup
 
 def _test_pdf_determina(basedir, _unused, fase):
     "test: esistenza determina"
@@ -150,240 +165,257 @@ def _test_pdf_determina(basedir, _unused, fase):
         raise FASE_ERROR
     return os.path.exists(pdf_path)
 
+def _test_pdf_preventivo_mepa(basedir, d_prat, fase):
+    "test esistenza preventivo mepa"
+    if fase == "A":
+        if d_prat[MOD_ACQUISTO] == TRATT_MEPA_40:
+            return ft.findfiles(basedir, TAB_ALLEGATI[PREV_TRATT_MEPA][0])
+        return True
+    if fase == "B":
+        return True
+    raise FASE_ERROR
+
 def _test_pdf_ordine(basedir, d_prat, fase):
     "test esistenza ordine nella fase data"
     if not basedir:
         raise NO_BASEDIR
     if fase == "A":
-        if d_prat[MOD_ACQUISTO] not in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000, PROC_NEG):
+        if d_prat[MOD_ACQUISTO] == TRATT_MEPA_40:
             return True
     elif fase == "B":
-        if d_prat[MOD_ACQUISTO_B] not in (SUPER_5000, SUPER_1000, PROC_NEG):
-            return True
+        return True
     else:
         raise FASE_ERROR
     pdf_path = os.path.join(basedir, ORD_PDF_FILE)
     return os.path.exists(pdf_path)
 
-def _test_pdf_richiesta(basedir, _unused1, _unused2):
-    "test: esistenza richiesta"
+def _test_pdf_progetto(basedir, _unused1, _unused2):
+    "test: esistenza progetto"
     if not basedir:
         raise NO_BASEDIR
-    pdf_path = os.path.join(basedir, RIC_PDF_FILE)
+    pdf_path = os.path.join(basedir, PROG_PDF_FILE)
     return os.path.exists(pdf_path)
-
 
 def _test_pdf_ordine_mepa(basedir, d_prat, fase):
     "test: esistenza ordine mepa"
+    if not basedir:
+        raise NO_BASEDIR
     if fase == "A":
-        if d_prat[MOD_ACQUISTO] in (MEPA, CONSIP):
-            return ft.findfiles(basedir, TAB_ALLEGATI[ORDINE_MEPA][0])
-        return True
+        if d_prat[MOD_ACQUISTO] == TRATT_MEPA_40:
+            return True
+        return False
     if fase == "B":
         return True
     raise FASE_ERROR
 
 def _test_pdf_trattativa_mepa(basedir, d_prat, fase):
     "test: esistenza trattativa diretta mepa"
-    if fase == "A":
-        if d_prat[MOD_ACQUISTO] == TRATT_MEPA:
-            return ft.findfiles(basedir, TAB_ALLEGATI[DOCUM_STIPULA][0])
-        return True
-    if fase == "B":
-        return True
-    raise FASE_ERROR
+    raise ToBeImplemented("_test_pdf_trattativa_mepa")
+#   if fase == "A":
+#       if d_prat[MOD_ACQUISTO] == TRATT_MEPA_40:
+#           return ft.findfiles(basedir, TAB_ALLEGATI[DOCUM_STIPULA][0])
+#       return True
+#   if fase == "B":
+#       return True
+#   raise FASE_ERROR
 
 def _test_pdf_offerta_ditta(basedir, d_prat, fase):
     "test: esistenza offerte da ditte"
-    if fase == "A":
-        if d_prat[MOD_ACQUISTO] in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000, PROC_NEG):
-            return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_A][0])))
-        return True
-    if fase == "B":
-        if d_prat.get(MOD_ACQUISTO_B, "") in (PROC_NEG, SUPER_5000, SUPER_1000):
-            return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_B][0])))
-        return True
-    raise FASE_ERROR
+    raise ToBeImplemented("_test_pdf_offerta_ditta")
+#   if fase == "A":
+#       if d_prat[MOD_ACQUISTO] in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000, PROC_NEG):
+#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_A][0])))
+#       return True
+#   if fase == "B":
+#       if d_prat.get(MOD_ACQUISTO_B, "") in (PROC_NEG, SUPER_5000, SUPER_1000):
+#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_B][0])))
+#       return True
+#   raise FASE_ERROR
 
 def _test_pdf_lettera_invito(basedir, d_prat, fase):
     "test: esistenza lettere di invito"
-    if fase == "A":
-        if d_prat[MOD_ACQUISTO] == PROC_NEG:
-            return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_A][0])))
-        return True
-    if fase == "B":
-        if d_prat[MOD_ACQUISTO] in (PROC_NEG, MANIF_INT):
-            return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_B][0])))
-        return True
-    raise FASE_ERROR
+    raise ToBeImplemented("_test_pdf_lettera_invito")
+#   if fase == "A":
+#       if d_prat[MOD_ACQUISTO] == PROC_NEG:
+#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_A][0])))
+#       return True
+#   if fase == "B":
+#       if d_prat[MOD_ACQUISTO] in (PROC_NEG, MANIF_INT):
+#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_B][0])))
+#       return True
+#   raise FASE_ERROR
 
 def _test_pdf_capitolato_rdo(basedir, d_prat, fase):
     "test: esistenza capitolato RDO"
-    if fase == "A":
-        if d_prat[MOD_ACQUISTO] in (RDO_MEPA, ):
-            return len(ft.findfiles(basedir, TAB_ALLEGATI[CAPITOLATO_RDO][0]))
-        return True
-    if fase == "B":
-        return True
-    raise FASE_ERROR
-
-def _test_pdf_dichiarazione_bollo(basedir, d_prat, fase):
-    "test: esistenza dichiarazione bollo"
-    if fase == "A":
-        if d_prat[MOD_ACQUISTO] in (MEPA, RDO_MEPA, PROC_NEG, MANIF_INT):
-            return len(ft.findfiles(basedir, TAB_ALLEGATI[DICH_IMPOSTA_BOLLO][0]))
-        return True
-    if fase == "B":
-        return True
-    raise FASE_ERROR
+    raise ToBeImplemented("_test_pdf_capitolato_rdo")
+#   if fase == "A":
+#       if d_prat[MOD_ACQUISTO] in (RDO_MEPA, ):
+#           return len(ft.findfiles(basedir, TAB_ALLEGATI[CAPITOLATO_RDO][0]))
+#       return True
+#   if fase == "B":
+#       return True
+#   raise FASE_ERROR
 
 def _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
     "test: esistenza lista ditte invitate"
-    if fase == "A":
-        if d_prat[MOD_ACQUISTO] == RDO_MEPA:
-            return len(ft.findfiles(basedir, TAB_ALLEGATI[LISTA_DITTE_INV][0]))
-        return True
-    if fase == "B":
-        return True
-    raise FASE_ERROR
+    raise ToBeImplemented("_test_pdf_lista_ditte_invitate")
+#   if fase == "A":
+#       if d_prat[MOD_ACQUISTO] == RDO_MEPA:
+#           return len(ft.findfiles(basedir, TAB_ALLEGATI[LISTA_DITTE_INV][0]))
+#       return True
+#   if fase == "B":
+#       return True
+#   raise FASE_ERROR
 
 def check_allegati_allegabili(d_prat):
     "test: allegati allegabili"
     if d_prat[PRATICA_APERTA] != 1:
-        return False, ['Pratica chiusa']
-    return True, ['Pratica aperta']
+        return 'Pratica chiusa'
+    return ''
 
 def check_allegati_cancellabili(the_user, d_prat):
     "test: allegati cancellabili"
     if d_prat.get(PRATICA_APERTA) != 1:
-        return False, ['Pratica chiusa']
+        return 'Pratica chiusa'
     if _test_admin(the_user):
-        return True, ['Admin']
+        return ''
     ret = ['Non admin']
     if _test_richiedente(the_user, d_prat):
-        return True, ['Richiedente']
+        return ''
     ret.append('Non richiedente')
     if _test_responsabile(the_user, d_prat):
-        return True, ['Responsabile']
+        return ''
     ret.append('Non responsabile')
-    return False, ret
+    return ', '.join(ret)
 
-def check_richiesta_inviabile(the_user, basedir, d_prat):               # pylint: disable=R0911
-    "test: richiesta inviabile"
-    if d_prat.get(PRATICA_APERTA, 1) != 1:
-        return (False, ['Pratica chiusa'])
-    if not _test_pdf_richiesta(basedir, d_prat, "A"):
-        return (False, ['Richiesta non generata'])
-    if not _test_pdf_ordine_mepa(basedir, d_prat, "A"):
-        return (False, ["Manca Bozza d'ordine MEPA"])
+def check_progetto_inviabile(the_user, basedir, d_prat):               # pylint: disable=R0911
+    "test: progetto inviabile"
+    if not d_prat.get(PRATICA_APERTA, 1):
+        return 'Pratica chiusa'
+    if not _test_pdf_progetto(basedir, d_prat, "A"):
+        return 'Progetto non generato'
+    if not _test_pdf_preventivo_mepa(basedir, d_prat, "A"):
+        return MANCA_PREV_MEPA
     if not (_test_admin(the_user) or _test_richiedente(the_user, d_prat)):
-        return (False, ["Operazione consentita solo al richiedente o all'Amministrazione"])
-    if d_prat.get(RICHIESTA_INVIATA):
-        return (False, ['Richiesta già inviata'])
+        return "Operazione consentita solo al richiedente o all'Amministrazione"
+    if d_prat.get(PROGETTO_INVIATO):
+        return 'Progetto già inviato'
     if d_prat.get(FIRMA_APPROVAZIONE):
-        return (False, ['Richiesta già approvata'])
-    return (True, [])
+        return 'Progetto già approvato'
+    return ''
 
-def check_richiesta_modificabile(the_user, basedir, d_prat):               # pylint: disable=W0703,R0911
-    "test: richiesta modificabile"
+def check_progetto_modificabile(the_user, basedir, d_prat):               # pylint: disable=W0703,R0911
+    "test: progetto modificabile"
     if d_prat.get(PRATICA_APERTA) != 1:  # NO: La pratica e' chiusa
-        return (False, ['Pratica chiusa'])
+        return 'Pratica chiusa'
     if _test_pdf_determina(basedir, d_prat, "A"):
-        return (False, ['Determina generata'])
+        return 'Determina generata'
     if _test_admin(the_user):
-        return (True, ['admin'])
+        return  ''
     if _test_responsabile(the_user, d_prat):
-        return (True, ['responsabile'])
+        return ''
     if _test_richiedente(the_user, d_prat):
-        if d_prat.get(RICHIESTA_INVIATA, 0):
-            return (False, ["Richiesta in approvazione. Operazione consentita solo "
-                            "al responsabile dei fondi o all'Amministrazione"])
-        return (True, ['richiedente'])
-    return (False, ["Operazione consentita solo al richiedente, "
-                    "al responsabile dei fondi o all'Amministrazione"])
+        if d_prat.get(PROGETTO_INVIATO, 0):
+            return """Progetto in approvazione. Operazione consentita solo
+al responsabile dei fondi o all'Amministrazione"""
+        return ''
+    return """Operazione consentita solo al richiedente,
+al responsabile dei fondi o all'Amministrazione"""
 
-def check_richiesta_approvabile(the_user, basedir, d_prat):
-    "test: richiesta approvabile"
-    if d_prat[PRATICA_APERTA] != 1:
-        return False, ['Pratica chiusa']
+def check_progetto_approvabile(the_user, basedir, d_prat):
+    "test: progetto approvabile"
+    if not d_prat[PRATICA_APERTA]:
+        return 'Pratica chiusa'
     if not _test_responsabile(the_user, d_prat):
-        return False, ["Operazione consentita solo al responsabile dei fondi"]
+        return "Operazione consentita solo al responsabile dei fondi"
     if d_prat.get(FIRMA_APPROVAZIONE):
-        return False, ['Richiesta già approvata']
-    if not _test_pdf_ordine_mepa(basedir, d_prat, "A"):
-        return False, ["Manca bozza d'ordine MEPA in allegato"]
-    return True, ''
+        return 'Progetto già approvato'
+    if not _test_pdf_preventivo_mepa(basedir, d_prat, "A"):
+        return MANCA_PREV_MEPA
+    return ''
+
+#def check_rup_nominabile(the_user, _unused, d_prat):
+#    "test: è possibile nominare il RUP"
+#    if not d_prat[PRATICA_APERTA]:
+#        return 'Pratica chiusa'
+#    if not _test_admin(the_user):
+#        return OPER_SOLO_AMMINISTRAZIONE
+#    if not d_prat.get(FIRMA_APPROVAZIONE):
+#        return 'Progetto non ancora approvato'
+#    if d_prat.get(EMAIL_RUP):
+#        return 'RUP già nominato'
+#    return ''
 
 def check_determina_modificabile(the_user, basedir, d_prat, fase):
     "test: determina a modificabile"
     if d_prat.get(PRATICA_APERTA) != 1:
-        return False, ['Pratica chiusa']
+        return 'Pratica chiusa'
     if not _test_admin(the_user):
-        return False, [OPER_SOLO_AMMINISTRAZIONE]
+        return OPER_SOLO_AMMINISTRAZIONE
     if fase == "A" and _test_pdf_determina(basedir, d_prat, "B"):
-        return False, ["Determina aggiudicazione generata"]
-    return True, []
+        return "Determina aggiudicazione generata"
+    return ''
 
 def check_determina_cancellabile(the_user, basedir, d_prat, fase):
     "test: determina cancellabile"
     if not _test_pdf_determina(basedir, d_prat, fase):
-        return False, ['La determina non è stata generata']
+        return 'La determina non è stata generata'
     return check_determina_modificabile(the_user, basedir, d_prat, fase)
 
 def check_ordine_modificabile(the_user, basedir, d_prat, fase):
     "test: ordine modificabile"
     if d_prat.get(PRATICA_APERTA) != 1:
-        return False, ['Pratica chiusa']
+        return 'Pratica chiusa'
     if not _test_admin(the_user):
-        return False, [OPER_SOLO_AMMINISTRAZIONE]
+        return OPER_SOLO_AMMINISTRAZIONE
     if not _test_pdf_determina(basedir, d_prat, fase):
-        return False, ['La determina non è stata generata']
-    return True, []
+        return 'La determina non è stata generata'
+    return ''
 
 def check_pratica_chiudibile(the_user, _unused, d_prat):
     "test: pratica chiudibile"
     if d_prat.get(PRATICA_APERTA) != 1:
-        return False, ['Pratica chiusa']
+        return 'Pratica chiusa'
     if not _test_admin(the_user):
-        return False, [OPER_SOLO_AMMINISTRAZIONE]
-    return True, []
+        return OPER_SOLO_AMMINISTRAZIONE
+    return ''
 
 def check_chiudibile_davvero(the_user, basedir, d_prat):
     "test: pratica chiudibile dopo conferma"
     ret = check_pratica_chiudibile(the_user, basedir, d_prat)
-    if not ret[0]:
+    if ret:
         return ret
     if d_prat.get(CONF_CHIUSURA, 0):
-        return True, []
+        return ''
     avv = _avvisi_allegati(basedir, d_prat, "A")
     avv += _avvisi_allegati(basedir, d_prat, "B")
     if avv:
-        return False, avv
-    return True, []
+        return avv
+    return ''
 
 def check_pratica_apribile(the_user, d_prat):
     "test: pratica apribile"
     if d_prat.get(PRATICA_APERTA, 0) != 0:
-        return False, ['Pratica aperta']
+        return 'Pratica aperta'
     if d_prat.get(PRATICA_ANNULLATA, 0):
-        return False, ['Pratica annullata']
+        return 'Pratica annullata'
     if _test_admin(the_user):
-        return True, []
-    return False, [OPER_SOLO_AMMINISTRAZIONE]
+        return ''
+    return OPER_SOLO_AMMINISTRAZIONE
 
 def check_pratica_annullabile(the_user, d_prat):
     "test: pratica annullabile"
     if d_prat.get(PRATICA_ANNULLATA, 0) == 1:
-        return False, ['Pratica già annullata']
+        return 'Pratica già annullata'
     if _test_admin(the_user):
-        return True, []
-    return False, [OPER_SOLO_AMMINISTRAZIONE]
+        return ''
+    return OPER_SOLO_AMMINISTRAZIONE
 
 def check_rdo_modificabile(_the_user, _basedir, d_prat):
     "test: rdo modificabile"
     if d_prat.get(PRATICA_APERTA) != 1:
-        return False, ['Pratica chiusa']
-    return True, []
+        return 'Pratica chiusa'
+    return ''
 
 def check_all(the_user, basedir, d_prat):
     "Verifica lo stato della pratica e riporta un dict riassuntivo"
@@ -391,56 +423,58 @@ def check_all(the_user, basedir, d_prat):
     info['debug'] = bool(DEBUG.local)
     info['developer'] = _test_developer(the_user)
     info['admin'] = _test_admin(the_user)
-    info[PDF_RICHIESTA] = _test_pdf_richiesta(basedir, d_prat, "")
+    info[PDF_PROGETTO] = _test_pdf_progetto(basedir, d_prat, "")
     info[PDF_DETERMINA_A] = _test_pdf_determina(basedir, d_prat, "A")
     info[PDF_DETERMINA_B] = _test_pdf_determina(basedir, d_prat, "B")
     info[PDF_ORDINE] = _test_pdf_ordine(basedir, d_prat, "A")
-    info['allegati_cancellabili'] = check_allegati_cancellabili(the_user, d_prat)[0]
-    info['det_a_cancellabile'] = check_determina_cancellabile(the_user, basedir, d_prat, "A")[0]
-    info['det_a_modificabile'] = check_determina_modificabile(the_user, basedir, d_prat, "A")[0]
-    info['det_b_cancellabile'] = check_determina_cancellabile(the_user, basedir, d_prat, "B")[0]
-    info['det_b_modificabile'] = check_determina_modificabile(the_user, basedir, d_prat, "B")[0]
-    info['ord_a_modificabile'] = check_ordine_modificabile(the_user, basedir, d_prat, "A")[0]
-    info['ord_b_modificabile'] = check_ordine_modificabile(the_user, basedir, d_prat, "B")[0]
-    info['rdo_modificabile'] = check_rdo_modificabile(the_user, basedir, d_prat)[0]
-    info['pratica_annullabile'] = check_pratica_annullabile(the_user, d_prat)[0]
-    info['pratica_apribile'] = check_pratica_apribile(the_user, d_prat)[0]
-    info['pratica_chiudibile'] = check_pratica_chiudibile(the_user, basedir, d_prat)[0]
-    info['richiesta_approvabile'] = check_richiesta_approvabile(the_user, basedir, d_prat)[0]
-    info['richiesta_modificabile'] = check_richiesta_modificabile(the_user, basedir, d_prat)[0]
-    info['richiesta_inviabile'] = check_richiesta_inviabile(the_user, basedir, d_prat)[0]
+    info['allegati_cancellabili'] = not check_allegati_cancellabili(the_user, d_prat)
+    info['det_a_cancellabile'] = not check_determina_cancellabile(the_user, basedir, d_prat, "A")
+    info['det_a_modificabile'] = not check_determina_modificabile(the_user, basedir, d_prat, "A")
+    info['det_b_cancellabile'] = not check_determina_cancellabile(the_user, basedir, d_prat, "B")
+    info['det_b_modificabile'] = not check_determina_modificabile(the_user, basedir, d_prat, "B")
+    info['ord_a_modificabile'] = not check_ordine_modificabile(the_user, basedir, d_prat, "A")
+    info['ord_b_modificabile'] = not check_ordine_modificabile(the_user, basedir, d_prat, "B")
+    info['rdo_modificabile'] = not check_rdo_modificabile(the_user, basedir, d_prat)
+    info['pratica_annullabile'] = not check_pratica_annullabile(the_user, d_prat)
+    info['pratica_apribile'] = not check_pratica_apribile(the_user, d_prat)
+    info['pratica_chiudibile'] = not check_pratica_chiudibile(the_user, basedir, d_prat)
+    info['progetto_approvabile'] = not check_progetto_approvabile(the_user, basedir, d_prat)
+    info['progetto_modificabile'] = not check_progetto_modificabile(the_user, basedir, d_prat)
+    info['progetto_inviabile'] = not check_progetto_inviabile(the_user, basedir, d_prat)
+    if info['progetto_approvabile']:
+        info['progetto_inviabile'] = False
+#   info['rup_nominabile'] = not check_rup_nominabile(the_user, basedir, d_prat)
     return info
 
 def show_ordine(d_prat):               # pylint: disable=W0703,R0911
     "Stabilisce se la parte ordine deve comparire nella prima fase della pratica"
     mod_acquisto = d_prat[MOD_ACQUISTO]
-    if mod_acquisto in (MEPA, CONSIP):
+    if mod_acquisto in (TRATT_MEPA_40, ):
         return 0
-    if mod_acquisto == INFER_5000:
-        return 1
-    if mod_acquisto == INFER_1000:
-        return 1
-    if mod_acquisto == SUPER_5000:
-        return 1
-    if mod_acquisto == SUPER_1000:
-        return 1
-    if mod_acquisto == RDO_MEPA:
-        return 2
-    if mod_acquisto == PROC_NEG:
-        return 2
-    if mod_acquisto == MANIF_INT:
-        return ""
-    if d_prat.get(VERSIONE, 0) < 1:
-        return 1
+#   if mod_acquisto == INFER_5000:
+#       return 1
+#   if mod_acquisto == INFER_1000:
+#       return 1
+#   if mod_acquisto == SUPER_5000:
+#       return 1
+#   if mod_acquisto == SUPER_1000:
+#       return 1
+#   if mod_acquisto == RDO_MEPA:
+#       return 2
+#   if mod_acquisto == PROC_NEG:
+#       return 2
+#   if mod_acquisto == MANIF_INT:
+#       return ""
     return ""
 
-def show_faseb(basedir, d_prat):
+def show_faseb(_basedir, _d_prat):
     "Stabilisce se la seconda parte della pratica deve comparire sulla pagina della pratica"
-    mod_acquisto = d_prat[MOD_ACQUISTO]
-    if mod_acquisto in (MANIF_INT, PROC_NEG, RDO_MEPA) and \
-       _test_pdf_determina(basedir, d_prat, "A"):
-        return "s"
     return ""
+#   mod_acquisto = d_prat[MOD_ACQUISTO]
+#   if mod_acquisto in (MANIF_INT, PROC_NEG, RDO_MEPA) and \
+#      _test_pdf_determina(basedir, d_prat, "A"):
+#       return "s"
+#   return ""
 
 def _nome_da_email(embody, prima_nome=True):
     "estrae nome da messaggio email"
@@ -457,7 +491,7 @@ def _hrecord(username, rec):
 
 def _email_approv(d_prat, ritrasm):
     "Invio mail di richiesta approvazione"
-    ret = False
+    ret = ''
     if ritrasm:
         sender = CONFIG.config[EMAIL_UFFICIO]
     else:
@@ -466,9 +500,9 @@ def _email_approv(d_prat, ritrasm):
     prat = d_prat[NUMERO_PRATICA]
     if eresp:
         if ritrasm:
-            subj = 'Ritrasmissione richiesta di acquisto.'
+            subj = 'Ritrasmissione progetto di acquisto.'
         else:
-            subj = 'Trasmissione richiesta di acquisto.'
+            subj = 'Trasmissione progetto di acquisto.'
         testo = TESTO_APPROVAZIONE%fk.request.host_url + DETTAGLIO_PRATICA
         body = testo.format(**d_prat)
         if DEBUG.local:
@@ -489,12 +523,6 @@ def _email_approv(d_prat, ritrasm):
         logging.error("Indirizzo responsabile non disponibile. Pratica %s", prat)
     return ret
 
-def _convert_key(adict, old_key, new_key):
-    "Converte nome di chiave in un dictionary"
-    if old_key in adict:
-        adict[new_key] = adict[old_key]
-        del adict[old_key]
-
 def _check_access(user_only=False):
     "Verifica accesso alla pratica"
     user = ft.login_check(fk.session)
@@ -508,10 +536,6 @@ def _check_access(user_only=False):
             d_prat = tb.jload((basedir, PRAT_JFILE))
         except tb.TableException:
             err_msg = _errore_accesso(basedir)
-        else:
-            # Aggiorna nome campi per versione 1 del file pratica
-            for o_key, n_key in KEYS_TO_UPDATE:
-                _convert_key(d_prat, o_key, n_key)
     else:
         err_msg = _errore_basedir(user)
     if not err_msg or user_only:
@@ -520,20 +544,20 @@ def _check_access(user_only=False):
     logging.error(err_msg)
     return fk.redirect(fk.url_for('start'))
 
-def _approva_richiesta(username, basedir, d_prat, sgn):
-    "funzione ausiliaria per approvazione richiesta"
+def _approva_progetto(username, basedir, d_prat, sgn):
+    "funzione ausiliaria per approvazione progetto"
     d_prat[FIRMA_APPROVAZIONE] = sgn
-    hist = 'Richiesta approvata'
+    hist = 'Progetto approvato'
     d_prat[STATO_PRATICA] = hist
     d_prat[STORIA_PRATICA].append(_hrecord(username, hist))
     tb.jsave((basedir, PRAT_JFILE), d_prat)
-    fk.flash(f"L'approvazione della richiesta {d_prat[NUMERO_PRATICA]} è stata"
-             "correttamente registrata", category="info")
+    fk.flash(f"L'approvazione del progetto {d_prat[NUMERO_PRATICA]} è stata"
+             " correttamente registrata", category="info")
 
     sender = d_prat[EMAIL_RESPONSABILE]
     prat = d_prat[NUMERO_PRATICA]
     if sender:
-        subj = 'Notifica approvazione richiesta di acquisto. Pratica: '+prat
+        subj = 'Notifica approvazione progetto di acquisto. Pratica: '+prat
         body = TESTO_NOTIFICA_APPROVAZIONE.format(**d_prat)
         if DEBUG.local:
             isdebug = 'Modo debug. '
@@ -547,7 +571,7 @@ def _approva_richiesta(username, basedir, d_prat, sgn):
         if ret:
             logging.info("Inviata richiesta approvazione a %s. "
                          "Pratica %s", ', '.join(recipients), prat)
-        subj = 'Conferma ricevimento approvazione richiesta di acquisto. Pratica: '+prat
+        subj = 'Conferma ricevimento approvazione progetto di acquisto. Pratica: '+prat
         hdr0 = HEADER_NOTIFICA_RESPONSABILE_WEB
         body = (hdr0+DETTAGLIO_PRATICA).format(**d_prat)
 
@@ -576,35 +600,34 @@ def menu_allegati_fasea(pratica):
     "Genera lista allegati in funzione del tipo di acquisto (fase A)"
     mod_acquisto = pratica[MOD_ACQUISTO]
     menu = []
-    if mod_acquisto in (MEPA, CONSIP):
-        menu.append(sel_menu(ORDINE_MEPA))
-    if mod_acquisto == TRATT_MEPA:
-        menu.append(sel_menu(DOCUM_STIPULA))
-        menu.append(sel_menu(DICH_IMPOSTA_BOLLO))
-    if mod_acquisto == RDO_MEPA:
-        menu = [sel_menu(LETT_INVITO_MEPA), sel_menu(LISTA_DITTE_INV)]
-    if mod_acquisto in (MEPA, RDO_MEPA, INFER_5000, SUPER_5000,
-                        INFER_1000, SUPER_1000, PROC_NEG, MANIF_INT):
-        menu.append(sel_menu(DICH_IMPOSTA_BOLLO))
-    if mod_acquisto in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000):
-        menu.append(sel_menu(OFFERTA_DITTA_A))
-        menu.append(sel_menu(LISTA_DETTAGLIATA_A))
+#   if mod_acquisto in (MEPA, CONSIP):
+#       menu.append(sel_menu(ORDINE_MEPA))
+    if mod_acquisto == TRATT_MEPA_40:
+        menu.append(sel_menu(PREV_TRATT_MEPA))
+#   if mod_acquisto == RDO_MEPA:
+#       menu = [sel_menu(LETT_INVITO_MEPA), sel_menu(LISTA_DITTE_INV)]
+#   if mod_acquisto in (MEPA, RDO_MEPA, INFER_5000, SUPER_5000,
+#                       INFER_1000, SUPER_1000, PROC_NEG, MANIF_INT):
+#       menu.append(sel_menu(DICH_IMPOSTA_BOLLO))
+#   if mod_acquisto in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000):
+#       menu.append(sel_menu(OFFERTA_DITTA_A))
+#       menu.append(sel_menu(LISTA_DETTAGLIATA_A))
 
-    menu.append(sel_menu(ALLEGATO_CIG))
+#   menu.append(sel_menu(ALLEGATO_CIG))
     menu.append(sel_menu(ALLEGATO_GENERICO_A))
     return menu
 
-def menu_allegati_faseb(pratica):
+def menu_allegati_faseb(_pratica):
     "Genera lista allegati in funzione del tipo di acquisto (fase B)"
-    mod_acquisto = pratica[MOD_ACQUISTO]
+#   mod_acquisto = pratica[MOD_ACQUISTO]
     menu = []
-    if mod_acquisto == MANIF_INT:
-        menu = [sel_menu(LETT_INVITO_B),
-                sel_menu(OFFERTA_DITTA_B),
-                sel_menu(VERBALE_GARA),
-                sel_menu(LISTA_DETTAGLIATA_B)]
-    elif mod_acquisto == RDO_MEPA:
-        menu.append(sel_menu(CAPITOLATO_RDO))
+#   if mod_acquisto == MANIF_INT:
+#       menu = [sel_menu(LETT_INVITO_B),
+#               sel_menu(OFFERTA_DITTA_B),
+#               sel_menu(VERBALE_GARA),
+#               sel_menu(LISTA_DETTAGLIATA_B)]
+#   elif mod_acquisto == RDO_MEPA:
+#       menu.append(sel_menu(CAPITOLATO_RDO))
     menu.append(sel_menu(ALLEGATO_GENERICO_B))
     return menu
 
@@ -676,20 +699,21 @@ def pratica_common(user, basedir, d_prat):
         d_prat[STR_MOD_ACQ] = _select(MENU_MOD_ACQ, d_prat.get(MOD_ACQUISTO))
         d_prat[STR_CRIT_ASS] = _select(MENU_CRIT_ASS, d_prat.get(CRIT_ASS))
         tb.jsave((basedir, PRAT_JFILE), d_prat)
-    if info.get(PDF_RICHIESTA):
+    if info.get(PDF_PROGETTO):
         firma = d_prat.get(FIRMA_APPROVAZIONE)
         if firma:
-            firma_file = ft.signature((basedir, RIC_PDF_FILE))
+            firma_file = ft.signature((basedir, PROG_PDF_FILE))
             if firma_file != firma:
                 d_prat[STATO_PRATICA] = 'Approvazione non valida'
                 info['alarm'] = 1
     atch_files = ft.flist(basedir, filetypes=UPLOAD_TYPES,
-                          exclude=(RIC_PDF_FILE, DETA_PDF_FILE, DETB_PDF_FILE, ORD_PDF_FILE))
+                          exclude=(PROG_PDF_FILE, DETA_PDF_FILE, DETB_PDF_FILE, ORD_PDF_FILE))
     info['attachA'] = [(a, _clean_name(a)) for a in atch_files if ALL_A_MATCH.match(a)]
     info['attachB'] = [(a, _clean_name(a)) for a in atch_files if ALL_B_MATCH.match(a)]
     info['faseB'] = show_faseb(basedir, d_prat)
     info['ordine'] = show_ordine(d_prat)
-    info['rdo'] = 1 if d_prat.get(MOD_ACQUISTO) == RDO_MEPA else 0
+    info['rdo'] = 0
+#   info['rdo'] = 1 if d_prat.get(MOD_ACQUISTO) == RDO_MEPA else 0
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, uploadA=upla,
                               uploadB=uplb, sede=CONFIG.config[SEDE])
@@ -716,38 +740,43 @@ def _modifica_pratica(what):               # pylint: disable=R0912,R0915
             d_prat[CONF_CHIUSURA] = 1
     elif what[0].lower() == 'a':     # Apri pratica
         _clear_conferma_chiusura(basedir, d_prat, save=False)
-        is_apr, msg = check_pratica_apribile(user, d_prat)
-        if is_apr:
+        err = check_pratica_apribile(user, d_prat)
+        if err:
+            fk.flash(err, category="error")
+            logging.error('Apertura pratica non autorizzata: %s. Utente %s, pratica %s',
+                          "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
+        else:
             d_prat[STATO_PRATICA] = 'Aperta'
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Pratica riaperta'))
             d_prat[PRATICA_APERTA] = 1
             logging.info('Pratica %s riaperta', d_prat[NUMERO_PRATICA])
-        else:
-            for amsg in msg:
-                fk.flash(amsg, category="error")
-            logging.error('Apertura pratica non autorizzata: %s. Utente %s, pratica %s',
-                          "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
-    elif what[0].lower() == 'r':    # Invio richiesta per approvazione
+    elif what[0].lower() == 'r':    # Invio progetto per approvazione
         _clear_conferma_chiusura(basedir, d_prat, save=False)
-        is_inv, msg = check_richiesta_inviabile(user, basedir, d_prat)
-        if is_inv:
+        err = check_progetto_inviabile(user, basedir, d_prat)
+        if err:
+            fk.flash(msg, category="error")
+            logging.error('Invio progetto non autorizzato: %s. Utente %s, pratica %s',
+                          msg, user['userid'], d_prat[NUMERO_PRATICA])
+        else:
             d_prat[FIRMA_APPROVAZIONE] = ""
             ret = _email_approv(d_prat, True)
             if ret:
                 d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                       'Richiesta inviata per approvazione'))
-                d_prat[RICHIESTA_INVIATA] = 1
-                logging.info('Inviata richiesta approvazione pratica %s', d_prat[NUMERO_PRATICA])
-        else:
-            for amsg in msg:
-                fk.flash(amsg, category="error")
-            logging.error('Invio richiesta non autorizzato: %s. Utente %s, pratica %s',
-                          "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
+                                                       'Progetto inviato per approvazione'))
+                d_prat[PROGETTO_INVIATO] = 1
+                msg = 'Inviata richiesta approvazione pratica ' \
+                      f'{d_prat[NUMERO_PRATICA]} a: {d_prat[NOME_RESPONSABILE]}'
+                logging.info(msg)
+                fk.flash(msg, category='info')
     elif what[0].lower() == 'n':    # Annulla pratica
         _clear_conferma_chiusura(basedir, d_prat, save=False)
-        is_ann, msg = check_pratica_annullabile(user, d_prat)
-        if is_ann:
+        err = check_pratica_annullabile(user, d_prat)
+        if err:
+            fk.flash(err, category="error")
+            logging.error('Annullamento pratica non autorizzato: %s. Utente %s, pratica %s',
+                          "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
+        else:
             d_prat[PRATICA_ANNULLATA] = 1
             d_prat[STATO_PRATICA] = 'Annullata'
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
@@ -755,11 +784,6 @@ def _modifica_pratica(what):               # pylint: disable=R0912,R0915
             d_prat[CONF_CHIUSURA] = 0
             d_prat[PRATICA_APERTA] = 0
             logging.info('Pratica %s annullata', d_prat[NUMERO_PRATICA])
-        else:
-            for amsg in msg:
-                fk.flash(amsg, category="error")
-            logging.error('Annullamento pratica non autorizzato: %s. Utente %s, pratica %s',
-                          "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     tb.jsave((basedir, PRAT_JFILE), d_prat)
     return fk.redirect(fk.url_for('pratica1'))
 
@@ -779,20 +803,20 @@ def _aggiornaformato():
 def _avvisi_allegati(basedir, d_prat, fase):
     "Genera elenco avvisi relativi agli allegati"
     ret = []
-    if not _test_pdf_dichiarazione_bollo(basedir, d_prat, fase):
-        ret.append("Manca dichiarazione assolvimento imposta bollo")
-    if not _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
-        ret.append("Manca Lista ditte invitate")
-    if not _test_pdf_capitolato_rdo(basedir, d_prat, fase):
-        ret.append("Manca capitolato per RDO")
-    if not _test_pdf_offerta_ditta(basedir, d_prat, fase):
-        ret.append("Mancano offerte")
-    if not _test_pdf_lettera_invito(basedir, d_prat, fase):
-        ret.append("Mancano lettere invito")
-    if not _test_pdf_ordine_mepa(basedir, d_prat, fase):
-        ret.append("Manca Bozza d'ordine MEPA")
-    if not _test_pdf_trattativa_mepa(basedir, d_prat, fase):
-        ret.append("Manca offerta da trattativa diretta su MEPA")
+    if not _test_pdf_preventivo_mepa(basedir, d_prat, fase):
+        ret.append("Manca allegato preventivo MePA")
+#   if not _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
+#       ret.append("Manca Lista ditte invitate")
+#   if not _test_pdf_capitolato_rdo(basedir, d_prat, fase):
+#       ret.append("Manca capitolato per RDO")
+#   if not _test_pdf_offerta_ditta(basedir, d_prat, fase):
+#       ret.append("Mancano offerte")
+#   if not _test_pdf_lettera_invito(basedir, d_prat, fase):
+#       ret.append("Mancano lettere invito")
+#   if not _test_pdf_ordine_mepa(basedir, d_prat, fase):
+#       ret.append("Manca Bozza d'ordine MEPA")
+#   if not _test_pdf_trattativa_mepa(basedir, d_prat, fase):
+#       ret.append("Manca offerta da trattativa diretta su MEPA")
     return ret
 
 def _avvisi(_unused, basedir, d_prat, fase, level=0):
@@ -813,12 +837,12 @@ def _pratica_ascendente(item):
     nprat = item.get(NUMERO_PRATICA, '0/0').split('/')[0]
     return int(nprat)
 
-def _render_richiesta(form, d_prat):
-    "rendering del form richiesta di acquisto"
-    ddp = {'title': 'Richiesta di acquisto',
+def _render_progetto(form, d_prat):
+    "rendering del form progetto di acquisto"
+    ddp = {'title': 'Progetto di acquisto',
            'subtitle': f"Pratica N. {d_prat['numero_pratica']}<br><br>"
                        f"Richiedente: {d_prat['nome_richiedente']}",
-           'before': '<form method=POST action=/modificarichiesta '
+           'before': '<form method=POST action=/modificaprogetto '
                      'accept-charset="utf-8" novalidate>',
            'after': '</form>',
            'note': OBBLIGATORIO,
@@ -911,10 +935,7 @@ def modificadetermina_a(user, basedir, d_prat):
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
-            d_prat[RUP] = _nome_da_email(d_prat[EMAIL_RUP], True)
-            if not _test_pdf_dichiarazione_bollo(basedir, d_prat, "A"):
-                fk.flash("Manca dichiarazione sostitutiva di assolvimento Imposta Bollo",
-                         category="info")
+            d_prat[NOME_RUP] = _nome_da_email(d_prat[EMAIL_RUP], True)
             d_prat[TITOLO_DIRETTORE] = CONFIG.config[TITOLO_DIRETTORE]
             logging.info('Genera determina: %s/%s', basedir, DETA_PDF_FILE)
             det_template = ft.modello_determinaa(d_prat[MOD_ACQUISTO])
@@ -963,9 +984,6 @@ def modificadetermina_b(user, basedir, d_prat):
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
-            if not _test_pdf_dichiarazione_bollo(basedir, d_prat, "A"):
-                fk.flash("Manca dichiarazione sostitutiva di assolvimento Imposta Bollo",
-                         category="info")
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
             d_prat[PDF_ORDINE] = ''
             d_prat[PDF_DETERMINA_B] = DETB_PDF_FILE
@@ -1007,7 +1025,7 @@ def before():
 @ACQ.route("/")
 def start():
     "pagina: iniziale"
-    logging.info('URL: /')
+    logging.info('URL: / (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1024,7 +1042,7 @@ def start():
 @ACQ.route("/about")
 def about():                                 # pylint: disable=R0915
     "pagina: informazioni sulle procedure"
-    logging.info('URL: /about')
+    logging.info('URL: /about (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1065,7 +1083,8 @@ def about():                                 # pylint: disable=R0915
         cks = list(CONFIG.config.keys())
         cks.sort()
         html.append('<tr><td><table cellpadding=3 border=1>')
-        html.append('<tr><th colspan=2> File di configurazione </th></tr>')
+        config_spec = f'{CONFIG_FILE}, letto: {time.asctime(time.localtime(CONFIG.time))}'
+        html.append(f'<tr><th colspan=2> File di configurazione ({config_spec})  </th></tr>')
         for key in cks:
             html.append(f'<tr><td><b>{key}</b></td><td>{CONFIG.config[key]}</td></tr>')
         html.append('</table></td></tr>')
@@ -1081,14 +1100,14 @@ def about():                                 # pylint: disable=R0915
 @ACQ.route("/clearsession")
 def clearsession():
     "pagina: logout"
-    logging.info('URL: /clearsession')
+    logging.info('URL: /clearsession (%s)', fk.request.method)
     fk.session.clear()
     return fk.redirect(fk.url_for('login'))
 
 @ACQ.route("/login", methods=['GET', 'POST'])
 def login():
     "pagina: login"
-    logging.info('URL: /login')
+    logging.info('URL: /login (%s)', fk.request.method)
     if os.stat(CONFIG_FILE).st_mtime > CONFIG.time:
         CONFIG.time = time.time()
         CONFIG.config = tb.jload(CONFIG_FILE)
@@ -1107,28 +1126,28 @@ def login():
     return fk.render_template('login.html', form=form, sede=CONFIG.config[SEDE],
                               title='Procedura per acquisti')
 
-@ACQ.route('/modificarichiesta', methods=('GET', 'POST'))
-def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
-    "pagina: modifica richiesta"
-    logging.info('URL: /modificarichiesta')
+@ACQ.route('/modificaprogetto', methods=('GET', 'POST'))
+def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
+    "pagina: modifica progetto"
+    logging.info('URL: /modificaprogetto (%s)', fk.request.method)
     ret = _check_access(user_only=True)
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
     _clear_conferma_chiusura(basedir, d_prat)
     if not d_prat:
+        print_debug('Genera nuova pratica per:', user['userid'])
         d_prat = _genera_pratica(user)
     else:
-        is_modif, msg = check_richiesta_modificabile(user, basedir, d_prat)
-        if not is_modif:
-            for amsg in msg:
-                fk.flash(amsg, category="error")
-            logging.error('Modifica richiesta non possibile: %s. Utente:%s pratica %s',
-                          "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
+        err = check_progetto_modificabile(user, basedir, d_prat)
+        if err:
+            fk.flash(err, category="error")
+            logging.error('Modifica progetto non possibile: %s. Utente:%s pratica %s',
+                          err, user['userid'], d_prat[NUMERO_PRATICA])
             return fk.redirect(fk.url_for('pratica1'))
     if d_prat.get(VERSIONE, 0) == 0:
-        return _aggiornaformato()
-    racq = fms.RichiestaAcquisto(fk.request.form, **d_prat)
+        raise RuntimeError("Formato file pratica obsoleto in modificaprogetto")
+    racq = fms.ProgettoAcquisto(fk.request.form, **d_prat)
     codfs = ft.GlobLists.CODFLIST.column('Codice', unique=True)
     codf_menu = list(zip(codfs, codfs))
     racq.lista_codf.choices = codf_menu
@@ -1136,10 +1155,16 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
     if not racq.lista_codf.data:    # Workaroud per errore wtform (non aggiorna campo)
         racq.lista_codf.process_data(d_prat.get("lista_codf", []))
     if fk.request.method == 'POST':
+        print_debug('Request data:', fk.request.form)
         if ANNULLA in fk.request.form:
             fk.flash('Operazione annullata', category="info")
             if SAVED in d_prat:
                 return fk.redirect(fk.url_for('pratica1'))
+            return fk.redirect(fk.url_for('start'))
+        mod_acquisto = fk.request.form.get(MOD_ACQUISTO)
+        print_debug('Modalità acquisto:', mod_acquisto)
+        if mod_acquisto not in MODALITA_IMPLEMENTATE:
+            fk.flash('Modalità di acquisto non ancora implementata', category="error")
             return fk.redirect(fk.url_for('start'))
         if racq.validate():
             if STORIA_PRATICA not in d_prat:
@@ -1150,11 +1175,11 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
                 ft.newdir(basedir)
                 d_prat.update({NUMERO_PRATICA: f'{number}/{year:4d}',
                                STORIA_PRATICA: [_hrecord(user['fullname'],
-                                                         'Richiesta generata')],
+                                                         'Progetto generato')],
                                DATA_RICHIESTA: ft.today(False)})
             else:
                 d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                       'Richiesta modificata'))
+                                                       'Progetto modificato'))
             d_prat.update(clean_data(racq.data))
             d_prat[STR_CODF] = ', '.join(d_prat[LISTA_CODF])
             d_prat[STR_COSTO_IT] = ft.stringa_costo(d_prat.get(COSTO), "it")
@@ -1167,31 +1192,31 @@ def modificarichiesta():               # pylint: disable=R0912,R0915,R0911
             d_prat[SEDE] = CONFIG.config[SEDE]
             d_prat[CITTA] = CONFIG.config[SEDE][CITTA]
             d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
-            d_prat[RICHIESTA_INVIATA] = 0
+            d_prat[PROGETTO_INVIATO] = 0
             d_prat[FIRMA_APPROVAZIONE] = ""
             d_prat[SAVED] = 1
             d_prat[CONF_CHIUSURA] = 0
             tb.jsave((basedir, PRAT_JFILE), d_prat)
             logging.info('Salvati dati pratica: %s/%s', basedir, PRAT_JFILE)
-            ric_name = os.path.splitext(RIC_PDF_FILE)[0]
-            ft.makepdf(basedir, ric_name, ric_name,
+            prog_name = os.path.splitext(PROG_PDF_FILE)[0]
+            ft.makepdf(basedir, prog_name, prog_name,
                        debug=DEBUG.local, pratica=d_prat, sede=CONFIG.config[SEDE])
             ft.remove((basedir, DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, DETB_PDF_FILE), show_error=False)
             ft.remove((basedir, ORD_PDF_FILE), show_error=False)
-            logging.info('Generata richiesta: %s/%s', basedir, RIC_PDF_FILE)
+            logging.info('Generato progetto: %s/%s', basedir, PROG_PDF_FILE)
             _avvisi(user, basedir, d_prat, "A")
             return fk.redirect(fk.url_for('pratica1'))
         errors = racq.get_errors()
         for err in errors:
             fk.flash(err, category="error")
-        logging.debug("Errori form Richiesta di acquisto: %s", "; ".join(errors))
-    return _render_richiesta(racq, d_prat)
+        logging.debug("Errori form Progetto di acquisto: %s", "; ".join(errors))
+    return _render_progetto(racq, d_prat)
 
 @ACQ.route('/verificaallegati/<fase>')
 def verificaallegati(fase):
     "Emette avviso sullo stato degli allegati"
-    logging.info(f'URL: /verificaallegati/{fase}')     #pylint: disable=W1203
+    logging.info('URL: /verificaallegati/{fase} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1201,17 +1226,21 @@ def verificaallegati(fase):
         fk.flash("Allegati OK", category="info")
     return pratica_common(user, basedir, d_prat)
 
-@ACQ.route('/inviarichiesta')
-def inviarichiesta():
-    "pagina: invia richiesta"
-    logging.info('URL: /inviarichiesta')
+@ACQ.route('/inviaprogetto')
+def inviaprogetto():
+    "pagina: invia progetto"
+    logging.info('URL: /inviaprogetto (%s)', fk.request.method)
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
     _clear_conferma_chiusura(basedir, d_prat)
-    is_inv, msg = check_richiesta_inviabile(user, basedir, d_prat)
-    if is_inv:
+    err = check_progetto_inviabile(user, basedir, d_prat)
+    if err:
+        fk.flash(err, category="error")
+        logging.error('Invio fallito: %s. Utente: %s pratica %s', err,
+                      user['userid'], d_prat[NUMERO_PRATICA])
+    else:
         ret = _email_approv(d_prat, False)
         if ret:
             if d_prat[MOD_ACQUISTO] in (MEPA, CONSIP):
@@ -1220,115 +1249,113 @@ def inviarichiesta():
             fk.flash("Richiesta di approvazione per  la pratica "
                      f"{d_prat[NUMERO_PRATICA]} inviata a: "
                      f"{d_prat.get(EMAIL_RESPONSABILE, 'IND.NON DISPONIBILE')}", category="info")
-            d_prat[RICHIESTA_INVIATA] = 1
+            d_prat[PROGETTO_INVIATO] = 1
             d_prat[STATO_PRATICA] = ATTESA_APPROVAZIONE
             d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'],
                                                    'Inviata richiesta approvazione'))
             tb.jsave((basedir, PRAT_JFILE), d_prat)
         else:
             msg = "Invio per approvazione fallito"
-            fk.flash(msg, category="Error")
+            fk.flash(msg, category="error")
             logging.error("Errore invio approvazione - Pratica: %s, EMail resp: %s",
                           d_prat[NUMERO_PRATICA], d_prat[EMAIL_RESPONSABILE])
-    else:
-        for amsg in msg:
-            fk.flash(amsg, category="error")
-        logging.error('Invi fallito: %s. Utente: %s pratica %s', "; ".join(msg),
-                      user['userid'], d_prat[NUMERO_PRATICA])
     return fk.redirect(fk.url_for('pratica1'))
 
-@ACQ.route('/aggiornaformato', methods=('GET', 'POST'))
-def aggiornaformato():
-    "pagina: Aggiornamento formato pratica"
-    logging.info('URL: /aggiornaformato')
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
-    user, basedir, d_prat = ret
-    aggiornamento = fms.AggiornaFormato(fk.request.form, **d_prat)
-    if fk.request.method == 'POST':
-        if ANNULLA in fk.request.form:
-            fk.flash('Aggiornamento annullato', category="info")
-            return fk.redirect(fk.url_for('start'))
-        if aggiornamento.validate():
-            d_prat[COSTO] = aggiornamento.nuovo_costo.data
-            d_prat[MOD_ACQUISTO] = aggiornamento.nuova_modalita_acquisto.data
-            _delete_field(d_prat, "stringa_trasporto_eng")
-            _delete_field(d_prat, "stringa_trasporto")
-            _delete_field(d_prat, "trasporto")
-            _delete_field(d_prat, "difformita")
-            _delete_field(d_prat, "stato_mepa")
-            _delete_field(d_prat, "costo_ordine")
-            d_prat[VERSIONE] = FILE_VERSION
-            tb.jsave((basedir, PRAT_JFILE), d_prat)
-            ft.remove((basedir, DETA_PDF_FILE), show_error=False)
-            ft.remove((basedir, ORD_PDF_FILE), show_error=False)
-            msg0 = "Aggiornato formato pratica"
-            msg = msg0+" N. "+d_prat[NUMERO_PRATICA]
-            d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], msg0))
-            logging.info(msg)
-            fk.flash(msg0, category="info")
-            return pratica_common(user, basedir, d_prat)
-        fk.flash("Errore specifica costo o trasporto", category="error")
-    ddp = {'title': f'Aggiornamento formato pratica N. {d_prat[NUMERO_PRATICA]}',
-           'subtitle': "Per l'aggiornamento occorre specificare nuovamente i costi "
-                       "del bene/servizio e del trasporto, nonché la modalità di acquisto",
-           'before': '<form method=POST action=/aggiornaformato accept-charset="utf-8" novalidate>',
-           'after': '</form>',
-           'body': aggiornamento.renderme(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
-
-@ACQ.route('/approvarichiesta')
-def approvarichiesta():
-    "pagina: approva richiesta"
-    logging.info('URL: /approvarichiesta')
+@ACQ.route('/approvaprogetto')
+def approvaprogetto():
+    "pagina: approva progetto"
+    logging.info('URL: /approvaprogetto (%s)', fk.request.method)
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
     _clear_conferma_chiusura(basedir, d_prat)
-    sgn = ft.signature((basedir, RIC_PDF_FILE))
-    is_approv, msg = check_richiesta_approvabile(user, basedir, d_prat)
-    if is_approv:
-        _approva_richiesta(user.get('fullname'), basedir, d_prat, sgn)
-    else:
-        for amsg in msg:
-            fk.flash(amsg, category="error")
+    sgn = ft.signature((basedir, PROG_PDF_FILE))
+    err = check_progetto_approvabile(user, basedir, d_prat)
+    if err:
+        fk.flash(err, category="error")
         logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
-                      "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
+                      err, user['userid'], d_prat[NUMERO_PRATICA])
+    else:
+        _approva_progetto(user.get('fullname'), basedir, d_prat, sgn)
     return fk.redirect(fk.url_for('pratica1'))
+
+#@ACQ.route('/rup/<oper>', methods=('GET', 'POST'))
+#def rup(oper):
+#    "pagina: nomina/cancella RUP"
+#    logging.info(f'URL: /rup/{oper} ({fk.request.method})')     #pylint: disable=W1203
+#    ret = _check_access()
+#    if not isinstance(ret, tuple):
+#        return ret
+#    user, basedir, d_prat = ret
+#    _clear_conferma_chiusura(basedir, d_prat)
+#    if oper == 'cancella':
+#        err = check_rup_cancellabile(user, d_prat)
+#        if err:
+#            fk.flash(err, category="error")
+#            logging.error('Cancellazione RUP non autorizzata: %s. Utente %s pratica %s',
+#                          err, user['userid'], d_prat[NUMERO_PRATICA])
+#            return pratica1()
+#        if EMAIL_RUP in d_prat:
+#            msg = f"RUP: {d_prat[NOME_RUP]} cancellato"
+#            logging.info(msg)
+#            del d_prat[EMAIL_RUP]
+#            del d_prat[NOME_RUP]
+#            tb.jsave((basedir, PRAT_JFILE), d_prat)
+#            fk.flash(msg, category="info")
+#        return pratica1()
+#    if oper == 'nomina':
+##        rupf = fms.NominaRUP(fk.request.form)
+#        rupf.email_rup.choices = _menu_scelta_utente("Seleziona RUP")
+#        if fk.request.method == 'POST':
+#            if rupf.validate():
+#                d_prat[EMAIL_RUP] = rupf.email_rup.data
+#                d_prat[NOME_RUP] = _nome_da_email(d_prat[EMAIL_RUP], True)
+#                tb.jsave((basedir, PRAT_JFILE), d_prat)
+#                msg = f"{d_prat[NOME_RUP]} nominato RUP per pratica {d_prat[NUMERO_PRATICA]}"
+#                logging.info(msg)
+#                fk.flash(msg, category='info')
+#                return pratica1()
+#            fk.flash('Scelta RUP non valida', category="error")
+#        ddp = {'title': 'Nomina RUP',
+#               'before': '<form method=POST action=/rup/nomina '
+#                         'accept-charset="utf-8" novalidate>',
+#               'after': '</form>',
+#               'note': 'QUesta è una nota',
+#               'body': rupf.renderme()}
+#        return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
+#    raise RuntimeError('rup: operazione errata')
 
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
 def cancella(name):
     "pagina: cancella allegato"
-    logging.info(f'URL: /cancella/{name}')     #pylint: disable=W1203
+    logging.info(f'URL: /cancella/{name} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
     _clear_conferma_chiusura(basedir, d_prat)
-    is_canc, msg = check_allegati_cancellabili(user, d_prat)
-    if is_canc:
+    err = check_allegati_cancellabili(user, d_prat)
+    if err:
+        fk.flash(err, category="error")
+        logging.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
+                      err, user['userid'], d_prat[NUMERO_PRATICA])
+    else:
         d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], f'Rimosso allegato {name}'))
         ft.remove((basedir, name))
-    else:
-        for amsg in msg:
-            fk.flash(amsg, category="error")
-        logging.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
-                      "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     tb.jsave((basedir, PRAT_JFILE), d_prat)
     return pratica1()
 
 @ACQ.route('/vedicodf')
 def vedicodf():
     "pagine: visualizza lista codici fondo"
-    logging.info('URL: /vedicodf')
+    logging.info('URL: /vedicodf (%s)', fk.request.method)
     return ft.GlobLists.CODFLIST.render(title="Lista Codici fondi e responsabili")
 
 @ACQ.route('/vedifile/<filename>')
 def vedifile(filename):
     "pagina: visualizza file PDF"
-    logging.info(f'URL: /vedifile/{filename}')     #pylint: disable=W1203
+    logging.info('URL: /vedifile/{filename} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1339,7 +1366,7 @@ def vedifile(filename):
 @ACQ.route('/pratiche/<stato>/<anno>/<ascendente>')
 def lista_pratiche(stato, anno, ascendente):
     "pagina: lista pratiche"
-    logging.info(f'URL: /pratiche/{stato}/{anno}/{ascendente}')     #pylint: disable=W1203
+    logging.info('URL: /pratiche/{stato}/{anno}/{ascendente} ({fk.request.method})')     #pylint: disable=W1203
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1369,6 +1396,9 @@ def lista_pratiche(stato, anno, ascendente):
     elif stato[:3] == 'RES':
         filtsb = lambda x: _test_responsabile(user, x)
         title += ' come resp. dei fondi'
+    elif stato[:3] == 'RUP':
+        filtsb = lambda x: _test_rup(user, x)
+        title += ' come RUP'
     else:
         filtsb = lambda x: True
     filt = lambda x: filtac(x) and filtsb(x)
@@ -1388,7 +1418,7 @@ def lista_pratiche(stato, anno, ascendente):
 @ACQ.route('/trovapratica', methods=('POST', 'GET'))
 def trovapratica():               # pylint: disable=R0912,R0914,R0915
     "pagina: trova pratica"
-    logging.info('URL: /trovapratica')
+    logging.info('URL: /trovapratica (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if not user:
         return fk.redirect(fk.url_for('login'))
@@ -1474,7 +1504,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
     "pagina: accesso a pratica indicata"
-    logging.info(f'URL: /pratica0/{num}/{year}')     #pylint: disable=W1203
+    logging.info('URL: /pratica0/{num}/{year} ({fk.request.method})')     #pylint: disable=W1203
     basedir = ft.namebasedir(year, num)
     fk.session[BASEDIR_STR] = basedir
     ret = _check_access()
@@ -1494,7 +1524,7 @@ def get_tipo_allegato():
 @ACQ.route('/pratica1', methods=('GET', 'POST'))
 def pratica1():               # pylint: disable=R0914
     "pagina: pratica, modo 1 (iterazione modifica)"
-    logging.info('URL: /pratica1')
+    logging.info('URL: /pratica1 (%s)', fk.request.method)
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1508,11 +1538,10 @@ def pratica1():               # pylint: disable=R0914
             _clear_conferma_chiusura(basedir, d_prat)
             tipo_allegato = get_tipo_allegato()
             logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
-            is_alleg, msg = check_allegati_allegabili(d_prat)
-            if not is_alleg:
-                for amsg in msg:
-                    fk.flash(amsg, category="error")
-                logging.error("; ".join(msg))
+            err = check_allegati_allegabili(d_prat)
+            if err:
+                fk.flash(err, category="error")
+                logging.error(err)
                 return pratica_common(user, basedir, d_prat)
             origname, ext = os.path.splitext(fle.filename)
             origname = secure_filename(origname)
@@ -1548,7 +1577,7 @@ def pratica1():               # pylint: disable=R0914
 @ACQ.route('/togglestoria', methods=('GET', 'POST', ))
 def togglestoria():
     "pagina: abilita/disabilita storia pratica"
-    logging.info('URL: /togglestoria')
+    logging.info('URL: /togglestoria (%s)', fk.request.method)
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1565,7 +1594,7 @@ def togglestoria():
 @ACQ.route('/modificadetermina/<fase>', methods=('GET', 'POST', ))
 def modificadetermina(fase):
     "pagina: modifica determina"
-    logging.info(f'URL: /modificadetermina/{fase}')     #pylint: disable=W1203
+    logging.info('URL: /modificadetermina/{fase} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1576,30 +1605,34 @@ def modificadetermina(fase):
         return fk.redirect(fk.url_for('pratica1'))
     if d_prat.get(VERSIONE, 0) == 0:
         return _aggiornaformato()
-    is_modif, msg = check_determina_modificabile(user, basedir, d_prat, fase)
-    if is_modif:
+    err = check_determina_modificabile(user, basedir, d_prat, fase)
+    if err:
+        fk.flash(err, category="error")
+        logging.error('Gestione determina non autorizzata: %s. Utente %s, pratica %s',
+                     err, user['userid'], d_prat[NUMERO_PRATICA])
+    else:
         if fase == "A":
             return modificadetermina_a(user, basedir, d_prat)
         if fase == "B":
             return modificadetermina_b(user, basedir, d_prat)
         raise FASE_ERROR
-    for amsg in msg:
-        fk.flash(amsg, category="error")
-    logging.error('Gestione determina non autorizzata: %s. Utente %s, pratica %s',
-                  "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     return pratica1()
 
 @ACQ.route('/cancelladetermina/<fase>', methods=('GET', ))
 def cancelladetermina(fase):
     "pagina: cancella determina"
-    logging.info(f'URL: /cancelladetermina/{fase}')     #pylint: disable=W1203
+    logging.info('URL: /cancelladetermina/{fase} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
     _clear_conferma_chiusura(basedir, d_prat)
-    is_canc, msg = check_determina_cancellabile(user, basedir, d_prat, fase)
-    if is_canc:
+    err = check_determina_cancellabile(user, basedir, d_prat, fase)
+    if err:
+        fk.flash(err, category="error")
+        logging.error('cancellazione determina non autorizzata: %s. Utente %s, pratica %s',
+                      err, user['userid'], d_prat[NUMERO_PRATICA])
+    else:
         if fase == "A":
             ft.remove((basedir, DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, DETB_PDF_FILE), show_error=False)
@@ -1616,17 +1649,12 @@ def cancelladetermina(fase):
             logging.info("Cancellati determina agg. e ordine. Pratica N. %s",
                          d_prat.get(NUMERO_PRATICA, ''))
         tb.jsave((basedir, PRAT_JFILE), d_prat)
-    else:
-        for amsg in msg:
-            fk.flash(amsg, category="error")
-        logging.error('cancellazione determina non autorizzata: %s. Utente %s, pratica %s',
-                      "; ".join(msg), user['userid'], d_prat[NUMERO_PRATICA])
     return pratica1()
 
 @ACQ.route('/modificaordine/<fase>', methods=('GET', 'POST'))
 def modificaordine(fase):               # pylint: disable=R0912,R0914
     "pagina: modifica ordine"
-    logging.info(f'URL: /modificaordine/{fase}')     #pylint: disable=W1203
+    logging.info('URL: /modificaordine/{fase} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1634,88 +1662,86 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
     _clear_conferma_chiusura(basedir, d_prat)
     if DATA_ORDINE not in d_prat:
         d_prat[DATA_ORDINE] = ft.today(False)
-    is_modif, msg = check_ordine_modificabile(user, basedir, d_prat, fase)
-    if is_modif:
-        if d_prat.get(VERSIONE, 0) == 0:
-            return _aggiornaformato()
-        if not d_prat.get(DESCRIZIONE_ORDINE):
-            d_prat[DESCRIZIONE_ORDINE] = d_prat[DESCRIZIONE_ACQUISTO]
-        if not d_prat.get(COSTO_ORDINE):
-            d_prat[COSTO_ORDINE] = d_prat[COSTO]
-        orn = fms.Ordine(fk.request.form, **d_prat)
-        if fk.request.method == 'POST':
-            if ANNULLA in fk.request.form:
-                fk.flash('Operazione annullata', category="info")
-                return fk.redirect(fk.url_for('pratica1'))
-            if orn.validate():
-                d_prat.update(clean_data(orn.data))
-                if d_prat.get(LINGUA_ORDINE, '') == 'EN':
-                    ord_name = ORD_NAME_EN
-                else:
-                    ord_name = ORD_NAME_IT
-                d_prat[STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "it")
-                d_prat[STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "uk")
-                d_prat[TITOLO_DIRETTORE_UK] = CONFIG.config[TITOLO_DIRETTORE_UK]
-                logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, ORD_PDF_FILE)
-                file_lista_dettagliata = filename_allegato(ALL_SING,
-                                                           TAB_ALLEGATI[LISTA_DETTAGLIATA_A][0],
-                                                           "", ".pdf", "", d_prat)
-                if ft.findfiles(basedir, file_lista_dettagliata):
-                    include = file_lista_dettagliata
-                    d_prat[DETTAGLIO_ORDINE] = 1
-                else:
-                    include = ""
-                    d_prat[DETTAGLIO_ORDINE] = 0
-                pdf_name = os.path.splitext(ORD_PDF_FILE)[0]
-                ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local,
-                           include=include, pratica=d_prat, sede=CONFIG.config[SEDE])
-                d_prat[PDF_ORDINE] = ORD_PDF_FILE
-                d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))
-                tb.jsave((basedir, PRAT_JFILE), d_prat)
-                url = fk.url_for('pratica1')
-                return fk.redirect(url)
-            errors = orn.get_errors()
-            for err in errors:
-                fk.flash(err, category="error")
-            logging.debug("Errori form Ordine: %s", "; ".join(errors))
-        ddp = {'title': 'Immissione dati per ordine',
-               'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-               'before': f'<form method=POST action=/modificaordine/{fase} ' \
-                         'accept-charset="utf-8" novalidate>',
-               'after': "</form>",
-               'note': OBBLIGATORIO,
-               'body': orn.renderme(d_prat)}
-    else:
-        for amsg in msg:
-            fk.flash(amsg, category="error")
+    err = check_ordine_modificabile(user, basedir, d_prat, fase)
+    if err:
+        fk.flash(err, category="error")
         logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
-                      "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
+                      err, user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
         url = fk.url_for('pratica1')
         return fk.redirect(url)
+    if d_prat.get(VERSIONE, 0) == 0:
+        return _aggiornaformato()
+    if not d_prat.get(DESCRIZIONE_ORDINE):
+        d_prat[DESCRIZIONE_ORDINE] = d_prat[DESCRIZIONE_ACQUISTO]
+    if not d_prat.get(COSTO_ORDINE):
+        d_prat[COSTO_ORDINE] = d_prat[COSTO]
+    orn = fms.Ordine(fk.request.form, **d_prat)
+    if fk.request.method == 'POST':
+        if ANNULLA in fk.request.form:
+            fk.flash('Operazione annullata', category="info")
+            return fk.redirect(fk.url_for('pratica1'))
+        if orn.validate():
+            d_prat.update(clean_data(orn.data))
+            if d_prat.get(LINGUA_ORDINE, '') == 'EN':
+                ord_name = ORD_NAME_EN
+            else:
+                ord_name = ORD_NAME_IT
+            d_prat[STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "it")
+            d_prat[STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(COSTO_ORDINE), "uk")
+            d_prat[TITOLO_DIRETTORE_UK] = CONFIG.config[TITOLO_DIRETTORE_UK]
+            logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, ORD_PDF_FILE)
+            file_lista_dettagliata = filename_allegato(ALL_SING,
+                                                       TAB_ALLEGATI[LISTA_DETTAGLIATA_A][0],
+                                                       "", ".pdf", "", d_prat)
+            if ft.findfiles(basedir, file_lista_dettagliata):
+                include = file_lista_dettagliata
+                d_prat[DETTAGLIO_ORDINE] = 1
+            else:
+                include = ""
+                d_prat[DETTAGLIO_ORDINE] = 0
+            pdf_name = os.path.splitext(ORD_PDF_FILE)[0]
+            ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local,
+                       include=include, pratica=d_prat, sede=CONFIG.config[SEDE])
+            d_prat[PDF_ORDINE] = ORD_PDF_FILE
+            d_prat[STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))
+            tb.jsave((basedir, PRAT_JFILE), d_prat)
+            url = fk.url_for('pratica1')
+            return fk.redirect(url)
+        errors = orn.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        logging.debug("Errori form Ordine: %s", "; ".join(errors))
+    ddp = {'title': 'Immissione dati per ordine',
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+           'before': f'<form method=POST action=/modificaordine/{fase} ' \
+                     'accept-charset="utf-8" novalidate>',
+           'after': "</form>",
+           'note': OBBLIGATORIO,
+           'body': orn.renderme(d_prat)}
     return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 @ACQ.route('/chiudipratica')
 def chiudipratica():
     "pagina: chiudi pratica"
-    logging.info('URL: /chiudipratica')
+    logging.info('URL: /chiudipratica ({fk.request.method})')
     return _modifica_pratica('chiudi')
 
 @ACQ.route('/apripratica')
 def apripratica():
     "pagina: apri pratica"
-    logging.info('URL: /apripratica')
+    logging.info('URL: /apripratica (%s)', fk.request.method)
     return _modifica_pratica('apri')
 
 @ACQ.route('/annullapratica')
 def annullapratica():
     "pagina: annulla pratica"
-    logging.info('URL: /annullapratica')
+    logging.info('URL: /annullapratica (%s)', fk.request.method)
     return _modifica_pratica('null')
 
 @ACQ.route('/vedijson/<fname>')
 def vedijson(fname):
     "pagina: mostra contenuto di file json"
-    logging.info(f'URL: /vedijson/{fname}')     #pylint: disable=W1203
+    logging.info('URL: /vedijson/{fname} ({fk.request.method})')     #pylint: disable=W1203
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
@@ -1734,66 +1760,58 @@ def vedijson(fname):
 @ACQ.route('/files/<name>')
 def files(name):
     "download file"
-#   logging.info(f'URL: /files/{name}')     #pylint: disable=W1203
+    logging.info('URL: /files/%s (%s)', name, fk.request.method)     #pylint: disable=W1203
     return  ACQ.send_static_file(name)
 
 @ACQ.route('/show_checks')
 def show_checks():
     "Mostra risultato checks"
-    logging.info('URL: /show_checks')
+    logging.info('URL: /show_checks (%s)', fk.request.method)
+    def addsi(text):
+        return "NO: "+text+"\n" if text else "SI\n"
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     the_user, basedir, d_prat = ret
     if _test_developer(the_user):
+        text = "<h4>Checks su pratica N. "+d_prat[NUMERO_PRATICA]+"</h4>\n"
         text = "<h4>Checks su pratica N. "+d_prat[NUMERO_PRATICA]+"</h4><pre>\n"
-        text += "  - pratica apribile: "+ \
-                str(check_pratica_apribile(the_user, d_prat))+"\n"
-        text += "  - pratica annullabile: "+ \
-                str(check_pratica_annullabile(the_user, d_prat))+"\n"
+        text += "  - pratica apribile: "+addsi(check_pratica_apribile(the_user, d_prat))
+        text += "  - pratica annullabile: "+addsi(check_pratica_annullabile(the_user, d_prat))
         text += "  - pratica chiudibile: "+ \
-                str(check_pratica_chiudibile(the_user, basedir, d_prat))+"\n"
-        text += "  - richiesta approvabile: "+ \
-                str(check_richiesta_approvabile(the_user, basedir, d_prat))+"\n"
-        text += "  - richiesta modificabile: "+ \
-                str(check_richiesta_modificabile(the_user, basedir, d_prat))+"\n"
-        text += "  - richiesta inviabile: "+ \
-                str(check_richiesta_inviabile(the_user, basedir, d_prat))+"\n"
-        text += "  - rdo modificabile: "+ \
-                str(check_rdo_modificabile(the_user, basedir, d_prat))+"\n"
+                addsi(check_pratica_chiudibile(the_user, basedir, d_prat))
+        text += "  - progetto approvabile: "+ \
+                addsi(check_progetto_approvabile(the_user, basedir, d_prat))
+        text += "  - progetto modificabile: "+ \
+                addsi(check_progetto_modificabile(the_user, basedir, d_prat))
+        text += "  - progetto inviabile: "+ \
+                addsi(check_progetto_inviabile(the_user, basedir, d_prat))
+        text += "  - rdo modificabile: "+addsi(check_rdo_modificabile(the_user, basedir, d_prat))
+#       text += "  - RUP nominabile: "+addsi(check_rup_nominabile(the_user, basedir, d_prat))
         text += "  - determina (fase A) cancellabile: "+ \
-                str(check_determina_cancellabile(the_user, basedir, d_prat, "A"))+"\n"
+                addsi(check_determina_cancellabile(the_user, basedir, d_prat, "A"))
         text += "  - determina (fase B) cancellabile: "+ \
-                str(check_determina_cancellabile(the_user, basedir, d_prat, "B"))+"\n"
+                addsi(check_determina_cancellabile(the_user, basedir, d_prat, "B"))
         text += "  - determina (fase A) modificabile: "+ \
-                str(check_determina_modificabile(the_user, basedir, d_prat, "A"))+"\n"
+                addsi(check_determina_modificabile(the_user, basedir, d_prat, "A"))
         text += "  - determina (fase B) modificabile: "+ \
-                str(check_determina_modificabile(the_user, basedir, d_prat, "B"))+"\n"
-        text += "  - allegati allegabili: "+ \
-                str(check_allegati_allegabili(d_prat))+"\n"
-        text += "  - allegati cancellabili: "+ \
-                str(check_allegati_cancellabili(the_user, d_prat))+"\n"
+                addsi(check_determina_modificabile(the_user, basedir, d_prat, "B"))
+        text += "  - allegati allegabili: "+addsi(check_allegati_allegabili(d_prat))
+        text += "  - allegati cancellabili: "+addsi(check_allegati_cancellabili(the_user, d_prat))
         text += "  - ordine (fase A) modificabile: "+ \
-                str(check_ordine_modificabile(the_user, basedir, d_prat, "A"))+"\n"
-        text += "  - ordine (fase A) modificabile: "+ \
-                str(check_ordine_modificabile(the_user, basedir, d_prat, "A"))+"\n"
+                addsi(check_ordine_modificabile(the_user, basedir, d_prat, "A"))
+        text += "  - ordine (fase B) modificabile: "+ \
+                addsi(check_ordine_modificabile(the_user, basedir, d_prat, "B"))
         text += "</pre>"
         return text
     logging.error('Visualizzazione checks() non autorizzata. Utente: %s', the_user['userid'])
     fk.session.clear()
     return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
 
-@ACQ.route('/email_approv/<_unused>')
-def email_approv(_unused):
-    "pagina lanciata dall'apposito cliente attivato dal filtro e-mail"
-    logging.info('URL: /email_approv')
-    logging.error("la URL /email_approv non dovrebbe essere più utilizzata. Fermare il crontab!")
-    return fk.render_template('noaccess.html', sede=CONFIG.config[SEDE])
-
 @ACQ.route('/user')
 def user_tbd():
     "pagina T.B.D."
-    logging.info('URL: /user')
+    logging.info('URL: /user (%s)', fk.request.method)
     return fk.render_template('tbd.html', goto='/', sede=CONFIG.config[SEDE])
 
 def remove_prefix(adict, prefix):
@@ -1808,14 +1826,18 @@ def remove_prefix(adict, prefix):
 @ACQ.route('/procedura_rdo', methods=('GET', 'POST'))
 def procedura_rdo():
     "Trattamento pagina per procedura RDO"
-    logging.info('URL: /procedura_rdo')
+    logging.info('URL: /procedura_rdo (%s)', fk.request.method)
     ret = _check_access()
     if not isinstance(ret, tuple):
         return ret
     user, basedir, d_prat = ret
     _clear_conferma_chiusura(basedir, d_prat)
-    is_modif, msg = check_rdo_modificabile(user, basedir, d_prat)
-    if is_modif:
+    err = check_rdo_modificabile(user, basedir, d_prat)
+    if err:
+        fk.flash(err, category="error")
+        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
+                      err, user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
+    else:
         if fk.request.method == 'POST':
             if ANNULLA in fk.request.form:
                 fk.flash('Operazione annullata', category="info")
@@ -1854,11 +1876,6 @@ def procedura_rdo():
                'after': "</form>",
                'note': OBBLIGATORIO,
                'body': rdo.renderme(**d_prat)}
-    else:
-        for amsg in msg:
-            fk.flash(amsg, category="error")
-        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
-                      "; ".join(msg), user['userid'], d_prat.get(NUMERO_PRATICA, 'N.A.'))
     return fk.render_template('form_layout.html', sede=CONFIG.config[SEDE], data=ddp)
 
 #############################################################################
@@ -1867,7 +1884,7 @@ def procedura_rdo():
 @ACQ.route('/housekeeping')
 def housekeeping():
     "Inizio procedura housekeeping"
-    logging.info('URL: /housekeeping')
+    logging.info('URL: /housekeeping (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if user:
         status = {'footer': f"Procedura housekeeping.py. Vers. {__version__} - " \
@@ -1886,7 +1903,7 @@ def housekeeping():
 @ACQ.route("/sortcodf/<field>")
 def sortcodf(field):
     "Riporta codici fondi con ordine specificato"
-    logging.info(f'URL: /sortcodf/{field}')     #pylint: disable=W1203
+    logging.info('URL: /sortcodf/{field} ({fk.request.method})')     #pylint: disable=W1203
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -1911,14 +1928,14 @@ def sortcodf(field):
 @ACQ.route("/codf")
 def codf():
     "Riporta codici fondi"
-    logging.info('URL: /codf')
+    logging.info('URL: /codf (%s)', fk.request.method)
     return sortcodf('')
 
 
 @ACQ.route('/addcodf', methods=('GET', 'POST'))
 def addcodf():
     "Aggiungi codice fondo"
-    logging.info('URL: /addcodf')
+    logging.info('URL: /addcodf (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -1951,7 +1968,7 @@ def addcodf():
 @ACQ.route('/editcodf/<nrec>', methods=('GET', 'POST'))
 def editcodf(nrec):
     "Modifica tabella codici fondi"
-    logging.info(f'URL: /editcodf/{nrec}')     #pylint: disable=W1203
+    logging.info('URL: /editcodf/{nrec} ({fk.request.method})')     #pylint: disable=W1203
     nrec = int(nrec)
     user = ft.login_check(fk.session)
     if user:
@@ -2001,13 +2018,13 @@ def editcodf(nrec):
 @ACQ.route('/downloadcodf', methods=('GET', 'POST'))
 def downloadcodf():
     "Download tabella codici fondi"
-    logging.info('URL: /downloadcodf')
+    logging.info('URL: /downloadcodf (%s)', fk.request.method)
     return download('codf')
 
 @ACQ.route('/downloadutenti', methods=('GET', 'POST'))
 def downloadutenti():
     "Download tabella utenti"
-    logging.info('URL: /downloadutenti')
+    logging.info('URL: /downloadutenti (%s)', fk.request.method)
     return download('utenti')
 
 def download(_unused):
@@ -2020,7 +2037,7 @@ def download(_unused):
 @ACQ.route("/utenti")
 def utenti():
     "Genera lista utenti"
-    logging.info('URL: /utenti')
+    logging.info('URL: /utenti (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -2044,7 +2061,7 @@ def utenti():
 @ACQ.route('/adduser', methods=('GET', 'POST'))
 def adduser():
     "Aggiungi utente"
-    logging.info('URL: /adduser')
+    logging.info('URL: /adduser ({fk.request.method})')
     user = ft.login_check(fk.session)
     if user:
         if _test_admin(user):
@@ -2075,7 +2092,7 @@ def adduser():
 @ACQ.route('/edituser/<nrec>', methods=('GET', 'POST'))
 def edituser(nrec):
     "Modifica dati utente"
-    logging.info(f'URL: /edituser/{nrec}')     #pylint: disable=W1203
+    logging.info('URL: /edituser/{nrec} ({fk.request.method})')     #pylint: disable=W1203
     nrec = int(nrec)
     user = ft.login_check(fk.session)
     if user:
@@ -2123,7 +2140,7 @@ def edituser(nrec):
 @ACQ.route('/environ', methods=('GET',))
 def environ():
     "Mostra informazioni su environment"
-    logging.info('URL: /environ')
+    logging.info('URL: /environ (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if user:
         if not _test_developer(user):
@@ -2157,7 +2174,7 @@ def environ():
 @ACQ.route('/testmail', methods=('GET',))
 def testmail():
     "Invia messaggio di prova all'indirizzo di webmaster"
-    logging.info('URL: /testmail')
+    logging.info('URL: /testmail (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if user:
         if not _test_developer(user):
@@ -2183,7 +2200,7 @@ server: {host} (se indicato come "-", l'invio avviene tramite GMail API)
 @ACQ.route('/force_excp', methods=('GET',))
 def force_excp():
     "Causa una eccezione"
-    logging.info('URL: /force_excp')
+    logging.info('URL: /force_excp (%s)', fk.request.method)
     user = ft.login_check(fk.session)
     if user:
         if not _test_developer(user):
@@ -2249,7 +2266,7 @@ def production():
     logging.basicConfig(level=logging.INFO)    # Livello logging normale
 #   logging.basicConfig(level=logging.DEBUG)   # Più verboso
     initialize_me()
-    ft.set_file_logger((WORKDIR, 'acquisti.log'))
+    ft.set_file_logger((WORKDIR, 'acquisti5.log'))
     ft.set_mail_logger(CONFIG.config[SMTP_HOST], CONFIG.config[EMAIL_PROCEDURA],
                        CONFIG.config[EMAIL_WEBMASTER], 'Notifica errore ACQUISTI')
 

@@ -24,7 +24,7 @@ import random
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from PyPDF2 import PdfReader, PdfWriter
 
 from constants import FILEDIR   # Necessario per test
 import ftools as ft             # Necessario per test
@@ -171,13 +171,13 @@ class SplittedAttachment:
     "Genera pagine PDF per allegato"
     def __init__(self, destdir, pdffile, debug=False):
         self.debug = debug
-        pdfa = PdfFileReader(open(pdffile, mode='rb'))     # pylint: disable=R1732
-        npages = pdfa.getNumPages()
+        pdfa = PdfReader(open(pdffile, mode='rb'))     # pylint: disable=R1732
+        npages = len(pdfa.pages)
         self.pagefiles = [os.path.join(destdir, f"atc_page-{np}.pdf") \
                          for np in range(npages)]
         for npage, pgfile in enumerate(self.pagefiles):
-            output = PdfFileWriter()
-            output.addPage(pdfa.getPage(npage))
+            output = PdfWriter()
+            output.add_page(pdfa.pages[npage])
             with open(pgfile, mode="wb") as ofp:
                 output.write(ofp)
             logging.debug('Written attachment page: %s', pgfile)
