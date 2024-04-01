@@ -11,19 +11,21 @@
 {% macro getval(value) %}
 Pratica N. {{ value }}
 {% endmacro %}
-{{ start_page("",sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
+{{ start_page(sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
 <tr><td>
 {% if info.debug %}
-   <h4> <font color=red>Modo debug</font>: invia email a webmaster </h4>
+   <h4> <font color=red>Modo debug</font>: invia tutti messaggi email a webmaster </h4>
 {% endif %}
 {% if info.developer %}
-<h4><font color=red>Modo developer</font>:<br>
-Template: pratica.html v 1.1 <br>
-&nbsp; &rightarrow;&nbsp;<a href=/vedijson/pratica onclick="window.open('/vedijson/pratica','newwindow','width=800,height=600,scrollbar=yes'); return false;">Vedi file pratica.json</a><br> 
-&nbsp; &rightarrow;&nbsp;<a href=/show_checks onclick="window.open('/show_checks','newwindow','width=800,height=600,scrollbar=yes'); return false;">visualizza checks</a></h4> 
-   <b>Info:</b> {{ info }}
-   <hr>
-{% endif %}
+<form action=/devel target=_blank method=post>
+<h4><font color=red>Modo developer</font> - Template: pratica.html v 1.1 - &nbsp;Vedi:&nbsp;
+<input type=submit value="File pratica" name=vedipratica>
+<input type=submit value="Checks" name=vedichecks>
+<input type=submit value="Info" name=vediinfo>
+<input type=submit value="Config" name=vediconfig>
+{% for k, v in info.items() %} <input type="hidden" name="info.{{k}}" value="{{v}}"> {% endfor %}
+</form>
+{% endif %}</h4> 
 
 <table cellspacing=3>
 <tr><td><b>Progetto del:</b></td><td> {{ pratica.data_richiesta }} </td></tr>

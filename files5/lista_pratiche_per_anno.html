@@ -38,15 +38,13 @@
 }
 </style>
 
-
-
 {% from "_common.html" import start_page, end_page %}
-{{ start_page("",sede.sede_it,title,subtitle) }}
+{{ start_page(sede.sede_it,title,subtitle) }}
 <tr><td>
 {% if years %}
 Seleziona: 
 {% for yy in years %}
-[<a href=/pratiche/{{ stato }}/{{ yy }}/0>{{ yy }}</a>&nbsp;<div class="tooltip"><a href=/pratiche/{{ stato }}/{{ yy }}/1><img src=/files5/up-16.png><span class="tooltiptext">in ordine crescente</span></a></div>]&nbsp;&nbsp;
+[<a href=/pratiche/{{ filtro }}/{{ yy }}/0>{{ yy }}</a>&nbsp;<div class="tooltip"><a href=/pratiche/{{ filtro }}/{{ yy }}/1><img src=/files5/up-16.png><span class="tooltiptext">in ordine crescente</span></a></div>]&nbsp;&nbsp;
 {% endfor %}
 <hr>
 {% endif %}
@@ -56,7 +54,7 @@ Seleziona:
 {% for d in dlist %}
 <p>   <li> <em> {{ d.numero_pratica }}</em>. Progetto di acquisto del {{ d.data_richiesta }}. 
        Resp.fondi: {{ d.nome_responsabile }}. Richiedente: {{ d.nome_richiedente }}.<br>
-       <b> {{ d.descrizione_acquisto }}.</b><br>Stato: {{ d.stato_pratica }}.&nbsp;&nbsp;&nbsp;&rightarrow; <a href=/pratica0/{{ d.numero_pratica }}>Vedi</a> </li>
+       <b> {{ d.descrizione_acquisto }}.</b>&nbsp;&nbsp;&nbsp;&rightarrow; <a href=/pratica0/{{ d.numero_pratica }}>Vedi</a> </li>
 {% endfor %}
 </ul>
 </td></tr>

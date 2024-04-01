@@ -74,33 +74,13 @@ if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo
 else:
     PAM_AUTH = pam.pam().authenticate
 
+USER_DN = 'uid=%s,ou=people,dc=inaf,dc=it'
+
 class GlobLists:         # pylint: disable=R0903
     "Liste usate dalla procedura. Definite in fase di inizializzazione"
     USERLIST = None
     CODFLIST = None
     HELPLIST = []
-
-USER_DN = 'uid=%s,ou=people,dc=inaf,dc=it'
-
-def version():
-    "Riporta versione del modulo"
-    return f"ftools.py. Versione {__version__} - {__author__}, {__date__}"
-
-def _setformatter():
-    logger = logging.getLogger()
-    if not hasattr(logger, 'fHandler'):
-        return
-    fmtstr = '%(asctime)s '+ logger.host_info + ' ['+logger.user_info+'] %(levelname)s %(message)s'
-    formatter = logging.Formatter(fmt=fmtstr)
-    logger.fHandler.setFormatter(formatter)
-    if hasattr(logger, 'eHandler'):
-        logger.eHandler.setFormatter(formatter)
-
-def _last_resort_log(message):
-    "funzione chamata quando c'è un errore nel logger"
-    fname = os.path.join(WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
-    with open(fname, "a", encoding='utf8') as f_out:
-        print(message, file=f_out)
 
 class MyException(RuntimeError):
     "Exception arricchita"
@@ -120,7 +100,235 @@ class GMailHandler(StreamHandler):           # pylint: disable=R0903
             sm.send("", None, self.fromaddr, self.dest, self.subject, self.format(record))
         except Exception as excp:
             _last_resort_log(f"Errore invio email a: {self.dest}\n- {excp}")
-#       print("GMailHandler emit:", record)
+
+########################################## Table support
+class FTable(tb.Table):
+    "definizione tabelle con estensioni per rendering HTML"
+    def __init__(self, path, header=None, sortable=()):
+        tb.Table.__init__(self, path, header)
+        self.sortable = [x for x in sortable if x in self.header]
+
+    def render_item_as_form(self, title, form, action,            # pylint: disable=R0913
+                            nrow=0, ignore=(), errors=()):
+        "HTML rendering di un campo per uso in un form"
+        html = [TABLE_HEADER]
+        if title:
+            html.append(f'<h1> {title} </h1>')
+        if errors:
+            html.append("<hr><b><font color=red>Attenzione:</font></b><br />")
+            for err in errors:
+                html.append("&nbsp;&nbsp; - "+err+"<br />")
+            html.append("<hr>")
+        html.append(f'<form method="POST" action="{action}">')
+        if nrow > 0:
+            html.append(f'<b>Record N. {nrow}</b><p>')
+        html.append('<dl>')
+        for fname in self.header[1:]:
+            if fname in ignore:
+                continue
+            val = str(form[fname])
+            html.append(f'<dt> {form[fname].label} <dd> {val}')
+        html.append('</dl>')
+        html.append(str(form['annulla']) + '&nbsp;&nbsp;' + str(form['avanti']))
+        if nrow > 0:
+            html.append('<hr>'+str(form['cancella']))
+        html.append('</form>')
+        return '\n'.join(html)
+
+    def render_item_as_text(self, title, nrow, index=False):
+        "HTML rendering di un campo"
+        html = [TABLE_HEADER]
+        if title:
+            html.append(f'<h1> {title} </h1>')
+        if index:
+            fields = self.header
+        else:
+            fields = self.header[1:]
+        row = self.get_row(nrow, index=index, as_dict=True)
+        html.append(f'<b>Record N. {nrow}</b><p>')
+        html.append('<dl>')
+        for fld in fields:
+            val = row[fld]
+            html.append(f'<dt> {fld} <dd> {val}')
+        html.append('</dl>')
+        return '\n'.join(html)
+
+    def render(self, title=None, menu=(), select_url=(), sort_url=(),      # pylint: disable=R0912,R0913,R0914
+               edit_symb=EDIT_SYMB, index=False, sort_on=1, footer='',
+               select=None, messages=()):
+        "HTML rendering della tabella"
+        def _formrow(row):
+            dname = row[0]
+            ret = f'<tr><td><a href="{select_url[0]}/{dname}">{edit_symb}</a></td><td>'
+            return ret+'</td><td>'.join([str(r) for r in row[1:]])+'</td></tr>'
+        def _fullrow(row):
+            return '<tr><td>'+'</td><td>'.join([str(r) for r in row])+'</td></tr>'
+        def _shortrow(row):
+            return '<tr><td>'+'</td><td>'.join([str(r) for r in row[1:]])+'</td></tr>'
+        def _fmtheader(name):
+            uname = str(name)
+            if uname in self.sortable and sort_url:
+                uname = uname+'&nbsp;&nbsp;<a href='+sort_url[0]+'/'+uname+'>'+sort_url[1]+'</a>'
+            return '<th>'+uname+'</th>'
+
+        html = [TABLE_HEADER]
+        if title:
+            html.append(f'<h1> {title} </h1>')
+        if messages:
+            html.append('<hr>')
+            for msg in messages:
+                html.append(f'<p> {msg} </p>')
+            html.append('<hr>')
+        render_menu = []
+        for mnu in menu:
+            render_menu.append(f'<a href="{mnu[0]}">{mnu[1]}</a>')
+        if render_menu:
+            html.append('&nbsp;|&nbsp'.join(render_menu))
+        if select_url:
+            html.append(f'<hr>{select_url[1]}')
+        if select_url:
+            dorow = _formrow
+            fields = ['&nbsp;'] + self.header[1:]
+        elif index:
+            dorow = _fullrow
+            fields = ['&nbsp;'] + self.header[1:]
+        else:
+            dorow = _shortrow
+            fields = self.header[1:]
+        html.append('<table border=1><tr>'+ \
+                    reduce(lambda x, y: str(x)+_fmtheader(y), fields, '')+'</tr>')
+        self.sort(sort_on)
+        if select:
+            allrows = [x for x in self.rows if select(x)]
+        else:
+            allrows = self.rows
+        for row in allrows:
+            html.append(dorow(row))
+        html.append('</table>')
+        if footer:
+            html.append(f'<center><font size=1>{footer}</font></center>')
+        return '\n'.join(html)
+
+########################################## End table support
+
+class Matchty:               # pylint: disable=R0903
+    "classe per verificare il corretto tipo di un file"
+    def __init__(self, tlist):
+        def addp(name):
+            "normalizza nome estensione"
+            if name[0] != '.':
+                name = '.'+name
+            return name.lower()
+        self.tlist = [addp(t) for t in tlist]
+
+    def check(self, name):
+        "verifica estensione"
+        ext = os.path.splitext(name)[1]
+        return ext.lower() in self.tlist
+
+class DocList:               # pylint: disable=R0903
+    "definizione lista documenti"
+    def __init__(self, thedir, fname,                        # pylint: disable=R0913
+                 year=None,
+                 directory_filter=lambda x: True,
+                 filename_filter=lambda x: True,
+                 content_filter=lambda x: True,
+                 sort=None,
+                 extract=None):
+        self.years = get_years(thedir)  # Rendi noto quali altri
+        self.years.sort()               # anni sono disponibili
+        if is_year(year):
+            self.year = str(year)
+        else:
+            self.year = str(thisyear())
+        ydir = os.path.join(thedir, self.year)
+        self.records = []
+        self.errors = []
+        try:
+            pdirs = [x for x in os.listdir(ydir) if IS_PRAT_DIR.match(x)]
+        except FileNotFoundError:
+            pdirs = []
+        else:
+            pdirs = [os.path.join(ydir, x) for x in pdirs if directory_filter(x)]
+            pdirs.sort()
+        for pdir in pdirs:
+            fnm = os.path.join(pdir, fname)
+            if filename_filter(fnm):
+                try:
+                    rec = tb.jload(fnm)
+                except tb.TableException:
+                    self.errors.append(fnm)
+                    continue
+                if rec and content_filter(rec):
+                    if extract:
+                        rec = {key:value for key, value in rec.items() if key in extract}
+                    self.records.append(rec)
+        if sort:
+            self.records.sort(key=sort)
+
+    def __len__(self):
+        "metodo standard per lunghezza"
+        return len(self.records)
+
+class PratIterator:
+    "Iteratore sulle pratiche dell'anno specificato"
+    def __init__(self, year=None):
+        if not year:
+            year = thisyear()
+        self.ydir = os.path.join(DATADIR, str(year))
+        self.pratdir = iter(os.listdir(self.ydir))
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        nextdir = self.pratdir.__next__()
+        pratfile = os.path.join(self.ydir, nextdir, "pratica.json")
+        try:
+            prat = tb.jload(pratfile)
+        except tb.TableException:
+            prat = {}
+        return prat
+
+
+def version():
+    "Riporta versione del modulo"
+    return f"ftools.py. Versione {__version__} - {__author__}, {__date__}"
+
+CHARS = string.ascii_letters+string.digits
+
+NON_ABILITATO = """
+non sei abilitato all'uso della procedura come "%s".
+Per ottenere l'abilitazione devi rivolgerti all'amministrazione
+"""
+
+def checkdir():
+    "Verifica esistenza della directory per dati e riporta il path"
+    thedir = DATADIR
+    if not os.path.exists(thedir):
+        print()
+        print(f"Directory {thedir} inesistente")
+        print("\nDevi creare le directory di lavoro\n")
+        sys.exit()
+    return thedir
+
+CONFIG = tb.jload((checkdir(), 'config.json'))
+
+def _setformatter():
+    logger = logging.getLogger()
+    if not hasattr(logger, 'fHandler'):
+        return
+    fmtstr = '%(asctime)s '+ logger.host_info + ' ['+logger.user_info+'] %(levelname)s %(message)s'
+    formatter = logging.Formatter(fmt=fmtstr)
+    logger.fHandler.setFormatter(formatter)
+    if hasattr(logger, 'eHandler'):
+        logger.eHandler.setFormatter(formatter)
+
+def _last_resort_log(message):
+    "funzione chamata quando c'è un errore nel logger"
+    fname = os.path.join(WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
+    with open(fname, "a", encoding='utf8') as f_out:
+        print(message, file=f_out)
 
 def set_file_logger(path):
     "imposta logger su file"
@@ -219,7 +427,7 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # py
 LETTERS = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ'
 
 def byinitial(inlist, key=lambda x: x, remove_empty=True):
-    "Rerturns inlist organized by Initial"
+    "Returns inlist organized by Initial"
 
     byin = {l: [] for l in LETTERS+'~'}
 
@@ -361,116 +569,6 @@ def clean_locks(datadir):
                 lockfile = os.path.join(dpath, name)
                 os.unlink(lockfile)
 
-########################################## Table support
-class FTable(tb.Table):
-    "definizione tabelle con estensioni per rendering HTML"
-    def __init__(self, path, header=None, sortable=()):
-        tb.Table.__init__(self, path, header)
-        self.sortable = [x for x in sortable if x in self.header]
-
-    def render_item_as_form(self, title, form, action,            # pylint: disable=R0913
-                            nrow=0, ignore=(), errors=()):
-        "HTML rendering di un campo per uso in un form"
-        html = [TABLE_HEADER]
-        if title:
-            html.append(f'<h1> {title} </h1>')
-        if errors:
-            html.append("<hr><b><font color=red>Attenzione:</font></b><br />")
-            for err in errors:
-                html.append("&nbsp;&nbsp; - "+err+"<br />")
-            html.append("<hr>")
-        html.append(f'<form method="POST" action="{action}">')
-        if nrow > 0:
-            html.append(f'<b>Record N. {nrow}</b><p>')
-        html.append('<dl>')
-        for fname in self.header[1:]:
-            if fname in ignore:
-                continue
-            val = str(form[fname])
-            html.append(f'<dt> {form[fname].label} <dd> {val}')
-        html.append('</dl>')
-        html.append(str(form['annulla']) + '&nbsp;&nbsp;' + str(form['avanti']))
-        if nrow > 0:
-            html.append('<hr>'+str(form['cancella']))
-        html.append('</form>')
-        return '\n'.join(html)
-
-    def render_item_as_text(self, title, nrow, index=False):
-        "HTML rendering di un campo"
-        html = [TABLE_HEADER]
-        if title:
-            html.append(f'<h1> {title} </h1>')
-        if index:
-            fields = self.header
-        else:
-            fields = self.header[1:]
-        row = self.get_row(nrow, index=index, as_dict=True)
-        html.append(f'<b>Record N. {nrow}</b><p>')
-        html.append('<dl>')
-        for fld in fields:
-            val = row[fld]
-            html.append(f'<dt> {fld} <dd> {val}')
-        html.append('</dl>')
-        return '\n'.join(html)
-
-    def render(self, title=None, menu=(), select_url=(), sort_url=(),      # pylint: disable=R0912,R0913,R0914
-               edit_symb=EDIT_SYMB, index=False, sort_on=1, footer='',
-               select=None, messages=()):
-        "HTML rendering della tabella"
-        def _formrow(row):
-            dname = row[0]
-            ret = f'<tr><td><a href="{select_url[0]}/{dname}">{edit_symb}</a></td><td>'
-            return ret+'</td><td>'.join([str(r) for r in row[1:]])+'</td></tr>'
-        def _fullrow(row):
-            return '<tr><td>'+'</td><td>'.join([str(r) for r in row])+'</td></tr>'
-        def _shortrow(row):
-            return '<tr><td>'+'</td><td>'.join([str(r) for r in row[1:]])+'</td></tr>'
-        def _fmtheader(name):
-            uname = str(name)
-            if uname in self.sortable and sort_url:
-                uname = uname+'&nbsp;&nbsp;<a href='+sort_url[0]+'/'+uname+'>'+sort_url[1]+'</a>'
-            return '<th>'+uname+'</th>'
-
-        html = [TABLE_HEADER]
-        if title:
-            html.append(f'<h1> {title} </h1>')
-        if messages:
-            html.append('<hr>')
-            for msg in messages:
-                html.append(f'<p> {msg} </p>')
-            html.append('<hr>')
-        render_menu = []
-        for mnu in menu:
-            render_menu.append(f'<a href="{mnu[0]}">{mnu[1]}</a>')
-        if render_menu:
-            html.append('&nbsp;|&nbsp'.join(render_menu))
-        if select_url:
-            html.append(f'<hr>{select_url[1]}')
-        if select_url:
-            dorow = _formrow
-            fields = ['&nbsp;'] + self.header[1:]
-        elif index:
-            dorow = _fullrow
-            fields = ['&nbsp;'] + self.header[1:]
-        else:
-            dorow = _shortrow
-            fields = self.header[1:]
-        html.append('<table border=1><tr>'+ \
-                    reduce(lambda x, y: str(x)+_fmtheader(y), fields, '')+'</tr>')
-        self.sort(sort_on)
-        if select:
-            allrows = [x for x in self.rows if select(x)]
-        else:
-            allrows = self.rows
-        for row in allrows:
-            html.append(dorow(row))
-        html.append('</table>')
-        if footer:
-            html.append(f'<center><font size=1>{footer}</font></center>')
-        return '\n'.join(html)
-
-########################################## End table support
-
 def host(url):
     "Estra la porzione 'host' da una URL"
     splt = url.split(':')
@@ -542,21 +640,6 @@ def internal_error(msg=''):
 def thisyear():
     "Riporta l'anno corrente"
     return time.localtime().tm_year
-
-class Matchty:               # pylint: disable=R0903
-    "classe per verificare il corretto tipo di un file"
-    def __init__(self, tlist):
-        def addp(name):
-            "normalizza nome estensione"
-            if name[0] != '.':
-                name = '.'+name
-            return name.lower()
-        self.tlist = [addp(t) for t in tlist]
-
-    def check(self, name):
-        "verifica estensione"
-        ext = os.path.splitext(name)[1]
-        return ext.lower() in self.tlist
 
 def findfiles(basedir, prefix):
     "trova file con prefisso di nome dato"
@@ -651,6 +734,10 @@ def makepdf(destdir, templ_name, pdf_name, debug=False, include="", **data):   #
     ndata = data.copy()
     ndata["headerpath"] = os.path.join(FILEDIR, "header.png")
     ndata["footerpath"] = os.path.join(FILEDIR, "footer.png")
+    ndata["titolo_direttore"] = CONFIG['titolo_direttore']
+    ndata["titolo_direttore_uk"] = CONFIG['titolo_direttore_uk']
+    ndata["nome_direttore"] = CONFIG['nome_direttore']
+    ndata["dir_is_m"] = CONFIG['gender_direttore'].lower() == 'm'
     latex.makepdf(destdir, pdfname, tfile, attach=attach_list, debug=debug, **ndata)
 
 def get_user(userid):
@@ -716,16 +803,6 @@ def init_helplist():
     else:
         GlobLists.HELPLIST = [x[5:-5] for x in flst if _helpfilt.match(x)]
 
-CHARS = string.ascii_letters+string.digits
-def randstr(lng):
-    "Genera stringa casuale di linghezzadata"
-    return ''.join([random.choice(CHARS) for i in range(lng)])
-
-NON_ABILITATO = """
-non sei abilitato all'uso della procedura come "%s".
-Per ottenere l'abilitazione devi rivolgerti all'amministrazione
-"""
-
 def _crypt(username, passw):
     'rimpiazzo di crypt.crypt (deprecato)'
     return base64.b64encode(encrypt(username, passw)).decode('ascii')
@@ -752,16 +829,6 @@ def authenticate(userid, password, ldap_host, ldap_port):            # pylint: d
     if user:
         return True, "Accesso autorizzato"
     return False, NON_ABILITATO%userid
-
-def checkdir():
-    "Verifica esistenza della directory per dati e riporta il path"
-    thedir = DATADIR
-    if not os.path.exists(thedir):
-        print()
-        print(f"Directory {thedir} inesistente")
-        print("\nDevi creare le directory di lavoro\n")
-        sys.exit()
-    return thedir
 
 def makeuser(userid):                         # pylint: disable=R0912,R0915
     "Crea record di utente"
@@ -908,70 +975,6 @@ def namebasedir(anno, num):
 
 IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
 
-class DocList:               # pylint: disable=R0903
-    "definizione lista documenti"
-    def __init__(self, thedir, fname,                        # pylint: disable=R0913
-                 year=None,
-                 directory_filter=lambda x: True,
-                 filename_filter=lambda x: True,
-                 content_filter=lambda x: True,
-                 sort=None,
-                 extract=None):
-        self.years = get_years(thedir)  # Rendi noto quali altri
-        self.years.sort()               # anni sono disponibili
-        if is_year(year):
-            self.year = str(year)
-        else:
-            self.year = str(thisyear())
-        ydir = os.path.join(thedir, self.year)
-        self.records = []
-        self.errors = []
-        try:
-            pdirs = [x for x in os.listdir(ydir) if IS_PRAT_DIR.match(x)]
-        except FileNotFoundError:
-            pdirs = []
-        else:
-            pdirs = [os.path.join(ydir, x) for x in pdirs if directory_filter(x)]
-            pdirs.sort()
-        for pdir in pdirs:
-            fnm = os.path.join(pdir, fname)
-            if filename_filter(fnm):
-                try:
-                    rec = tb.jload(fnm)
-                except tb.TableException:
-                    self.errors.append(fnm)
-                    continue
-                if rec and content_filter(rec):
-                    if extract:
-                        rec = {key:value for key, value in rec.items() if key in extract}
-                    self.records.append(rec)
-        if sort:
-            self.records.sort(key=sort)
-
-    def __len__(self):
-        "metodo standard per lunghezza"
-        return len(self.records)
-
-class PratIterator:
-    "Iteratore sulle pratiche dell'anno specificato"
-    def __init__(self, year=None):
-        if not year:
-            year = thisyear()
-        self.ydir = os.path.join(DATADIR, str(year))
-        self.pratdir = iter(os.listdir(self.ydir))
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        nextdir = self.pratdir.__next__()
-        pratfile = os.path.join(self.ydir, nextdir, "pratica.json")
-        try:
-            prat = tb.jload(pratfile)
-        except tb.TableException:
-            prat = {}
-        return prat
-
 def remove(path, show_error=True):
     "Remove files"
     fullname = tb.getpath(path)
@@ -1015,6 +1018,10 @@ def show64file(filename):
 def protect(fpath):
     "set proper mode bits on given filepath"
     os.chmod(fpath, stat.S_IRUSR+stat.S_IWUSR)
+
+def randstr(lng):
+    "Genera stringa casuale di linghezzadata"
+    return ''.join([random.choice(CHARS) for i in range(lng)])
 
 def makepwfile(ldappw=False):
     "Crea file per password"

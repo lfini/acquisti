@@ -3,7 +3,7 @@
 <tr><td valign=top width=60% bgcolor=#f0f0f0>
 <b>Progetto:</b>
 {% if info.pdf_progetto %}
-   [<a href=/vedifile/progetto.pdf>Vedi</a>]
+   [<a href=/vedifile/progetto.pdf target=_blank>Vedi</a>]
    {% if info.progetto_modificabile %}
       &nbsp;&nbsp;[<a href=/modificaprogetto>Modifica</a>]
    {% endif %}
@@ -13,25 +13,29 @@
    {% if info.progetto_approvabile %}
       &nbsp;&nbsp;[<a href=/approvaprogetto>Approva</a>]
    {% endif %}
+   {% if info.rup_nominabile %}
+      &nbsp;&nbsp;[<a href=/nominarup>Nomina RUP</a>]
+   {% endif %}
+   {% if info.rup_cancellabile %}
+      &nbsp;&nbsp;[<a href=/cancellarup>Rimuovi RUP</a>]
+   {% endif %}
+   {% if info.rich_rup_autorizzabile %}
+      &nbsp;&nbsp;[<a href=/autorizza>Autorizzazione direttore</a>]
+   {% endif %}
+   {% if info.autorizzazione_richiedibile %}
+      &nbsp;&nbsp;[<a href=/rich_autorizzazione>Richiedi autorizzazione al direttore</a>]
+   {% endif %}
 {% else %}
    {% if info.progetto_modificabile %}
       [<a href=/modificaprogetto>Genera</a>]
    {% endif %}
 {% endif %}
 <p>
-<b>Determina </b>[{{ pratica.numero_determina }}]<b>:</b>
-{% if info.pdf_determina %}
-   [<a href=/vedifile/determina.pdf>Vedi</a>]
-   {% if info.det_a_modificabile %}
-      &nbsp;&nbsp;[<a href=/modificadetermina/A>Modifica</a>]
-   {% endif %}
-   {% if info.det_a_cancellabile %}
-      &nbsp;&nbsp;[<a href=/cancelladetermina/A>Cancella</a>]
-   {% endif %}
+<b>Autorizzazione: </b>
+{% if info.pdf_autorizzazione %}
+   [<a href=/vedifile/autorizzazione.pdf>Vedi</a>]
 {% else %}
-   {% if info.det_a_modificabile %}
-      &nbsp;&nbsp;[<a href=/modificadetermina/A>Genera</a>]
-   {% endif %}
+   non ancora pervenuta
 {% endif %}
 <p>
 {% if info.ordine == 1 %}
@@ -49,8 +53,9 @@
 {% endif %}
 <p>
 
-<b>Allegati:</b> {% if pratica.pratica_aperta == 1 %} 
-      &nbsp;&nbsp;[<a href=/verificaallegati/A>Verifica allegati</a>]
+<b>Allegati:</b>
+   {% if info.allegati_mancanti %} 
+   &nbsp;&nbsp;(<font color="red">Mancanti: {{ info.allegati_mancanti }}</font>)
    {% endif %}
 {% if info.attachA %}
 <ul>

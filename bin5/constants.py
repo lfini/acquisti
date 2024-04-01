@@ -88,12 +88,22 @@ LATEX_PATH = "latex_path"
 LDAP_HOST = "ldap_host"
 LDAP_PORT = "ldap_port"
 NOME_WEBMASTER = 'nome_webmaster'
+NOME_DIRETTORE = 'nome_direttore'
 PART_IVA = "part_iva"
 SEDE = 'sede'
 SEDE_IT = 'sede_it'
 SEDE_UK = 'sede_uk'
 SMTP_HOST = 'smtp_host'
-WEBSITE = 'website'                             # config, sede
+TITOLO_DIRETTORE = 'titolo_direttore'
+TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'
+WEBSITE = 'website'
+
+# nomi file generati
+AUTH_PDF_FILE = "autorizzazione.pdf"
+DETA_PDF_FILE = "determina.pdf"
+DETB_PDF_FILE = "determinaB.pdf"
+ORD_PDF_FILE = "ordine.pdf"
+PROG_PDF_FILE = "progetto.pdf"
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
@@ -108,18 +118,16 @@ DATA_ORDINE = 'data_ordine'                     # dati_pratica
 DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
-DETA_PDF_FILE = "determina.pdf"
-DETB_PDF_FILE = "determinaB.pdf"
 DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
-DIRETTORE_M = 'dir_is_m'                        # dati_pratica
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
 EMAIL_RICHIEDENTE = 'email_richiedente'         # dati_pratica
 EMAIL_RUP = 'email_rup'                         # dati_pratica
 FINE_GARA = "fine_gara"                         # dati pratica
 FINE_GARA_GIORNO = "fine_gara_giorno"           # dati pratica
 FINE_GARA_ORE = "fine_gara_ore"                 # dati pratica
-FIRMA_APPROVAZIONE = 'firma_approvazione'       # dati_pratica
+FIRMA_APPROV_RESP = 'firma_approvazione'        # dati_pratica
+FIRMA_AUTORIZZ_DIR = 'firma_autorizzazione'     # dati_pratica
 GIUSTIFICAZIONE = 'giustificazione'             # dati_pratica
 IMPORTO = 'importo'
 IND_FORNITORE = 'ind_fornitore'                 # dati_pratica
@@ -133,8 +141,6 @@ MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
 MOD_ACQUISTO_B = 'modalita_acquisto_b'          # dati_pratica
 MODO_TRASP = 'modo_trasp'
 MOTIVAZIONE_ACQUISTO = 'motivazione_acquisto'   # dati_pratica
-NOME_DIRETTORE = 'nome_direttore'               # dati_pratica, config
-NOME_DIRETTORE_B = 'nome_direttore_b'           # dati_pratica
 NOME_FORNITORE = 'nome_fornitore'               # dati_pratica
 NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
@@ -145,9 +151,9 @@ NUMERO_DETERMINA_B = 'numero_determina_b'       # dati_pratica
 NUMERO_ORDINE = 'numero_ordine'                 # dati_pratica
 NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
 ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
-ORD_PDF_FILE = "ordine.pdf"
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
+PDF_AUTORIZZAZIONE = 'pdf_autorizzazione'       # dati_pratica
 PDF_DETERMINA_A = 'pdf_determina'               # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
 PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
@@ -156,7 +162,6 @@ PRAT_JFILE = 'pratica.json'
 PRATICA_ANNULLATA = 'pratica_annullata'         # dati_pratica
 PRATICA_APERTA = 'pratica_aperta'               # dati_pratica
 PREZZO_GARA = 'prezzo_gara'                     # dati_pratica
-PROG_PDF_FILE = "progetto.pdf"
 ONERI_SIC_GARA = 'oneri_sic_gara'               # dati_pratica
 PROGETTO_INVIATO = 'progetto_inviato'         # dati_pratica
 RUP = 'rup'                                     # dati_pratica
@@ -174,8 +179,6 @@ STR_MOD_ACQ = 'str_mod_acq'                     # dati_pratica
 STR_ONERI_IT = 'str_oneri_it'                   # dati_pratica
 STR_ONERI_UK = 'str_oneri_uk'                   # dati_pratica
 STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
-TITOLO_DIRETTORE = 'titolo_direttore'           # dati_pratica, config
-TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'     # dati_pratica, config
 VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica
 VERSIONE = 'versione'                           # dati_pratica
@@ -223,6 +226,8 @@ ALLEGATO_GENERICO_A = "allegato_gen_a"
 ALLEGATO_GENERICO_B = "allegato_gen_b"
 ALLEGATO_CIG = "all_cig"
 CAPITOLATO_RDO = 'capit_rdo'
+CV_RUP = 'cv_rup'
+DICH_RUP = 'dich_rup'
 LETT_INVITO_A = 'lett_invito_a'
 LETT_INVITO_B = 'lett_invito_b'
 LETT_INVITO_MEPA = 'lett_invito_mepa'
@@ -248,6 +253,8 @@ TAB_ALLEGATI = {ALLEGATO_GENERICO_A: ("A99_", "Allegato generico", ALL_NAME),
                 ALLEGATO_GENERICO_B: ("B99_", "Allegato generico", ALL_NAME),
                 ALLEGATO_CIG: ("A88_CIG_Prat.", "CIG", ALL_PRAT),
                 CAPITOLATO_RDO: ('A07_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
+                CV_RUP: ('A02_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
+                DICH_RUP: ('A03_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
                 DOCUM_STIPULA: ("A09_Documento_di_stipula",
                                 "Documento di stipula su MEPA", ALL_SING),
                 LETT_INVITO_A: ('A06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
@@ -268,17 +275,6 @@ TAB_ALLEGATI = {ALLEGATO_GENERICO_A: ("A99_", "Allegato generico", ALL_NAME),
 ################################################### Varie stringhe
 ACCESSO_NON_PREVISTO = "Sequenza di accesso non prevista. URL: "
 
-#APPROV_EMAIL_RESPINTA_OGGETTO = "Approvazione per e-mail respinta"
-
-#APPROV_EMAIL_RESPINTA = """
-#L'approvazione della richiesta di cui alla pratica numero %(numero_pratica)s
-#
-#   %(descrizione_acquisto)s
-#
-#è stata ricevuta per e-mail, ma è stata respinta perché la pratica
-#nel frattempo è stata  modificata
-#"""
-
 DETTAGLIO_PRATICA = """
 
 -----------------------------------------
@@ -296,19 +292,15 @@ Motivazione:
 Importo: {str_costo_it}
 """
 
-HEADER_NOTIFICA_RESPONSABILE_WEB = """
-L'approvazione del progetto di acquisto N. {numero_pratica} è stata
-registrata.
-"""
+MESSAGGIO_DI_PROVA = '''
+Invio messaggio di prova per verifica funzionamento del server.
 
-HEADER_NOTIFICA_RESPONSABILE_EMAIL = """
-L'approvazione del progetto di acquisto N. {numero_pratica} è stata
-ricevuta per e-mail e registrata.
-"""
+Messaggio inviato all'indirizzo corrispondente al Webmaster
+tramite {}
+'''
+
 OBBLIGATORIO = """<font color=red><b>N.B.:</b> Tutti i campi sottolineati
 sono obbligatori e devono essere specificati</font>"""
-
-OPER_SOLO_AMMINISTRAZIONE = "Operazione consentita solo all'Amministrazione"
 
 TABLE_HEADER = """<!DOCTYPE html>
 <html>
@@ -319,12 +311,11 @@ TABLE_HEADER = """<!DOCTYPE html>
 """
 
 TESTO_APPROVAZIONE = """
-Ti è stata inviato il progetto di acquisto N. {numero_pratica} per approvazione.
-(vedi dettagli sotto).
+Ti è stato inviato il progetto di acquisto N. {} (vedi dettagli sotto).
 
-Per approvarla puoi accedere alla procedura per la gestione degli ordini:
+Per approvarlo puoi accedere alla procedura Acquisti:
 
-     %s
+     {}
 
 e selezionare: Elenco pratiche aperte (come resp. fondi)
 """
@@ -336,6 +327,27 @@ Il progetto di acquisto N. {numero_pratica}:
 
 è stato approvato dal responsabile dei fondi.
 """
+
+TESTO_NOMINA_RUP = '''
+Sei stato nominato RUP per la pratica N. {} (vedi dettagli sotto).
+
+Sei pregato di accedere alla procedura Acquisti
+
+      {}
+
+per gli adempimenti del caso
+'''
+
+TESTO_RICHIESTA_AUTORIZZAZIONE = '''
+{nome_rup} in qualità di RUP del progetto di acquisto N. {numero_pratica}
+chieda l'autorizzazione del direttore.
+
+Per autorizzarlo puoi accedere alla procedura Acquisti:
+
+     {url}
+
+e selezionare: Elenco pratiche aperte (come Direttore)
+'''
 
 BINDIR = os.path.dirname(os.path.abspath(__file__))  # Path della directory eseguibili
 PKG_ROOT = os.path.abspath(os.path.join(BINDIR, ".."))  # Path della root del package

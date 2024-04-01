@@ -16,11 +16,12 @@ Supporto per l'invio di messaggi e-mail con vari metodi
 """
 
 import sys
-import pickle
+import json
 import os.path
 import smtplib
 from email.mime.text import MIMEText
 import base64
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -30,19 +31,21 @@ from constants import DATADIR
 class EmailError(Exception):
     "Errori da email"
 
-TOKEN_FILE = os.path.join(DATADIR, "GMailToken.pkl")
+TOKEN_FILE = os.path.join(DATADIR, "GMailToken.json")
 CREDS_FILE = os.path.join(DATADIR, "credentials.json")
 
 
 ############################################################### Codice per uso di GMail API
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+# Nota: quando si cambia questa linea, occorre cancellare il file GMailToken.json,
+#       e rigenerarlo lanciando questa procedura in modo tst con messaggio inviato
+#       via GMail
 
 def get_credentials():
     "Riporta (o genera) il file per credenziali API di GMail"
     creds = None
     if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, 'rb') as token:
-            creds = pickle.load(token)
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
     # Se il file di credenziali non esiste, deve essere generato
     # lanciando questa procedura da linea di comando
     if not creds or not creds.valid:
@@ -55,8 +58,8 @@ def get_credentials():
                 raise EmailError("Manca il file di credenziali per GMail API (%s)"%CREDS_FILE)
             flow = InstalledAppFlow.from_client_secrets_file(CREDS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, 'wb') as token:      # Salva le credenziali
-            pickle.dump(creds, token)
+        with open(TOKEN_FILE, 'w') as token:      # Salva le credenziali
+            token.write(creds.to_json())
     return creds
 
 def _send_via_gmail(message):

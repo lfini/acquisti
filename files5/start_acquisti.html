@@ -9,7 +9,7 @@
 <!-- template: start_acquisti.html  Vers. 5.0 -->
 
 {% from "_common.html" import start_page, end_page %}
-{{ start_page("",sede.sede_it,"Gestione acquisti") }}
+{{ start_page(sede.sede_it,"Gestione acquisti") }}
 <tr><td>
 <b>Utente:<i> {{ user.name }} {{ user.surname }}</i> </b> &nbsp;&nbsp;&nbsp; &rightarrow; <a href=/clearsession>Logout</a>
 </td></tr>
@@ -18,12 +18,18 @@
 <li><b> <a href=/modificaprogetto>Nuovo progetto di acquisto</a></b>
 <p>
 <li><b> <a href=/pratiche/RIC_A/0/0>Elenco pratiche aperte, come richiedente</a> </b>
-<li><b> <a href=/pratiche/RES_A/0/0>Elenco pratiche da approvare, come resp. fondi</a></b>
-<li><b> <a href=/pratiche/RUP_A/0/0>Elenco pratiche come RUP</a></b>
+<li><b> <a href=/pratiche/RES_0/0/0>Elenco pratiche da approvare, come resp. fondi</a></b>
+<li><b> <a href=/pratiche/RUP_A/0/0>Elenco pratiche aperte come RUP</a></b>
+{% if status.direttore %}
+<li><b> <a href=/pratiche/DIR_0/0/0>Elenco pratiche da approvare come Direttore</a></b>
+{% endif %}
 <p>
 <li> <a href=/pratiche/RIC_C/0/0>Rivedi pratiche chiuse, come richiedente</a>
-<li> <a href=/pratiche/RES_C/0/0>Rivedi pratiche approvate e chiuse, come resp. fondi</a>
+<li> <a href=/pratiche/RES_1/0/0>Rivedi pratiche approvate, come resp. fondi</a>
 <li> <a href=/pratiche/RUP_C/0/0>Rivedi pratiche chiuse, come RUP</a>
+{% if status.direttore %}
+<li> <a href=/pratiche/DIR_1/0/0>Rivedi pratiche approvate, come Direttore</a>
+{% endif %}
 {# <li> <a href=/user>Dati personali</a></h4> #}
 </td></tr>
 

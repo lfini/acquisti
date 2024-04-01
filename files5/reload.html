@@ -8,7 +8,7 @@
 <!-- template: reload.html v. 5.0 -->
 {% from "_common.html" import start_page, end_page %}
 {% if error %}
-{{ start_page("",sede.sede_it,"Errore operazione reload",error) }}
+{{ start_page(sede.sede_it,"Errore operazione reload",error) }}
 {% else %}
 {{ start_page("Operazione reload effettuata") }}
 {% endif %}

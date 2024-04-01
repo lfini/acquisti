@@ -30,8 +30,10 @@ LDAP_HOST_DESC = """Indirizzo del server LDAP per autenticazione utenti
 SMTP_HOST_DESC = """Indirizzo IP del server SMTP
 Indirizzo del server SMTP utilizzato dalla procedura
 per inviare i messaggi automatici [es: smtp.arcetri.astro.it]
-(usare "-" se si utilizza GMail API per  l'invio di messaggi.
-altrimenti usare un indirizzo e-mail valido per il server SMTP)
+************************************************************************
+NOTA: specificare "-" se si utilizza GMail API per  l'invio di messaggi.
+      altrimenti usare un indirizzo IP valido per il server SMTP)
+************************************************************************
 """
 
 LATEX_PATH_DESC = """Directory di installazione di pdflatex
@@ -52,6 +54,11 @@ TITOLO_DIRETTORE_UK_DESC = """Titolo del direttore per ordini in inglese
 """
 
 EMAIL_DIRETTORE_DESC = """Indirizzo e-mail del direttore
+
+****************************************************************
+NOTA: è *necessario* usare lo stesso indirizzo email specificato
+nella lista degli utenti della procedura.
+****************************************************************
 [es: luca.fini@inaf.it]
 """
 

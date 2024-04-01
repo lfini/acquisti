@@ -431,7 +431,6 @@ def _jload(name, nofile=None):
         ret = nofile
     return ret
 
-
 def jload(path, nofile=None):
     'Returns "nofile" if file cannot be read'
     name = getpath(path)
@@ -455,7 +454,6 @@ def jsave(path, data, lockinfo=None):
     finally:
         fpath = _junlock(path)
         os.chmod(fpath, 0o600)
-
 
 def jsave_b64(ppath, theobj):
     "base64 encoding of dict saved to jfile"

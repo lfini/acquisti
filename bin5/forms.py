@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 from constants import *   #pylint: disable=W0401
 
-__version__ = "2.1"
-__date__ = "30/11/2020"
+__version__ = "2.2"
+__date__ = "01/04/2024"
 __author__ = "Luca Fini"
 
 def radio_widget(field, **kwargs):
@@ -254,6 +254,19 @@ class MyLoginForm(FormWErrors):
     def password_ok(self):
         "Verifica password"
         return ft.authenticate(self._us, self._pw, self._ldap_host, self._ldap_port)
+
+class NominaRUP(FormWErrors):
+    'Form per nomina RUP'
+    email_rup = MySelectField('', True, [])
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+
+    def renderme(self):
+        "rendering del form"
+        html = B_TRTD+render_field(self.email_rup, size=15)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
+
 
 class ProgettoAcquisto(FormWErrors):
     "Form per richiesta acquisto"
