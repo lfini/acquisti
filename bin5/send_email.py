@@ -3,28 +3,28 @@ Supporto per l'invio di messaggi e-mail con vari metodi
 
 1. Uso per test del mailserver non autenticato:
 
-    python send_mail.py -n <mailserver> <indirizzo destinatario>
+    python send_mail.py [-t attach.pdf] -n <mailserver> <indirizzo destinatario>
 
 2. Uso per test del mailserver con autenticazione
 
-    python send_mail.py -a <mailserver> <user-id> <passwd> <indirizzo destinatario>
+    python send_mail.py [-t attach.pdf] -a <mailserver> <user-id> <passwd> <indirizzo destinatario>
 
 3. Uso per test e generazione del token per API GMail:
 
-    python send_mail.py -g <indirizzo destinatario>
+    python send_mail.py [-t attach.pdf] -g <indirizzo destinatario>
 
 """
 
 import sys
-import json
 import os.path
 import smtplib
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 import base64
+import getopt
 from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 from constants import DATADIR
 
@@ -55,10 +55,10 @@ def get_credentials():
             if __name__ != "__main__":
                 raise EmailError("Non è stato generato il token per GMail API")
             if not os.path.exists(CREDS_FILE):
-                raise EmailError("Manca il file di credenziali per GMail API (%s)"%CREDS_FILE)
+                raise EmailError(f"Manca il file di credenziali per GMail API ({CREDS_FILE})")
             flow = InstalledAppFlow.from_client_secrets_file(CREDS_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, 'w') as token:      # Salva le credenziali
+        with open(TOKEN_FILE, 'w', encoding='utf8') as token:      # Salva le credenziali
             token.write(creds.to_json())
     return creds
 
@@ -82,23 +82,24 @@ def _send_smtp(mailhost, auth, sender, dest, msg):
             smtp.login(auth[0], auth[1])
         smtp.sendmail(sender, dest, msg.as_string())
     except Exception as excp:
-        raise EmailError("[SMTP] "+str(excp))
+        raise EmailError("[SMTP]") from excp
     smtp.close()
 
-def send(mailhost, auth, sender, recipients, subj, message):     # pylint: disable=R0913
-    "Invia messaggio e-mail"
-    try:
-        msg = MIMEText(message.encode('utf8'), 'plain', 'utf8')
-        msg['to'] = ', '.join(recipients)
-        msg['subject'] = subj
-        msg['from'] = sender
-    except Exception as excp:
-        errmsg = str(excp)+" [Recip.:%s]"%",".join(recipients)
-        raise EmailError(errmsg)
+def send(mailhost, auth, sender, recipients, subj, message, attach=None):     # pylint: disable=R0913
+    'composizione ed invio messaggio'
+    emsg = EmailMessage()
+    emsg['to'] = ', '.join(recipients)
+    emsg['subject'] = subj
+    emsg['from'] = sender
+    emsg.set_content(message)
+    if attach:
+        pdfpath, pdfname = attach
+        with open(pdfpath, 'rb') as pdf:
+            emsg.add_attachment(pdf.read(), maintype='application', subtype='pdf', filename=pdfname)
     if mailhost:
-        _send_smtp(mailhost, auth, sender, recipients, msg)
+        _send_smtp(mailhost, auth, sender, recipients, emsg)
     else:
-        _send_via_gmail(msg)
+        _send_via_gmail(emsg)
 
 GMAIL_MESSAGE = """
 In seguito all'invio del messaggio è stato anche generato il
@@ -114,26 +115,55 @@ SUBJECT = "Messaggio di prova"
 
 SENDER = "test.acquisti@inaf.it"
 
-def main():
+ARGERR = 'Errore argomenti. Usa -h per aiuto'
+
+def main():           #pylint: disable=R0912
     "Uso diretto per attivazione token GMail e test"
-    if "-g" in sys.argv and len(sys.argv) == 3:
-        dest = sys.argv[2]
-        print("Invio messaggio di prova tramite GMail a: %s"%dest)
-        send("", None, SENDER, [dest], SUBJECT, GMAIL_MESSAGE)
+    if '-h' in sys.argv:
+        print(__doc__)
         sys.exit()
-    if "-n" in sys.argv and len(sys.argv) == 4:
-        dest = sys.argv[3]
-        mailserv = sys.argv[2]
-        print("Invio messaggio di prova tramite server %s a: %s"%(mailserv, dest))
-        send(mailserv, None, SENDER, [dest], SUBJECT, SMTP_MESSAGE%mailserv)
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'gnat:')
+    except getopt.error:
+        print(ARGERR)
         sys.exit()
-    if "-a" in sys.argv and len(sys.argv) == 6:
-        dest = sys.argv[5]
-        mailserv = sys.argv[2]
-        auth = (sys.argv[3], sys.argv[4])
-        print("Invio messaggio di prova tramite server %s a: %s"%(mailserv, dest))
-        send(mailserv, auth, SENDER, [dest], SUBJECT, SMTP_MESSAGE%mailserv)
-        sys.exit()
+    attach = None
+    oper = 0
+    for (opt, val) in opts:
+        if opt == "-g":
+            if len(args) == 1:
+                dest = args[0]
+                oper = 1
+            else:
+                print(ARGERR)
+                sys.exit()
+        elif opt == "-n":
+            if len(args) == 2:
+                dest, mailserv = args
+                oper = 2
+        elif opt ==  "-a":
+            if len(args) == 4:
+                dest, mailserv = args[:2]
+                auth = args[2:]
+                oper = 3
+        elif opt == "-t":
+            filepath = val
+            filename = os.path.basename(val)
+            attach = (filepath, filename)
+
+    if oper == 1:
+        print("Invio messaggio di prova tramite GMail a:", dest)
+        send("", None, SENDER, [dest], SUBJECT, GMAIL_MESSAGE, attach)
+    elif oper == 2:
+        print(f"Invio messaggio di prova tramite server {mailserv} a: ", dest)
+        send(mailserv, None, SENDER, [dest], SUBJECT, SMTP_MESSAGE%mailserv, attach)
+    elif oper == 3:
+        print(f"Invio messaggio di prova tramite server {mailserv} a: ", dest)
+        send(mailserv, auth, SENDER, [dest], SUBJECT, SMTP_MESSAGE%mailserv, attach)
+    else:
+        print(ARGERR)
+    sys.exit()
+
     print(__doc__)
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 <tr><td valign=top width=60% bgcolor=#f0f0f0>
 <b>Progetto:</b>
 {% if info.pdf_progetto %}
-   [<a href=/vedifile/progetto.pdf target=_blank>Vedi</a>]
+[<a href="/vedifile/progetto.pdf" target="_blank">Vedi</a>]
    {% if info.progetto_modificabile %}
       &nbsp;&nbsp;[<a href=/modificaprogetto>Modifica</a>]
    {% endif %}
@@ -14,15 +14,15 @@
       &nbsp;&nbsp;[<a href=/approvaprogetto>Approva</a>]
    {% endif %}
    {% if info.rup_nominabile %}
-      &nbsp;&nbsp;[<a href=/nominarup>Nomina RUP</a>]
+      &nbsp;&nbsp;[<a href=/nominarup>Indicazione RUP</a>]
    {% endif %}
    {% if info.rup_cancellabile %}
-      &nbsp;&nbsp;[<a href=/cancellarup>Rimuovi RUP</a>]
+      &nbsp;&nbsp;[<a href=/rimuovirup>Rimuovi RUP</a>]
    {% endif %}
    {% if info.rich_rup_autorizzabile %}
       &nbsp;&nbsp;[<a href=/autorizza>Autorizzazione direttore</a>]
    {% endif %}
-   {% if info.autorizzazione_richiedibile %}
+   {% if info.autorizz_richiedibile %}
       &nbsp;&nbsp;[<a href=/rich_autorizzazione>Richiedi autorizzazione al direttore</a>]
    {% endif %}
 {% else %}
@@ -31,13 +31,28 @@
    {% endif %}
 {% endif %}
 <p>
-<b>Autorizzazione: </b>
-{% if info.pdf_autorizzazione %}
-   [<a href=/vedifile/autorizzazione.pdf>Vedi</a>]
-{% else %}
-   non ancora pervenuta
+{% if info.pdf_nominarup %}
+<b>Nomina RUP: </b>
+   [<a href=/vedifile/nominarup.pdf>Vedi</a>]
 {% endif %}
 <p>
+<b>Determina: </b>
+{% if info.pdf_determina_a %}
+  [<a href=/vedifile/determina_a.pdf>Vedi</a>]
+  {% if info.det_a_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificadetermina_a>Modifica</a>]
+  {% endif %}
+  {% if info.det_a_cancellabile %}
+      &nbsp;&nbsp;[<a href=/cancelladetermina_a>Cancella</a>]
+  {% endif %}
+  {% if info.det_a_inviabile %}
+      &nbsp;&nbsp;[<a href=/inviadetermina>Invia al Direttore</a>]
+  {% endif %}
+{% else %}
+  {% if info.det_a_modificabile %}
+      [<a href=/modificadetermina_a>Genera</a>]
+  {% endif %}
+{% endif %}
 {% if info.ordine == 1 %}
 <b>Ordine:</b>
    {% if info.pdf_ordine %}
@@ -68,7 +83,7 @@
 {% endif %}
 
 <p>
-{% if pratica.pratica_aperta==1 %}
+{% if pratica.pratica_aperta %}
 </td><td valign=top width=40% bgcolor=#ffddaa>
 <form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
 <b> Allega documenti</b>

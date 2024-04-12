@@ -403,7 +403,7 @@ Ritorno: -1 (errore LDAP), 0 id/pw non validi, 1 id/pw validi"""
         return 1
     return 0
 
-def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # pylint: disable=R0913
+def send_email(mailhost, sender, recipients, subj, body, attach=None, debug_addr=''):    # pylint: disable=R0913
     "Invio messaggio e-mail"
     if debug_addr:
         warning = f"MODO DEBUG - destinatari originali: {', '.join(recipients)}\n\n"
@@ -417,7 +417,7 @@ def send_email(mailhost, sender, recipients, subj, body, debug_addr=''):    # py
     if mailhost.strip() == "-":
         mailhost = None
     try:
-        sm.send(mailhost, None, sender, dest, subjd, message)
+        sm.send(mailhost, None, sender, dest, subjd, message, attach)
     except Exception as excp:
         errmsg = f"Mail to: {', '.join(recipients)} - "+str(excp)
         logging.error(errmsg)
@@ -621,9 +621,9 @@ def date_to_time(date):
         ret = time.mktime(tstruc)
     return ret
 
-NUMB_RE = re.compile("\\d+(,\\d+)?$")
+NUMB_RE = re.compile("\\d+(,\\d{2})?$")
 def is_number(number):
-    "Verifica che il campo sia un numero nella forma: 111[,222]"
+    "Verifica che il campo sia un numero nella forma: 111[,22]"
     try:
         isnumb = NUMB_RE.match(number)
     except Exception:
@@ -697,10 +697,10 @@ def swapname(name):
         ret = name
     return ret
 
-def modello_determinaa(mod_acquisto):                  # pylint: disable=R0911
-    "Stabilisce il template per la determina, fase A"
+def modello_determina_a(mod_acquisto):                  # pylint: disable=R0911
+    "Stabilisce il template per la determina di aggiudicamento"
     if mod_acquisto == TRATT_MEPA_40:
-        return "determina_mepa"
+        return "determina_a"
 #   if mod_acquisto == INFER_5000:
 #       return "determina_inf5000"
 #   if mod_acquisto == INFER_1000:
@@ -775,7 +775,7 @@ def update_userlist():
         _read_userlist()
 
 def _read_codflist():
-    "Legge la lista dei codici fondo"
+    "Legge la lista dei codici Fu.Ob."
     GlobLists.CODFLIST = FTable((DATADIR, 'codf.json'))
     if GlobLists.CODFLIST.empty():
         logging.warning("Errore lettura lista codici fondi: %s", GlobLists.CODFLIST.filename)
@@ -783,10 +783,10 @@ def _read_codflist():
     resp_em = GlobLists.CODFLIST.column(4)
     resp_names = [_fullname(x) for x in resp_em]
     GlobLists.CODFLIST.add_column(1, 'nome_Responsabile', column=resp_names)
-    logging.info("Lista Codici fondo aggiornata")
+    logging.info("Lista Codici Fu.Ob. aggiornata")
 
 def update_codflist():
-    "Aggiorna la lista dei codici fondo"
+    "Aggiorna la lista dei codici Fu.Ob."
     if not GlobLists.CODFLIST:
         _read_codflist()
         return
@@ -810,6 +810,10 @@ def _crypt(username, passw):
 def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
+    if user.get('pw') != '-':
+        if _crypt(password, userid) == user['pw']:
+            logging.info('autenticazione locale OK')
+            return True, "Accesso autorizzato"
     auth_ok = False
     ret = ldap_authenticate(userid, password, ldap_host, ldap_port)
     if ret < 0:
@@ -820,10 +824,6 @@ def authenticate(userid, password, ldap_host, ldap_port):            # pylint: d
     if not auth_ok:
         auth_ok = PAM_AUTH(userid, password)
         logging.info('autenticazione PAM OK')
-    if not auth_ok and 'pw' in user:
-        if _crypt(password, userid) == user['pw']:
-            auth_ok = True
-            logging.info('autenticazione locale OK')
     if not auth_ok:
         return False, "ID/password errati"
     if user:

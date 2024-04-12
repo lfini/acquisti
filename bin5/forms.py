@@ -7,11 +7,22 @@ import flask as fk
 from markupsafe import Markup
 
 import ftools as ft
-from constants import *   #pylint: disable=W0401
+import constants as cs
 
 __version__ = "2.2"
 __date__ = "01/04/2024"
 __author__ = "Luca Fini"
+
+class DEBUG:             #pylint: disable=R0903
+    'debug flag'
+    enable = False
+
+def debug_enable(enable=True):
+    'abilita/disabilita printout di debug'
+    DEBUG.enable = enable
+
+def _debug(*f):
+    print('DBG FORMS>', *f)
 
 def radio_widget(field, **kwargs):
     "La mia versione del RadioWidget"
@@ -37,15 +48,15 @@ def popup(url, text, size=(700, 500)):
     return f'<a href="{url}"  onclick="window.open(\'{url}\', \'newwindow\', \'width={size[0]}, '\
            f'height={size[1]}, scrollbars=yes\'); return false;">{text}</a>'
 
-def render_field(field, oneline=False, **kw):
+def render_field(field, sameline=False, **kw):
     "Rendering di un campo"
     if field.help_spec:
         help_url = Markup(f'/files/{field.help_spec}')
         hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
     else:
         hlink = ''
-    if oneline:
-        sep = "&nbsp;"
+    if sameline:
+        sep = "&nbsp;&nbsp;&nbsp;"
     else:
         sep = "<br />"
     if field.is_required:
@@ -57,13 +68,6 @@ def render_field(field, oneline=False, **kw):
     else:
         ret = Markup(field(**kw))
     return lab+ret
-
-def nota_debug(modi, debug):
-    'introduce nota di Debug'
-    if debug:
-        text = ','.join(modi)
-        return f'<font size=1> solo per {text}<br></font>'
-    return ''
 
 B_TRTD = Markup('<tr><td>')
 E_TRTD = Markup('</td></tr>')
@@ -131,9 +135,10 @@ class MyAttachField(wt.Field):
         self.choices = choices             #pylint: disable=W0201
 
     def __call__(self, **_unused):
+        "rendering del form"
         ret = "<table><tr>"
         for atch in self.choices:
-            if atch[2] == ALL_SPEC:
+            if atch[2] == cs.ALL_SPEC:
                 spec = (atch[0], atch[1], "&nbsp;(<input type=text name=sigla_ditta size=5>)")
             else:
                 spec = (atch[0], atch[1], "&nbsp;")
@@ -149,11 +154,9 @@ class MyFormField(wt.FormField):
         self.is_required = required
         self.a_label = label
 
-    def __call__(self, **kw):
-        return render_field(self, **kw)
-
     def validate(self, *_unused):
         "Validazione modificata"
+        _debug('MyFormField.validate')
         if not self.form.validate():
             self.errlist.extend(self.form.errlist)
         return len(self.errlist) == 0
@@ -167,7 +170,8 @@ class MyFieldList(wt.FieldList):
         self.is_required = required
         self.a_label = label
 
-    def __call__(self, **kw):
+    def renderme(self, **kw):
+        "rendering del form"
         for item in self:
             return render_field(item, **kw)
 
@@ -191,43 +195,82 @@ class MyUpload(FormWErrors):
         super().__init__(*p, **kw)
         self.tipo_allegato.set(choices)
 
-class ImportoPiuIva(FormWErrors):
+class ImportoPiuIva(wt.Form):
     "Form per importo più I.V.A."
-    importo = wt.StringField("Importo", [wt.validators.Optional()])
-    valuta = wt.SelectField("Valuta", choices=MENU_VALUTA)
-    iva = wt.SelectField("Iva", choices=MENU_IVA)
-    iva_free = wt.StringField("", [wt.validators.Optional()])
+    importo = wt.StringField(render_kw={'size': 8})
+    iva = wt.StringField(render_kw={'size': 2})
+    descrizione = wt.StringField("", render_kw={'size': 30})
+
+    def __init__(self, *pargs, **kwargs):
+        super().__init__(*pargs, **kwargs)
+
+    def __call__(self, **_unused):
+        "Rendering del form"
+        ret = Markup('<td>')+self.descrizione()+Markup('</td><td align=right>')+ \
+              self.importo()+Markup('&nbsp;</td><td align=right>')+self.iva()+Markup('&nbsp;</td>')
+        return ret
 
     def validate(self, *_unused1, **_unused2):
         "Validazione dati"
-        if not ft.is_number(self.importo.data):
-            self.errlist.append("errore specifica importo")
-        return len(self.errlist) == 0
+        if self.importo.data:    # campo importo specificato
+            try:
+                self.importo.data = f'{float(self.importo.data):.2f}'
+            except ValueError:
+                return False
+        else:                    # Campo importo bianco
+            if self.iva.data:
+                return False
+            return True
+        if self.iva.data:        # campo IVA specificato
+            try:
+                self.iva.data = f'{int(self.iva.data)}'
+            except ValueError:
+                return False
+        return True
+
+class Costo(FormWErrors):
+    "Form per costo del bene"
+    valuta = wt.SelectField("Valuta", choices=cs.MENU_VALUTA)
+    voce_1 = wt.FormField(ImportoPiuIva)
+    voce_2 = wt.FormField(ImportoPiuIva)
+    voce_3 = wt.FormField(ImportoPiuIva)
+    voce_4 = wt.FormField(ImportoPiuIva)
+    voce_5 = wt.FormField(ImportoPiuIva)
+
+    def __init__(self, *pargs, **kwargs):
+        super().__init__(*pargs, **kwargs)
+        self.v_importo = 0
+        self.v_iva = 0
+        self.v_totale = 0
 
     def renderme(self, **_unused):
         "Rendering del form"
-        return Markup(self.importo(size=8)+self.valuta()+self.iva()+self.iva_free())
-
-class CostoPiuTrasporto(FormWErrors):
-    "Form per costo+trasporto"
-    costo = wt.FormField(ImportoPiuIva)
-    modo_trasp = wt.SelectField('', choices=MENU_TRASPORTO)
-    costo_trasporto = wt.FormField(ImportoPiuIva)
+        ret = Markup('&nbsp;&nbsp; Valuta: ')+self.valuta()+Markup('\n<table>')
+        ret += Markup('<r><td> &nbsp; </td><td align=center>Descrizione</td>')
+        ret += Markup('<td align=center> Importo </td><td align=center> I.V.A. % </td></tr>\n')
+        ret += Markup('<tr><td>voce&nbsp;1:</td>')+self.voce_1.form()+Markup('</tr>\n')
+        ret += Markup('<tr><td>voce&nbsp;2:</td>')+self.voce_2.form()+Markup('</tr>\n')
+        ret += Markup('<tr><td>voce&nbsp;3:</td>')+self.voce_3.form()+Markup('</tr>\n')
+        ret += Markup('<tr><td>voce&nbsp;4:</td>')+self.voce_4.form()+Markup('</tr>\n')
+        ret += Markup('<tr><td>voce&nbsp;5:</td>')+self.voce_5.form()+Markup('</tr>\n')
+        ret += Markup('</table>\n')
+#       ret += Markup('<tr><td>')+Markup(f'<b>Totale<b></td><td><b>{self.totale:.2f}</b></td></tr>')
+        return ret
 
     def validate(self, *_unused1, **_unused2):
         "Validazione del form"
-        self.costo.form.validate()
-        self.errlist.extend(self.costo.form.errlist)
-        if self.modo_trasp.data == "spec" and not self.costo_trasporto.validate(self):
-            self.errlist.append("errore spese di trasporto")
+        self.errlist = []
+        if not self.voce_1.validate(self):
+            self.errlist.append('Errore alla voce 1')
+        if not self.voce_2.validate(self):
+            self.errlist.append('Errore alla voce 2')
+        if not self.voce_3.validate(self):
+            self.errlist.append('Errore alla voce 3')
+        if not self.voce_4.validate(self):
+            self.errlist.append('Errore alla voce 4')
+        if not self.voce_5.validate(self):
+            self.errlist.append('Errore alla voce 5')
         return len(self.errlist) == 0
-
-    def renderme(self, **_unused):
-        "Rendering del form"
-        ret = Markup("&nbsp;&nbsp;&nbsp;&nbsp;Importo: ")+self.costo.renderme()+BRK
-        ret += Markup("Trasporto: ")+self.modo_trasp()+BRK
-        ret += Markup("&nbsp;&nbsp;&nbsp;&nbsp")+self.costo_trasporto.renderme()
-        return ret
 
 class MyLoginForm(FormWErrors):
     "Form per login"
@@ -261,12 +304,11 @@ class NominaRUP(FormWErrors):
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def renderme(self):
+    def __call__(self):
         "rendering del form"
         html = B_TRTD+render_field(self.email_rup, size=15)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
-
 
 class ProgettoAcquisto(FormWErrors):
     "Form per richiesta acquisto"
@@ -276,20 +318,22 @@ class ProgettoAcquisto(FormWErrors):
                                          '(Solo se diversa dalla precedente)', False)
     motivazione_acquisto = MyTextAreaField('Motivazione acquisto', True)
     lista_codf = MySelectMultipleField('Codice Fondo', True,
-                                       [wt.validators.InputRequired("Manca codice fondo")])
+                                       [wt.validators.InputRequired("Manca codice Fu.Ob.")])
     email_responsabile = MySelectField('Responsabile', True,
                                        [wt.validators.InputRequired("Manca responsabile acquisto")])
     modalita_acquisto = MyRadioField('Modalit&agrave; di acquisto', True,
-                                     choices=MENU_MOD_ACQ,
+                                     choices=cs.MENU_MOD_ACQ,
                                      widget=radio_widget)
     criterio_assegnazione = MyRadioField("Criterio di assegnazione", True,
-                                         choices=MENU_CRIT_ASS,
+                                         choices=cs.MENU_CRIT_ASS,
                                          widget=radio_widget)
     giustificazione = MyTextAreaField('Giustificazione procedura', True)
-    nome_fornitore = MyTextField('Denominazione fornitore', True)
-    ind_fornitore = MyTextField('Indirizzo fornitore', True)
+    fornitore_nome = MyTextField('Denominazione fornitore', True)
+    fornitore_sede = MyTextField('Indirizzo fornitore', True)
+    fornitore_codfisc = MyTextField('Codice Fiscale', True)
+    fornitore_partiva = MyTextField('Partita Iva', True)
     rif_offerta = MyTextField('Riferimento offerta', True)
-    costo = MyFormField(CostoPiuTrasporto, "Costo presunto", True)
+    costo = MyFormField(Costo, 'Costo del bene', True)
     oneri_sicurezza = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
     newform = wt.HiddenField()
 
@@ -297,42 +341,9 @@ class ProgettoAcquisto(FormWErrors):
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def validate(self, extra_validators=None):                                   #pylint: disable=R0912
-        if not ft.date_to_time(self.data_richiesta.data):
-            self.errlist.append("Errore specifica data")
-        if not self.descrizione_acquisto.data:
-            self.errlist.append("Manca descrizione acquisto")
-        if not self.motivazione_acquisto.data:
-            self.errlist.append("Manca motivazione acquisto")
-#       if not self.rif_offerta.data:
-#           self.errlist.append("Manca il riferimento all'offerta")
-        if not self.lista_codf.data:
-            self.errlist.append("Manca codice fondo")
-        if not self.email_responsabile.data:
-            self.errlist.append("Manca responsabile acquisto")
-        if not self.modalita_acquisto.data:
-            self.errlist.append("Specificare modalit&agrave; di acquisto")
-#       if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_5000:
-#           self.errlist.append('Manca giustificazione per '\
-#                               'affidamento diretto ed importo sup. a 5000 €')
-#       if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_1000:
-#           self.errlist.append('Manca giustificazione per '\
-#                               'affidamento diretto ed importo sup. a 1000 €')
-#       if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
-#           if not (self.nome_fornitore.data and self.ind_fornitore.data):
-#               self.errlist.append("Dati fornitore incompleti")
-        if not self.costo.validate():
-            self.errlist.append("Costo: "+", ".join(self.costo.errlist))
-#       if self.modalita_acquisto.data == RDO_MEPA:
-#           if self.criterio_assegnazione.data not in (PREZ_PIU_BASSO, OFF_PIU_VANT):
-#               self.errlist.append("Specificare criterio di assegnazione")
-#           if not self.oneri_sicurezza.validate():
-#               self.errlist.append("Oneri sicurezza: "+", ".join(self.oneri_sicurezza.errlist))
-        return len(self.errlist) == 0
-
-    def renderme(self):
+    def __call__(self):
         "rendering del form"
-        html = B_TRTD+render_field(self.data_richiesta, size=15)+E_TRTD
+        html = B_TRTD+render_field(self.data_richiesta, sameline=True, size=15)+E_TRTD
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None and self.modalita_acquisto.data != 'None':
             html += B_TRTD+render_field(self.descrizione_acquisto, size=50)+E_TRTD
@@ -345,15 +356,17 @@ class ProgettoAcquisto(FormWErrors):
             pop =popup(fk.url_for('vedicodf'),
                        'Vedi lista Codici fondi e responsabili', size=(1100, 900))
             html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
-            html += render_field(self.email_responsabile)
+            html += render_field(self.email_responsabile, sameline=True)
             html += BRK+render_field(self.lista_codf)+E_TRTD
 
 #           if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
             if True:               # provvisoriamente al posto delle linea sopra
-                html += B_TRTD+render_field(self.nome_fornitore, size=50)+BRK
-                html += render_field(self.ind_fornitore, sep='', size=50)+E_TRTD
+                html += B_TRTD+render_field(self.fornitore_nome, size=50)+BRK
+                html += render_field(self.fornitore_sede, sep='', size=50)+BRK
+                html += render_field(self.fornitore_codfisc)+BRK
+                html += render_field(self.fornitore_partiva)+E_TRTD
 #               html += render_field(self.rif_offerta, sep='', size=50)+E_TRTD
-            html += B_TRTD+render_field(self.costo)+E_TRTD
+            html += B_TRTD+render_field(self.costo, sameline=True)+E_TRTD
 
 #           if self.modalita_acquisto.data in (RDO_MEPA, PROC_NEG):
 #               html += B_TRTD+render_field(self.criterio_assegnazione)+E_TRTD
@@ -363,52 +376,80 @@ class ProgettoAcquisto(FormWErrors):
         html += self.newform()
         return html
 
+    def validate(self, extra_validators=None):                                   #pylint: disable=R0912
+        if not ft.date_to_time(self.data_richiesta.data):
+            self.errlist.append("Errore specifica data")
+        if not self.descrizione_acquisto.data:
+            self.errlist.append("Manca descrizione acquisto")
+        if not self.motivazione_acquisto.data:
+            self.errlist.append("Manca motivazione acquisto")
+#       if not self.rif_offerta.data:
+#           self.errlist.append("Manca il riferimento all'offerta")
+        if not self.lista_codf.data:
+            self.errlist.append("Manca codice Fu.Ob.")
+        if not self.email_responsabile.data:
+            self.errlist.append("Manca responsabile acquisto")
+        if not self.modalita_acquisto.data:
+            self.errlist.append("Specificare modalit&agrave; di acquisto")
+#       if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_5000:
+#           self.errlist.append('Manca giustificazione per '\
+#                               'affidamento diretto ed importo sup. a 5000 €')
+#       if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_1000:
+#           self.errlist.append('Manca giustificazione per '\
+#                               'affidamento diretto ed importo sup. a 1000 €')
+#       if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
+#           if not (self.fornitore_nome.data and self.fornitore_sede.data):
+#               self.errlist.append("Dati fornitore incompleti")
+        if not self.costo.validate():
+            self.errlist.append("Costo: "+", ".join(self.costo.errlist))
+#       if self.modalita_acquisto.data == RDO_MEPA:
+#           if self.criterio_assegnazione.data not in (PREZ_PIU_BASSO, OFF_PIU_VANT):
+#               self.errlist.append("Specificare criterio di assegnazione")
+#           if not self.oneri_sicurezza.validate():
+#               self.errlist.append("Oneri sicurezza: "+", ".join(self.oneri_sicurezza.errlist))
+        return len(self.errlist) == 0
+
 class DeterminaA(FormWErrors):
-    "form per definizione determina fase A"
-    numero_determina = MyTextField('Numero determina', True,
+    "form per definizione determina tipo a"
+    numero_determina_a = MyTextField('Numero determina', True,
                                    [wt.validators.InputRequired("Manca numero determina")])
-    data_determina = MyTextField('Data (g/m/aaaa)', True,
+    data_determina_a = MyTextField('Data (g/m/aaaa)', True,
                                  [wt.validators.Optional("Manca data determina")])
-    nome_direttore = MyTextField('Direttore', True,
-                                 [wt.validators.Optional("Manca nome direttore")])
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
-    cup = MyTextField('CUP', False, [wt.validators.Optional()])
-    email_rup = MySelectField('RUP', True,
-                              [wt.validators.InputRequired("Manca indicazione RUP")])
+    numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
+    numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def validate(self, extra_validators=None):
-        "Validazione specifica per il form"
-        if not self.numero_determina.data:
-            self.errlist.append("Manca numero determina")
-        if not self.data_determina.data:
-            self.errlist.append("Manca data determina")
-        if not self.nome_direttore.data:
-            self.errlist.append("Manca nome direttore")
-        if not self.capitolo.data:
-            self.errlist.append("Manca indicazione capitolo")
-        if not self.email_rup.data:
-            self.errlist.append("Manca indicazione RUP")
-        return len(self.errlist) == 0
-
-    def renderme(self, d_prat):
+    def __call__(self, d_prat):
         "rendering del form"
-        html = B_TRTD+Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
-                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_determina)+BRK
-        html += render_field(self.data_determina)+BRK
-        html += render_field(self.nome_direttore)+E_TRTD
-        html += B_TRTD+Markup(f"Codici Fondi: {d_prat[STR_CODF]}<p>")
+        html = B_TRTD+Markup(f'Richiesta del {d_prat[cs.DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
+        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
+        html += B_TRTD+render_field(self.numero_determina_a)+BRK
+        html += render_field(self.data_determina_a)+BRK
+        html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo)+BRK
-        html += render_field(self.cup)+BRK
-#       html.append(render_field(self.email_rup)+'</td></tr><tr><td>')
-        html += render_field(self.email_rup)+E_TRTD
+        html += render_field(self.numero_cup)+BRK
+        html += render_field(self.numero_cig)+BRK
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
+
+    def validate(self, extra_validators=None):
+        "Validazione specifica per il form"
+        if not self.numero_determina_a.data:
+            self.errlist.append("Manca numero determina")
+        if not self.data_determina_a.data:
+            self.errlist.append("Manca data determina")
+        if not self.capitolo.data:
+            self.errlist.append("Manca indicazione capitolo")
+        if not self.numero_cup.data:
+            self.errlist.append("Manca indicazione numero CUP")
+        if not self.numero_cig.data:
+            self.errlist.append("Manca indicazione numero CIG")
+        return len(self.errlist) == 0
 
 class DeterminaB(FormWErrors):
     "form per definizione determina fase B"
@@ -426,6 +467,32 @@ class DeterminaB(FormWErrors):
         super().__init__(*pw, **kw)
         self._vinc = vincitore
 
+    def __call__(self, d_prat):
+        "rendering del form"
+        html = B_TRTD+Markup(f'Richiesta del {d_prat[cs.DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
+        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
+        html += B_TRTD+render_field(self.numero_determina_b)+BRK
+        html += render_field(self.data_determina_b)+BRK
+        html += render_field(self.nome_direttore_b)+E_TRTD
+        html += B_TRTD+Markup(f"<b>Modalità acquisto:</b> {d_prat[cs.STR_MOD_ACQ]}<br>")
+        html += Markup(f"<b>Criterio di assegnazione:</b> {d_prat[cs.STR_CRIT_ASS]}<br>")
+        html += Markup(f"<b>Codici Fondi:</b> {d_prat[cs.STR_CODF]}<br>")
+        html += Markup(f"<b>Capitolo:</b> {d_prat[cs.CAPITOLO]}<br>")
+        cup = d_prat.get(cs.CUP).strip()
+        if cup:
+            html += Markup(f"<b>CUP:</b> {cup}<br>")
+        html += Markup(f"<b>RUP:</b> {d_prat[cs.RUP]}<br>")
+        if self._vinc:
+            html += Markup(f"<b>Vincitore:</b> {d_prat[cs.VINCITORE][cs.NOME_DITTA]} "\
+                              f"- {d_prat[cs.VINCITORE][cs.SEDE_DITTA]}")+E_TRTD
+        else:
+            html += Markup('<b>Vincitore:</b> nessun vincitore')+E_TRTD
+            html += B_TRTD+render_field(self.art_2, cols=100)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
+
     def validate(self, extra_validators=None):
         "Validazione specifica per il form"
         if not self.numero_determina_b.data:
@@ -436,32 +503,6 @@ class DeterminaB(FormWErrors):
             self.errlist.append("Manca nome direttore")
         return len(self.errlist) == 0
 
-    def renderme(self, d_prat):
-        "rendering del form"
-        html = B_TRTD+Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
-                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_determina_b)+BRK
-        html += render_field(self.data_determina_b)+BRK
-        html += render_field(self.nome_direttore_b)+E_TRTD
-        html += B_TRTD+Markup(f"<b>Modalità acquisto:</b> {d_prat[STR_MOD_ACQ]}<br>")
-        html += Markup(f"<b>Criterio di assegnazione:</b> {d_prat[STR_CRIT_ASS]}<br>")
-        html += Markup(f"<b>Codici Fondi:</b> {d_prat[STR_CODF]}<br>")
-        html += Markup(f"<b>Capitolo:</b> {d_prat[CAPITOLO]}<br>")
-        cup = d_prat.get(CUP).strip()
-        if cup:
-            html += Markup(f"<b>CUP:</b> {cup}<br>")
-        html += Markup(f"<b>RUP:</b> {d_prat[RUP]}<br>")
-        if self._vinc:
-            html += Markup(f"<b>Vincitore:</b> {d_prat[VINCITORE][NOME_DITTA]} "\
-                              f"- {d_prat[VINCITORE][SEDE_DITTA]}")+E_TRTD
-        else:
-            html += Markup('<b>Vincitore:</b> nessun vincitore')+E_TRTD
-            html += B_TRTD+render_field(self.art_2, cols=100)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
-        return html
-
 class Ordine(FormWErrors):
     "form per definizione ordine"
     lingua_ordine = MySelectField('', True, choices=(('IT', 'Italiano'), ('EN', 'Inglese')))
@@ -471,12 +512,32 @@ class Ordine(FormWErrors):
                               [wt.validators.InputRequired("Manca data ordine")])
     descrizione_ordine = MyTextAreaField('Descrizione', True,
                                          [wt.validators.InputRequired("Manca descrizione ordine")])
-    costo_ordine = MyFormField(CostoPiuTrasporto, "Costo per Ordine", True)
+    costo_ordine = MyFormField(Costo, "Costo per Ordine", True)
     cig = MyTextField('CIG', True, [wt.validators.InputRequired("Manca specifica CIG")])
     note_ordine = MyTextAreaField('Note', False, [wt.validators.Optional()])
 
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+
+    def __call__(self, d_prat):
+        "rendering del form"
+        html = B_TRTD+Markup(f'Richiesta del {d_prat[cs.DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
+        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')
+        html += Markup(f'<p>Presso la ditta:<blockquote>{d_prat[cs.FORNITORE_NOME]}<br>'\
+                          f'{d_prat[cs.FORNITORE_SEDE]}</blockquote>')+E_TRTD
+        html += B_TRTD+Markup('<table width=100%><tr><td align=left>')+ \
+                    render_field(self.numero_ordine)+Markup('</td>')
+        html += Markup('<td align=right>')+render_field(self.lingua_ordine)+ \
+                          E_TRTD+Markup('</table></br>')
+        html += render_field(self.data_ordine)+BRK
+        html += render_field(self.cig)+E_TRTD
+        html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
+        html += B_TRTD+self.costo_ordine.renderme()+E_TRTD
+        html += B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
     def validate(self, extra_validators=None):
         "Validazione specifica per il form"
@@ -492,36 +553,16 @@ class Ordine(FormWErrors):
             self.errlist.append("Manca specifica CIG")
         return len(self.errlist) == 0
 
-    def renderme(self, d_prat):
-        "rendering del form"
-        html = B_TRTD+Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
-                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')
-        html += Markup(f'<p>Presso la ditta:<blockquote>{d_prat[NOME_FORNITORE]}<br>'\
-                          f'{d_prat[IND_FORNITORE]}</blockquote>')+E_TRTD
-        html += B_TRTD+Markup('<table width=100%><tr><td align=left>')+ \
-                    render_field(self.numero_ordine)+Markup('</td>')
-        html += Markup('<td align=right>')+render_field(self.lingua_ordine)+ \
-                          E_TRTD+Markup('</table></br>')
-        html += render_field(self.data_ordine)+BRK
-        html += render_field(self.cig)+E_TRTD
-        html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
-        html += B_TRTD+self.costo_ordine.renderme()+E_TRTD
-        html += B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
-        return html
-
 class AggiornaFormato(FormWErrors):
     "Classe per aggiornamento formato pratiche vers.0/1"
-    nuovo_costo = MyFormField(CostoPiuTrasporto, "Costo", True)
+    nuovo_costo = MyFormField(Costo, "Costo", True)
     nuova_modalita_acquisto = MyRadioField('Modalit&agrave; di acquisto', True,
-                                           choices=MENU_MOD_ACQ,
+                                           choices=cs.MENU_MOD_ACQ,
                                            widget=radio_widget)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def renderme(self, d_prat):
+    def __call__(self, d_prat):
         "rendering del form"
         html = B_TRTD+Markup('Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>'\
                 'richiesta.pdf</a>')+E_TRTD
@@ -543,14 +584,14 @@ class TrovaPratica(FormWErrors):
     T_avanti = wt.SubmitField('Trova', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def renderme(self):
+    def __call__(self):
         "Rendering del form"
-        html = B_TRTD+render_field(self.trova_prat_aperta, oneline=True)+BRK+BRK
-        html += render_field(self.trova_richiedente, oneline=True)+BRK+BRK
-        html += render_field(self.trova_responsabile, oneline=True)+BRK+BRK
-        html += render_field(self.trova_anno, oneline=True)+BRK+BRK
-        html += render_field(self.trova_parola, oneline=True)+BRK+BRK
-        html += render_field(self.elenco_ascendente, oneline=True)+E_TRTD
+        html = B_TRTD+render_field(self.trova_prat_aperta, sameline=True)+BRK+BRK
+        html += render_field(self.trova_richiedente, sameline=True)+BRK+BRK
+        html += render_field(self.trova_responsabile, sameline=True)+BRK+BRK
+        html += render_field(self.trova_anno, sameline=True)+BRK+BRK
+        html += render_field(self.trova_parola, sameline=True)+BRK+BRK
+        html += render_field(self.elenco_ascendente, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
@@ -561,13 +602,17 @@ class Ditta(FormWErrors):
     "form per singola ditta"
     nome_ditta = MyTextField('', True)
     sede_ditta = MyTextField('', True)
+    codfisc_ditta = MyTextField('', True)
+    partiva_ditta = MyTextField('', True)
     vincitore = wt.BooleanField()
     T_cancella = wt.BooleanField()
 
-    def renderme(self, **_unused):
+    def __call__(self, **_unused):
         "Rendering del form"
         html = B_TD+render_field(self.nome_ditta)+E_TD
         html += B_TD+render_field(self.sede_ditta)+E_TD
+        html += B_TD+Markup('Cod.Fisc.: ')+render_field(self.codfisc_ditta)+E_TD
+        html += B_TD+Markup('Part.IVA: ')+render_field(self.partiva_ditta)+E_TD
         if hasattr(self, "offerta"):
             html += B_TD+self.offerta()+E_TD
         html += B_TD+self.vincitore()+E_TD
@@ -587,7 +632,7 @@ class PraticaRDO(FormWErrors):
     inizio_gara = MyTextField('Data inizio (g/m/aaaa)', True)
     fine_gara = MyTextField('Data/ora fine (g/m/aaaa ora:min)', True)
     lista_ditte = new_lista_ditte("Elenco ditte che hanno presentato offerta")
-    prezzo_gara = MyFormField(CostoPiuTrasporto, "Prezzo di gara", True)
+    prezzo_gara = MyFormField(Costo, "Prezzo di gara", True)
     oneri_sic_gara = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
     T_more = wt.SubmitField("+Ditte")
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
@@ -597,12 +642,7 @@ class PraticaRDO(FormWErrors):
         super().__init__(*pw, **kw)
         self.min_entries = 2
 
-    def increment(self):
-        "Incrementa numero di ditte"
-        self.lista_ditte.append_entry()
-        self.lista_ditte.append_entry()
-
-    def renderme(self, **kw):
+    def __call__(self, **kw):
         "Rendering del form"
         html = B_TRTD+render_field(self.inizio_gara)+BRK
         html += render_field(self.fine_gara)+E_TRTD
@@ -619,6 +659,11 @@ class PraticaRDO(FormWErrors):
         html += BRK+render_field(self.oneri_sic_gara)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
+
+    def increment(self):
+        "Incrementa numero di ditte"
+        self.lista_ditte.append_entry()
+        self.lista_ditte.append_entry()
 
     def validate(self, extra_validators=None):
         "Validazione"

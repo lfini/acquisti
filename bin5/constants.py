@@ -15,6 +15,8 @@ EDIT_SYMB = '<font color=red><b>&ofcir;</b></font>'
 
 APPROVAL_EXPIRATION = 7*24*3600.     # Tempo espirazione per approvazione
 
+FILE_VERSION = 3    # Versione file pratica.json
+
 # Stringhe di uso frequente
 
 ATTESA_APPROVAZIONE = 'In attesa di approvazione'
@@ -26,12 +28,23 @@ AVANTI = "T_avanti"
 ANNULLA = "T_annulla"
 MORE = "T_more"
 
+NOME_DITTA = "nome_ditta"
+SEDE_DITTA = "sede_ditta"
+
 TEMPORARY_KEY_PREFIX = "T_"
 
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 
-NOME_DITTA = "nome_ditta"
-SEDE_DITTA = "sede_ditta"
+PASSI_OPERATIVI = {"progetto_inviato": "Progetto inviato al Resp. fondi",
+                   "progetto_approvato": "Progetto approvato dal resp. fondi",
+                   "rup_indicato": "RUP indicato",
+                   "richiesta_aut_inviata": "Inviata richiesta autorizzazione al Direttore",
+                   "autorizzazione_concessa": "Autorizzazione RUP concessa",
+                   "rdo_generata": "Richiesta di Offerta generata",
+                   "determina_agg_generata": "Determina di aggiudicazione generata",
+                   "determina_agg_inviata": "Determina di aggiudicazione inviata al Direttore",
+                   "determina_firmata": "Determina di aggiudicazione firmata dal Direttore"
+                   }
 
 # Costanti per menu modalità acquisto
 ACCORDO_QUADRO = "acc.quadro"
@@ -99,25 +112,29 @@ TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'
 WEBSITE = 'website'
 
 # nomi file generati
-AUTH_PDF_FILE = "autorizzazione.pdf"
-DETA_PDF_FILE = "determina.pdf"
-DETB_PDF_FILE = "determinaB.pdf"
+DETA_PDF_FILE = "determina_a.pdf"
+DETB_PDF_FILE = "determina_b.pdf"
 ORD_PDF_FILE = "ordine.pdf"
+NOMINARUP_PDF_FILE = "nominarup.pdf"
 PROG_PDF_FILE = "progetto.pdf"
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
-CONF_CHIUSURA = '_conf_chiusura'                # dati_pratica
 COSTO = 'costo'                                 # dati_pratica
+COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
+COSTO_IVA = 'costo_iva'                         # dati pratica
+COSTO_NETTO = 'costo_netto'                     # dati pratica
 COSTO_ORDINE = 'costo_ordine'                   # dati_pratica
+COSTO_TOTALE = 'costo_totale'                   # dati_pratica
 CRIT_ASS = 'criterio_assegnazione'              # dati_pratica
 CUP = 'cup'                                     # dati_pratica
-DATA_DETERMINA_A = 'data_determina'             # dati_pratica
+DATA_DETERMINA_A = 'data_determina_a'           # dati_pratica
 DATA_DETERMINA_B = 'data_determina_b'           # dati_pratica
 DATA_ORDINE = 'data_ordine'                     # dati_pratica
 DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
+DET_A_INVIATA = 'det_a_inviata'                 # dati_pratica
 DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
@@ -128,9 +145,12 @@ FINE_GARA_GIORNO = "fine_gara_giorno"           # dati pratica
 FINE_GARA_ORE = "fine_gara_ore"                 # dati pratica
 FIRMA_APPROV_RESP = 'firma_approvazione'        # dati_pratica
 FIRMA_AUTORIZZ_DIR = 'firma_autorizzazione'     # dati_pratica
+FORNITORE_NOME = 'fornitore_nome'               # dati_pratica
+FORNITORE_SEDE = 'fornitore_sede'               # dati_pratica
+FORNITORE_CODFISC = 'fornitore_codfisc'         # dati_pratica
+FORNITORE_PARTIVA = 'fornitore_pativa'          # dati_pratica
 GIUSTIFICAZIONE = 'giustificazione'             # dati_pratica
 IMPORTO = 'importo'
-IND_FORNITORE = 'ind_fornitore'                 # dati_pratica
 INIZIO_GARA = "inizio_gara"                     # dati pratica
 IVA = "iva"
 IVAFREE = "iva_free"                            # dati_pratica[costo]
@@ -141,20 +161,19 @@ MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
 MOD_ACQUISTO_B = 'modalita_acquisto_b'          # dati_pratica
 MODO_TRASP = 'modo_trasp'
 MOTIVAZIONE_ACQUISTO = 'motivazione_acquisto'   # dati_pratica
-NOME_FORNITORE = 'nome_fornitore'               # dati_pratica
 NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
 NOME_RUP = 'nome_rup'                           # dati_pratica
 NOTE_RICHIESTA = 'note_richiesta'               # dati_pratica
-NUMERO_DETERMINA_A = 'numero_determina'         # dati_pratica
+NUMERO_DETERMINA_A = 'numero_determina_a'       # dati_pratica
 NUMERO_DETERMINA_B = 'numero_determina_b'       # dati_pratica
 NUMERO_ORDINE = 'numero_ordine'                 # dati_pratica
 NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
 ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
-PDF_AUTORIZZAZIONE = 'pdf_autorizzazione'       # dati_pratica
-PDF_DETERMINA_A = 'pdf_determina'               # dati_pratica
+PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
+PDF_DETERMINA_A = 'pdf_determina_a'             # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
 PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
 PDF_PROGETTO = 'pdf_progetto'                   # dati_pratica
@@ -163,7 +182,7 @@ PRATICA_ANNULLATA = 'pratica_annullata'         # dati_pratica
 PRATICA_APERTA = 'pratica_aperta'               # dati_pratica
 PREZZO_GARA = 'prezzo_gara'                     # dati_pratica
 ONERI_SIC_GARA = 'oneri_sic_gara'               # dati_pratica
-PROGETTO_INVIATO = 'progetto_inviato'         # dati_pratica
+PROGETTO_INVIATO = 'progetto_inviato'           # dati_pratica
 RUP = 'rup'                                     # dati_pratica
 SAVED = '_saved'                                # dati_pratica
 SIGLA_DITTA = 'sigla_ditta'                     # form MyUpload1
@@ -202,10 +221,10 @@ MENU_IVA = ((IVA_NO, "-"),
             (IVAINCL, "I.V.A. inclusa"),
             (IVAESENTE, "esente I.V.A."))
 
-MENU_VALUTA = ((EURO, "Euro"),
-               (POUND, "Pounds"),
-               (DOLLAR, "Dollars"),
-               (SFR, "Fr.Svizzeri"))
+MENU_VALUTA = ((EURO, "EUR"),
+               (POUND, "GBP"),
+               (DOLLAR, "USD"),
+               (SFR, "SFR"))
 
 MENU_TRASPORTO = ((NON_APP, "Non applicabile"),
                   (TRASP_INC, "Incluso"),
@@ -228,6 +247,9 @@ ALLEGATO_CIG = "all_cig"
 CAPITOLATO_RDO = 'capit_rdo'
 CV_RUP = 'cv_rup'
 DICH_RUP = 'dich_rup'
+DET_FIRMATA = 'det_firmata'
+RDO_MEPA = 'rdo_mepa'
+OFF_DITTA = 'off_ditta'
 LETT_INVITO_A = 'lett_invito_a'
 LETT_INVITO_B = 'lett_invito_b'
 LETT_INVITO_MEPA = 'lett_invito_mepa'
@@ -251,25 +273,28 @@ ALL_PRAT = 3    # Allegato singolo con numero pratica
 # Tabella allegati  key   pref.nome file     descrizione  singolo/multiplo
 TAB_ALLEGATI = {ALLEGATO_GENERICO_A: ("A99_", "Allegato generico", ALL_NAME),
                 ALLEGATO_GENERICO_B: ("B99_", "Allegato generico", ALL_NAME),
-                ALLEGATO_CIG: ("A88_CIG_Prat.", "CIG", ALL_PRAT),
-                CAPITOLATO_RDO: ('A07_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
-                CV_RUP: ('A02_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
-                DICH_RUP: ('A03_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
-                DOCUM_STIPULA: ("A09_Documento_di_stipula",
+                CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
+                DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
+                PREV_TRATT_MEPA: ('A08_Preventivo_trattativa_MePA',
+                                  "Preventivo trattativa diretta MePA", ALL_SING),
+                ALLEGATO_CIG: ("A12_CIG_MePA.", "CIG da MePA", ALL_SING),
+                RDO_MEPA: ("A16_RdO_MePA", "RdO da MePA", ALL_SING),
+                OFF_DITTA: ("A20_Offerta_finale", "Offerta finale ditta", ALL_SING),
+                DET_FIRMATA: ("A24_Determina_Firmata", "Determina con firma digitale", ALL_SING),
+                DOCUM_STIPULA: ("A29_Documento_di_stipula",
                                 "Documento di stipula su MEPA", ALL_SING),
-                LETT_INVITO_A: ('A06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
+                CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
+                LETT_INVITO_A: ('A26_Lettera_Invito', "Lettera di invito", ALL_SPEC),
                 LETT_INVITO_B: ('B06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
-                LETT_INVITO_MEPA: ('A06_Lettera_Invito_MEPA', "Lettera di invito MEPA", ALL_SING),
+                LETT_INVITO_MEPA: ('A36_Lettera_Invito_MEPA', "Lettera di invito MEPA", ALL_SING),
                 LISTA_DETTAGLIATA_A: ('A40_Lista_dettagliata_per_ordine',
                                       "Lista dettagliata allegata all'ordine", ALL_SING),
                 LISTA_DETTAGLIATA_B: ('B40_Lista_dettagliata_per_ordine',
                                       "Lista dettagliata allegata all'ordine", ALL_SING),
                 LISTA_DITTE_INV: ('A08_Lista_ditte_invitate', "Lista ditte invitate", ALL_SING),
-                OFFERTA_DITTA_A: ('A10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
+                OFFERTA_DITTA_A: ('A50_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
                 OFFERTA_DITTA_B: ('B10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
-                PREV_TRATT_MEPA: ('A01_Preventivo_trattativa_MePA',
-                                  "Preventivo trattativa diretta MePA", ALL_SING),
-                ORDINE_MEPA: ('A10_Bozza_Ordine_MEPA', "Bozza ordine MEPA", ALL_SING),
+                ORDINE_MEPA: ('A60_Bozza_Ordine_MEPA', "Bozza ordine MEPA", ALL_SING),
                 VERBALE_GARA: ('B50_Verbale_Gara', "Verbale di gara", ALL_SING)}
 
 ################################################### Varie stringhe
@@ -340,13 +365,23 @@ per gli adempimenti del caso
 
 TESTO_RICHIESTA_AUTORIZZAZIONE = '''
 {nome_rup} in qualità di RUP del progetto di acquisto N. {numero_pratica}
-chieda l'autorizzazione del direttore.
+chiede l'autorizzazione del direttore.
 
 Per autorizzarlo puoi accedere alla procedura Acquisti:
 
      {url}
 
 e selezionare: Elenco pratiche aperte (come Direttore)
+'''
+
+TESTO_INVIA_DETERMINA = '''
+Ti è stata inviata la determina relativa al progetto di acquisto N. {numero_pratica}
+sotto dettagliato.
+
+La determina in allegato deve essere firmata elettronicamente e riinviata a:
+
+    {nome_rup} ({email_rup})
+
 '''
 
 BINDIR = os.path.dirname(os.path.abspath(__file__))  # Path della directory eseguibili
@@ -357,3 +392,5 @@ AUXFILEDIR = "files5"          # nome directory per file ausiliari
 DATADIR = os.path.join(PKG_ROOT, "data_tmp")      # path della directory per i dati"
 FILEDIR = os.path.join(PKG_ROOT, AUXFILEDIR)  # path della directory dei files ausiliari"
 WORKDIR = os.path.join(PKG_ROOT, "work")      # path della directory di lavoro"
+
+CONFIG_FILE = os.path.join(DATADIR, CONFIG_NAME)
