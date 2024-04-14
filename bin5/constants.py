@@ -35,16 +35,16 @@ TEMPORARY_KEY_PREFIX = "T_"
 
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 
-PASSI_OPERATIVI = {"progetto_inviato": "Progetto inviato al Resp. fondi",
-                   "progetto_approvato": "Progetto approvato dal resp. fondi",
-                   "rup_indicato": "RUP indicato",
-                   "richiesta_aut_inviata": "Inviata richiesta autorizzazione al Direttore",
-                   "autorizzazione_concessa": "Autorizzazione RUP concessa",
-                   "rdo_generata": "Richiesta di Offerta generata",
-                   "determina_agg_generata": "Determina di aggiudicazione generata",
-                   "determina_agg_inviata": "Determina di aggiudicazione inviata al Direttore",
-                   "determina_firmata": "Determina di aggiudicazione firmata dal Direttore"
-                   }
+PASSI_OPERATIVI = { 0: "Generato progetto di acquisto",
+                   10: "Progetto inviato al Resp. fondi per approvazione",
+                   20: "Progetto approvato dal resp. fondi",
+                   30: "RUP indicato",
+                   40: "Inviata richiesta autorizzazione al Direttore",
+                   50: "Autorizzazione concessa e nomina RUP",
+                   60: "Richiesta di Offerta generata e allegata",
+                   70: "Determina di aggiudicazione inviata al Direttore per firma",
+                   80: "Determina di aggiudicazione firmata allegata alla pratica",
+                  }
 
 # Costanti per menu modalità acquisto
 ACCORDO_QUADRO = "acc.quadro"

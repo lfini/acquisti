@@ -210,7 +210,7 @@ def _test_pdf_determina(basedir, _unused, fase) -> bool:
 def _test_all_prev_mepa(basedir, d_prat) -> bool:
     "test esistenza preventivo mepa"
     if d_prat[cs.MOD_ACQUISTO] == cs.TRATT_MEPA_40:
-        return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.PREV_TRATT_MEPA][0])
+        return bool(ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.PREV_TRATT_MEPA][0]))
     return True
 
 def _test_all_cv_rup(basedir) -> bool:
