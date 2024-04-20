@@ -113,7 +113,7 @@ TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'
 WEBSITE = 'website'
 
 # nomi file generati
-DETA_PDF_FILE = "determina_a.pdf"
+DECIS_PDF_FILE = "decisione.pdf"
 DETB_PDF_FILE = "determina_b.pdf"
 ORD_PDF_FILE = "ordine.pdf"
 NOMINARUP_PDF_FILE = "nominarup.pdf"
@@ -129,13 +129,13 @@ COSTO_ORDINE = 'costo_ordine'                   # dati_pratica
 COSTO_TOTALE = 'costo_totale'                   # dati_pratica
 CRIT_ASS = 'criterio_assegnazione'              # dati_pratica
 CUP = 'cup'                                     # dati_pratica
-DATA_DETERMINA_A = 'data_determina_a'           # dati_pratica
+DATA_DECISIONE = 'data_decisione'           # dati_pratica
 DATA_DETERMINA_B = 'data_determina_b'           # dati_pratica
 DATA_ORDINE = 'data_ordine'                     # dati_pratica
 DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
-DET_A_INVIATA = 'det_a_inviata'                 # dati_pratica
+DECIS_INVIATA = 'det_a_inviata'                 # dati_pratica
 DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
@@ -166,7 +166,7 @@ NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
 NOME_RUP = 'nome_rup'                           # dati_pratica
 NOTE_RICHIESTA = 'note_richiesta'               # dati_pratica
-NUMERO_DETERMINA_A = 'numero_determina_a'       # dati_pratica
+NUMERO_DECISIONE = 'numero_decisione'       # dati_pratica
 NUMERO_DETERMINA_B = 'numero_determina_b'       # dati_pratica
 NUMERO_ORDINE = 'numero_ordine'                 # dati_pratica
 NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
@@ -174,7 +174,7 @@ ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
-PDF_DETERMINA_A = 'pdf_determina_a'             # dati_pratica
+PDF_DECISIONE = 'pdf_decisione'             # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
 PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
 PDF_PROGETTO = 'pdf_progetto'                   # dati_pratica
@@ -251,7 +251,7 @@ ALL_CIG = "all_cig"
 ALL_CV_RUP = 'cv_rup'
 ALL_DICH_RUP = 'dich_rup'
 ALL_PREV_MEPA = "prev_mepa"
-ALL_DET_FIRMATA = 'det_firmata'
+ALL_DECIS_FIRMATA = 'decis_firmata'
 ALL_RDO_MEPA = 'rdo_mepa'
 
 ALL_OFF_DITTA = 'off_ditta'
@@ -284,8 +284,8 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Allegato generico", ALL_NAME),
                 ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
                 ALL_RDO_MEPA: ("A16_RdO_MePA", "RdO da MePA", ALL_SING),
                 ALL_OFF_DITTA: ("A20_Offerta_finale", "Offerta finale ditta", ALL_SING),
-                ALL_DET_FIRMATA: ("A24_Determina_Firmata",
-                                  "Determina con firma digitale", ALL_SING),
+                ALL_DECIS_FIRMATA: ("A24_Decisione_Firmata",
+                                  "Decisione di contrarre con firma digitale", ALL_SING),
                 DOCUM_STIPULA: ("A29_Documento_di_stipula",
                                 "Documento di stipula su MEPA", ALL_SING),
 #               CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
@@ -347,7 +347,7 @@ TABLE_HEADER = """<!DOCTYPE html>
 TESTO_APPROVAZIONE = """
 Ti è stato inviato il progetto di acquisto N. {} (vedi dettagli sotto).
 
-Per approvarlo puoi accedere alla procedura Acquisti:
+Per approvare progetto e fondi, puoi accedere alla procedura Acquisti:
 
      {}
 
@@ -383,11 +383,11 @@ Per autorizzarlo puoi accedere alla procedura Acquisti:
 e selezionare: Elenco pratiche aperte (come Direttore)
 '''
 
-TESTO_INVIA_DETERMINA = '''
-Ti è stata inviata la determina relativa al progetto di acquisto N. {numero_pratica}
-sotto dettagliato.
+TESTO_INVIA_DECISIONE = '''
+Ti è stata inviata la decisione di contrarre relativa al progetto di acquisto
+N. {numero_pratica} sotto dettagliato.
 
-La determina in allegato deve essere firmata elettronicamente e inviata al RUP:
+Il documento in allegato deve essere firmato elettronicamente e inviata al RUP:
 
     {nome_rup} ({email_rup})
 

@@ -36,21 +36,21 @@
    [<a href=/vedifile/nominarup.pdf>Vedi</a>]
 {% endif %}
 <p>
-<b>Determina: </b>
-{% if info.pdf_determina_a %}
-  [<a href=/vedifile/determina_a.pdf>Vedi</a>]
-  {% if info.det_a_modificabile %}
-      &nbsp;&nbsp;[<a href=/modificadetermina_a>Modifica</a>]
+<b>Decisione: </b>
+{% if info.pdf_decisione %}
+  [<a href=/vedifile/decisione.pdf>Vedi</a>]
+  {% if info.decis_modificabile %}
+      &nbsp;&nbsp;[<a href=/modificadecisione>Modifica</a>]
   {% endif %}
-  {% if info.det_a_cancellabile %}
-      &nbsp;&nbsp;[<a href=/cancelladetermina_a>Cancella</a>]
+  {% if info.decis_cancellabile %}
+      &nbsp;&nbsp;[<a href=/cancelladecisione>Cancella</a>]
   {% endif %}
-  {% if info.det_a_inviabile %}
-      &nbsp;&nbsp;[<a href=/inviadetermina>Invia al Direttore</a>]
+  {% if info.decis_inviabile %}
+      &nbsp;&nbsp;[<a href=/inviadecisione>Invia al Direttore</a>]
   {% endif %}
 {% else %}
-  {% if info.det_a_modificabile %}
-      [<a href=/modificadetermina_a>Genera</a>]
+  {% if info.decis_modificabile %}
+      [<a href=/modificadecisione>Genera</a>]
   {% endif %}
 {% endif %}
 {% if info.ordine == 1 %}

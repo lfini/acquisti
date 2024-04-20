@@ -3,7 +3,7 @@ Tools per la procedura acquisti.py
 
 Uso da linea di comando:
     python ftools.py access     - test username/password
-    python ftools.py ndet       - Visualizza ultimo num. determina
+    python ftools.py ndecis     - Visualizza ultimo num. decisione di contrarre
     python ftools.py nprat      - Visualizza ultimo num. pratica
     python ftools.py plist      - Visualizza elenco pratiche
     python ftools.py prat nprat - Visualizza File dati di una pratica
@@ -315,6 +315,7 @@ def checkdir():
 CONFIG = tb.jload((checkdir(), 'config.json'))
 
 def setformatter():
+    'definisce formato di log'
     logger = logging.getLogger()
     if not hasattr(logger, 'fHandler'):
         return
@@ -538,9 +539,9 @@ def _find_max_field(what, year=None):
                         prat = nprat
     return maxfld, prat
 
-def find_max_det(year=None):
-    "Cerca il massimo valore del numero determina"
-    return _find_max_field("numero_determina", year)
+def find_max_decis(year=None):
+    "Cerca il massimo valore del numero decisione di contrarre"
+    return _find_max_field("numero_decisione", year)
 
 
 def clean_locks(datadir):
@@ -671,10 +672,10 @@ def swapname(name):
         ret = name
     return ret
 
-def modello_determina_a(mod_acquisto):                  # pylint: disable=R0911
-    "Stabilisce il template per la determina di aggiudicamento"
+def modello_decisione(mod_acquisto):                  # pylint: disable=R0911
+    "Stabilisce il template per la decisione di contrarre"
     if mod_acquisto == TRATT_MEPA_40:
-        return "determina_a"
+        return "decisione"
 #   if mod_acquisto == INFER_5000:
 #       return "determina_inf5000"
 #   if mod_acquisto == INFER_1000:
@@ -691,7 +692,7 @@ def modello_determina_a(mod_acquisto):                  # pylint: disable=R0911
 #       return "determina_procneg"
 #   if mod_acquisto == MANIF_INT:
 #       return "determina_manif"
-    raise RuntimeError(f'Errore scelta modello determina (mod.acquisto: {mod_acquisto}')
+    raise RuntimeError(f'Errore scelta modello decisione (mod.acquisto: {mod_acquisto}')
 
 def makepdf(destdir, templ_name, pdf_name, debug=False, include="", **data):   # pylint: disable=R0913
     "Crea documento PDF da template LaTeX e dict di termini"
@@ -784,8 +785,8 @@ def _crypt(username, passw):
 def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
-    if (pwd := user.get('pw')) != '-':
-        if _crypt(password, userid) == pwd:
+    if (pswd := user.get('pw')) != '-':
+        if _crypt(password, userid) == pswd:
             logging.info('autenticazione locale OK')
             return True, "Accesso autorizzato"
     auth_ok = False
@@ -1021,12 +1022,12 @@ def input_anno():
         year = thisyear()
     return year
 
-def showmaxdet():
-    "Trova massimo numero di determina"
+def showmaxdecis():
+    "Trova massimo numero di decisione di contrarre"
     year = input_anno()
-    ndet, prat = find_max_det(year)
+    ndet, prat = find_max_decis(year)
     print()
-    print(f"Ultima determina anno {year}: {ndet} (pratica: {prat})")
+    print(f"Ultima edecisione di contrarre anno {year}: {ndet} (pratica: {prat})")
 
 def showmaxprat():
     "Trova massimo numero di pratica"
@@ -1168,7 +1169,7 @@ def main():                                           # pylint: disable=R0912
     elif verb == 'al':
         showallfields()
     elif verb == 'nd':
-        showmaxdet()
+        showmaxdecis()
     elif verb == 'np':
         showmaxprat()
     elif verb == 'pa':

@@ -36,9 +36,9 @@ Pratica N. {{ value }}
 <tr><td><b>Mod. acquisto:</b></td><td> {{ pratica.str_mod_acq }} </td></tr>
 <tr><td><b>Stato:</b></td><td>  
 {% if info.alarm %}
-   <font color=red>{{ pratica.stato_pratica }}</font>
+   <font color=red>{{ info.stato_pratica }}</font>
 {% else %}
-   {{ pratica.stato_pratica }}
+   {{ info.stato_pratica }}
 {% endif %}
 <tr><td valign=top align=left><b>Storia:</b></td>
     <td align=left>

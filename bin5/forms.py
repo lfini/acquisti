@@ -409,12 +409,12 @@ class ProgettoAcquisto(FormWErrors):
 #               self.errlist.append("Oneri sicurezza: "+", ".join(self.oneri_sicurezza.errlist))
         return len(self.errlist) == 0
 
-class DeterminaA(FormWErrors):
-    "form per definizione determina tipo a"
-    numero_determina_a = MyTextField('Numero determina', True,
-                                   [wt.validators.InputRequired("Manca numero determina")])
-    data_determina_a = MyTextField('Data (g/m/aaaa)', True,
-                                 [wt.validators.Optional("Manca data determina")])
+class Decisione(FormWErrors):
+    "form per definizione decisione di contrarre"
+    numero_decisione = MyTextField('Numero decisione', True,
+                                   [wt.validators.InputRequired("Manca numero decisione")])
+    data_decisione = MyTextField('Data (g/m/aaaa)', True,
+                                 [wt.validators.Optional("Manca data decisione")])
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
     numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
@@ -428,8 +428,8 @@ class DeterminaA(FormWErrors):
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
                                 f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_determina_a)+BRK
-        html += render_field(self.data_determina_a)+BRK
+        html += B_TRTD+render_field(self.numero_decisione)+BRK
+        html += render_field(self.data_decisione)+BRK
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo)+BRK
         html += render_field(self.numero_cup)+BRK
@@ -439,10 +439,10 @@ class DeterminaA(FormWErrors):
 
     def validate(self, extra_validators=None):
         "Validazione specifica per il form"
-        if not self.numero_determina_a.data:
-            self.errlist.append("Manca numero determina")
-        if not self.data_determina_a.data:
-            self.errlist.append("Manca data determina")
+        if not self.numero_decisione.data:
+            self.errlist.append("Manca numero decisione")
+        if not self.data_decisione.data:
+            self.errlist.append("Manca data decisione")
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
         if not self.numero_cup.data:

@@ -92,8 +92,8 @@ NON_RESP = 'non sei responsabile dei fondi'
 NON_RUP = 'non sei RUP'
 NON_DIR = 'non sei Direttore'
 
-NO_DET_A_INVIATA = 'NO: Determina già inviata'
-NO_DETERMINA_GEN = 'NO: determina già generata'
+NO_DECIS_INVIATA = 'NO: decisione di contrarre già inviata'
+NO_DECIS_GENERATA = 'NO: decisione di contrarre già generata'
 NO_NON_ADMIN = 'NO: '+NON_ADMIN
 NO_NON_RICH = 'NO: '+NON_RICH
 NO_NON_RESP = 'NO: '+NON_RESP
@@ -134,7 +134,6 @@ class CONFIG:                   # pylint: disable=R0903
 
 BASEDIR_STR = 'basedir'
 
-MAX_DETERMINA = 0
 START_YEAR = 0
 
 class DEBUG:         # pylint: disable=R0903
@@ -190,23 +189,11 @@ def _test_direttore(the_user) -> bool:
     emailuser = the_user.get("email", "U").lower()
     return emailuser == emaildir
 
-def _test_pdf_determina_a(basedir) -> bool:
-    "test: esistenza determina"
+def _test_pdf_decisione(basedir) -> bool:
+    "test: esistenza decisione di contrarre"
     if not basedir:
         raise NO_BASEDIR
-    return os.path.exists(os.path.join(basedir, cs.DETA_PDF_FILE))
-
-def _test_pdf_determina(basedir, _unused, fase) -> bool:
-    "test: esistenza determina"
-    if not basedir:
-        raise NO_BASEDIR
-    if fase == "B":
-        pdf_path = os.path.join(basedir, cs.DETB_PDF_FILE)
-    elif fase == "A":
-        pdf_path = os.path.join(basedir, cs.DETA_PDF_FILE)
-    else:
-        raise FASE_ERROR
-    return os.path.exists(pdf_path)
+    return os.path.exists(os.path.join(basedir, cs.DECIS_PDF_FILE))
 
 def _test_all_prev_mepa(basedir, d_prat) -> bool:
     "test esistenza preventivo mepa"
@@ -418,7 +405,7 @@ def check_rup_nominabile(the_user, d_prat) -> str:
         return NO_RUP_GIA_NOMINATO
     return YES
 
-def check_autorizz_richiedibile(the_user, basedir, d_prat) -> str:
+def check_autorizz_richiedibile(the_user, basedir, d_prat) -> str:     #pylint: disable=R0911
     "test: il RUP può chiedere l'autorizzazione del direttore?"
     if not d_prat[cs.PRATICA_APERTA]:
         return NO_PRATICA_CHIUSA
@@ -448,8 +435,8 @@ def check_rich_rup_autorizzabile(the_user, basedir, d_prat) -> str:
         return NO_RUP_DICH
     return YES
 
-def check_determina_a_modificabile(the_user, basedir, d_prat) -> str:
-    "test: determina tipo A modificabile"
+def check_decisione_modificabile(the_user, basedir, d_prat) -> str:
+    "test: decisione di contrarre modificabile"
     if d_prat.get(cs.PRATICA_APERTA) != 1:
         return NO_PRATICA_CHIUSA
     if not _test_rup(the_user, d_prat):
@@ -458,41 +445,27 @@ def check_determina_a_modificabile(the_user, basedir, d_prat) -> str:
         return NO_PDF_CIG
     if not _test_all_rdo_mepa(basedir):
         return NO_PDF_RDO_MEPA
-    if d_prat.get(cs.DET_A_INVIATA):
-        return NO_DET_A_INVIATA
+    if d_prat.get(cs.DECIS_INVIATA):
+        return NO_DECIS_INVIATA
     return YES
 
-def check_determina_a_inviabile(the_user, basedir, d_prat) -> str:
-    "test: determina tipo A modificabile"
+def check_decisione_inviabile(the_user, basedir, d_prat) -> str:
+    "test: decisione di contrarre inviabile"
     if d_prat.get(cs.PRATICA_APERTA) != 1:
         return NO_PRATICA_CHIUSA
     if not _test_rup(the_user, d_prat):
         return NO_NON_RUP
-    if not _test_pdf_determina_a(basedir):
-        return NO_DETERMINA_GEN
-    if d_prat.get(cs.DET_A_INVIATA):
-        return NO_DET_A_INVIATA
+    if not _test_pdf_decisione(basedir):
+        return NO_DECIS_GENERATA
+    if d_prat.get(cs.DECIS_INVIATA):
+        return NO_DECIS_INVIATA
     return YES
 
-def check_determina_a_cancellabile(the_user, basedir, d_prat) -> str:
-    "test: determina cancellabile"
-    if not _test_pdf_determina_a(basedir):
-        return NO_DETERMINA_GEN
-    return check_determina_a_modificabile(the_user, basedir, d_prat)
-
-def check_determina_b_cancellabile(the_user, basedir, d_prat) -> str:
-    "test: determina cancellabile"
-    raise RuntimeError('TBD')
-
-def check_ordine_modificabile(the_user, basedir, d_prat, fase) -> str:
-    "test: ordine modificabile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:
-        return NO_PRATICA_CHIUSA
-    if not _test_admin(the_user):
-        return NO_NON_ADMIN
-    if not _test_pdf_determina(basedir, d_prat, fase):
-        return NO_DETERMINA_GEN
-    return ''
+def check_decisione_cancellabile(the_user, basedir, d_prat) -> str:
+    "test: decisione di contrarre cancellabile"
+    if not _test_pdf_decisione(basedir):
+        return NO_DECIS_GENERATA
+    return check_decisione_modificabile(the_user, basedir, d_prat)
 
 def check_pratica_chiudibile(the_user, _unused, d_prat) -> str:
     "test: pratica chiudibile"
@@ -541,28 +514,21 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['all_dich_rup'] = YES if _test_all_dich_rup(basedir) else NOT
     info['all_cig'] = YES if _test_all_cig(basedir) else NOT
     info['all_rdo_mepa'] = YES if _test_all_rdo_mepa(basedir) else NOT
-    info[cs.PDF_DETERMINA_A] = YES if _test_pdf_determina_a(basedir) else NOT
-#   info[cs.PDF_DETERMINA_B] = YES if _test_pdf_determina_b(basedir, d_prat) else NOT
-    info[cs.PDF_ORDINE] = YES if _test_pdf_ordine(basedir, d_prat, "A") else NOT
+    info[cs.PDF_DECISIONE] = YES if _test_pdf_decisione(basedir) else NOT
     info['allegati_cancellabili'] = check_allegati_cancellabili(the_user, d_prat)
-    info['det_a_modificabile'] = check_determina_a_modificabile(the_user, basedir, d_prat)
-    info['det_a_cancellabile'] = check_determina_a_cancellabile(the_user, basedir, d_prat)
-    info['det_a_inviabile'] = check_determina_a_inviabile(the_user, basedir, d_prat)
-#   info['det_b_cancellabile'] = check_determina_cancellabile(the_user, basedir, d_prat, "B")
-#   info['det_b_modificabile'] = check_determina_modificabile(the_user, basedir, d_prat, "B")
-#   info['ord_a_modificabile'] = check_ordine_modificabile(the_user, basedir, d_prat, "A")
-#   info['ord_b_modificabile'] = check_ordine_modificabile(the_user, basedir, d_prat, "B")
-#   info['rdo_modificabile'] = check_rdo_modificabile(the_user, basedir, d_prat)
+    info['autorizz_richiedibile'] = check_autorizz_richiedibile(the_user, basedir, d_prat)
+    info['decis_modificabile'] = check_decisione_modificabile(the_user, basedir, d_prat)
+    info['decis_cancellabile'] = check_decisione_cancellabile(the_user, basedir, d_prat)
+    info['decis_inviabile'] = check_decisione_inviabile(the_user, basedir, d_prat)
     info['pratica_annullabile'] = check_pratica_annullabile(the_user, d_prat)
     info['pratica_apribile'] = check_pratica_apribile(the_user, d_prat)
     info['pratica_chiudibile'] = check_pratica_chiudibile(the_user, basedir, d_prat)
     info['progetto_approvabile'] = check_progetto_approvabile(the_user, basedir, d_prat)
     info['progetto_modificabile'] = check_progetto_modificabile(the_user, basedir, d_prat)
     info['progetto_inviabile'] = check_progetto_inviabile(the_user, basedir, d_prat)
+    info['rich_rup_autorizzabile'] = check_rich_rup_autorizzabile(the_user, basedir, d_prat)
     info['rup_nominabile'] = check_rup_nominabile(the_user, d_prat)
     info['rup_cancellabile'] = check_rup_cancellabile(the_user, basedir, d_prat)
-    info['autorizz_richiedibile'] = check_autorizz_richiedibile(the_user, basedir, d_prat)
-    info['rich_rup_autorizzabile'] = check_rich_rup_autorizzabile(the_user, basedir, d_prat)
     return info
 
 def check_all(the_user, basedir, d_prat) -> dict:
@@ -572,37 +538,7 @@ def check_all(the_user, basedir, d_prat) -> dict:
         info[key] = val.startswith(YES)
     return info
 
-def show_ordine(d_prat):               # pylint: disable=W0703,R0911
-    "Stabilisce se la parte ordine deve comparire nella prima fase della pratica"
-    mod_acquisto = d_prat[cs.MOD_ACQUISTO]
-    if mod_acquisto in (cs.TRATT_MEPA_40, ):
-        return 0
-#   if mod_acquisto == INFER_5000:
-#       return 1
-#   if mod_acquisto == INFER_1000:
-#       return 1
-#   if mod_acquisto == SUPER_5000:
-#       return 1
-#   if mod_acquisto == SUPER_1000:
-#       return 1
-#   if mod_acquisto == RDO_MEPA:
-#       return 2
-#   if mod_acquisto == PROC_NEG:
-#       return 2
-#   if mod_acquisto == MANIF_INT:
-#       return ""
-    return ""
-
-def show_faseb(_basedir, _d_prat):
-    "Stabilisce se la seconda parte della pratica deve comparire sulla pagina della pratica"
-    return ""
-#   mod_acquisto = d_prat[MOD_ACQUISTO]
-#   if mod_acquisto in (MANIF_INT, PROC_NEG, RDO_MEPA) and \
-#      _test_pdf_determina(basedir, d_prat, "A"):
-#       return "s"
-#   return ""
-
-def _nome_da_email(embody, prima_nome=True):
+def nome_da_email(embody, prima_nome=True):
     "estrae nome da messaggio email"
     row = ft.GlobLists.USERLIST.where('email', embody.strip())
     if row:
@@ -696,7 +632,7 @@ def menu_allegati(basedir, d_prat):
             menu.append(voce_menu)
         if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_RDO_MEPA):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_DET_FIRMATA):
+        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_DECIS_FIRMATA):
             menu.append(voce_menu)
     menu.append(sel_menu(cs.ALL_GENERICO))
     return menu
@@ -782,14 +718,15 @@ def pratica_common(user, basedir, d_prat):
             if firma_file != firma:
                 info['alarm'] = 1
     atch_files = ft.flist(basedir, filetypes=cs.UPLOAD_TYPES,
-                          exclude=(cs.PROG_PDF_FILE, cs.DETA_PDF_FILE,
+                          exclude=(cs.PROG_PDF_FILE, cs.DECIS_PDF_FILE,
                                    cs.DETB_PDF_FILE, cs.ORD_PDF_FILE))
     info['attach'] = [(a, _clean_name(a)) for a in atch_files if ALL_MATCH.match(a)]
 #   info['attachB'] = [(a, _clean_name(a)) for a in atch_files if ALL_B_MATCH.match(a)]
 #   info['faseB'] = show_faseb(basedir, d_prat)
-    info['ordine'] = show_ordine(d_prat)
+#   info['ordine'] = show_ordine(d_prat)
     info['rdo'] = 0
     info['allegati_mancanti'] = verifica_allegati(basedir, d_prat)
+    info['stato_pratica'] = cs.PASSI[d_prat.get(cs.STATO_PRATICA, 0)]
 #   info['rdo'] = 1 if d_prat.get(MOD_ACQUISTO) == RDO_MEPA else 0
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, uploadA=upla,
@@ -861,7 +798,7 @@ def verifica_allegati(basedir, d_prat):
             ret.append("CIG")
         if not _test_all_rdo_mepa(basedir):
             ret.append("RdO da MePA")
-        if d_prat.get(cs.DET_A_INVIATA):
+        if d_prat.get(cs.DECIS_INVIATA):
             ret.append("Det. firmata")
 #   if not _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
 #       ret.append("Manca Lista ditte invitate")
@@ -908,7 +845,7 @@ def _render_progetto(form, d_prat):
            'body': form()}
     return fk.render_template("form_layout.html", sede=CONFIG.config[cs.SEDE], data=ddp)
 
-def _genera_pratica(user):
+def genera_pratica(user):
     "Genera pratica temporanea vuota"
     d_prat = {cs.VERSIONE: cs.FILE_VERSION,
               cs.NUMERO_PRATICA: '-------',
@@ -983,54 +920,6 @@ def _nome_resp(ulist, eaddr, prima_nome=True):
                f"{ulist.get(eaddr, ['', '??', '??'])[2]}"
     return f"{ulist.get(eaddr, ['', '', '??', '??'])[2]}, " \
            f"{ulist.get(eaddr, ['', '??', '??'])[3]}"
-
-def modificadetermina_b(user, basedir, d_prat):
-    "pagina: modifica determina fase B"
-    errors, vincitore = _rdo_validate(d_prat)
-    if errors:
-        for err in errors:
-            fk.flash(err, category="error")
-        logging.debug("Pratica RDO non completa: %s", "; ".join(errors))
-        return fk.redirect(fk.url_for('pratica1'))
-    d_prat[cs.VINCITORE] = vincitore
-    if cs.NUMERO_DETERMINA_B not in d_prat:
-        year = ft.thisyear()
-        ndet = ft.find_max_det(year)[0]+1
-        d_prat[cs.NUMERO_DETERMINA_B] = f"{ndet}/{year:4d}"
-        d_prat[cs.DATA_DETERMINA_B] = ft.today(False)
-        logging.info("Nuovo num. determina B: %s", d_prat[cs.NUMERO_DETERMINA_B])
-    det = fms.DeterminaB(fk.request.form, vincitore=bool(vincitore), **d_prat)
-    if fk.request.method == 'POST':
-        if det.validate():
-            d_prat.update(clean_data(det.data))
-            ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-            d_prat[cs.PDF_ORDINE] = ''
-            d_prat[cs.PDF_DETERMINA_B] = cs.DETB_PDF_FILE
-            d_prat[cs.FINE_GARA_GIORNO], d_prat[cs.FINE_GARA_ORE] = d_prat[cs.FINE_GARA].split()
-            d_prat[cs.STR_PREZZO_GARA] = ft.stringa_costo(d_prat.get(cs.PREZZO_GARA), "it")
-            d_prat[cs.STR_ONERI_IT] = ft.stringa_valore(d_prat.get(cs.ONERI_SIC_GARA), "it")
-            salvapratica(basedir, d_prat)
-            logging.info('Genera determina: %s/%s', basedir, cs.DETB_PDF_FILE)
-            det_template = os.path.splitext(cs.DETB_PDF_FILE)[0]
-            det_name = det_template
-            str_direttore = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
-            ft.makepdf(basedir, det_template, det_name, sede=CONFIG.config[cs.SEDE],
-                       debug=DEBUG.local, pratica=d_prat, user=user, il_direttore=str_direttore)
-            storia(d_prat, user, 'Generata determina B')
-            return fk.redirect(fk.url_for('pratica1'))
-        errors = det.get_errors()
-        for err in errors:
-            fk.flash(err, category="error")
-        logging.debug("Errori form DeterminaB: %s", "; ".join(errors))
-
-    ddp = {'title': 'Immissione dati per determina',
-           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-           'before': '<form method=POST action=/modificadetermina_b '
-                     'accept-charset="utf-8" novalidate>',
-           'after': "</form>",
-           'note': cs.OBBLIGATORIO,
-           'body': det(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 def costo_voce(voce):
     'calcola importo netto e iva'
@@ -1208,7 +1097,7 @@ def clearsession():
     return login()
 
 @ACQ.route('/modificaprogetto', methods=('GET', 'POST'))
-def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
+def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     "pagina: modifica progetto"
     logging.info('URL: /modificaprogetto (%s)', fk.request.method)
     if not (ret := _check_access(user_only=True)):
@@ -1217,7 +1106,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
     user, basedir, d_prat = ret
     if not d_prat:
         print_debug('Genera nuova pratica per:', user['userid'])
-        d_prat = _genera_pratica(user)
+        d_prat = genera_pratica(user)
     else:
         err = check_progetto_modificabile(user, basedir, d_prat)
         if err.startswith(NOT):
@@ -1263,7 +1152,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
             d_prat[cs.STR_CODF] = ', '.join(d_prat[cs.LISTA_CODF])
             d_prat[cs.STR_MOD_ACQ] = _select(cs.MENU_MOD_ACQ, d_prat.get(cs.MOD_ACQUISTO))
             d_prat[cs.STR_CRIT_ASS] = _select(cs.MENU_CRIT_ASS, d_prat.get(cs.CRIT_ASS))
-            d_prat[cs.NOME_RESPONSABILE] = _nome_da_email(d_prat[cs.EMAIL_RESPONSABILE], True)
+            d_prat[cs.NOME_RESPONSABILE] = nome_da_email(d_prat[cs.EMAIL_RESPONSABILE], True)
             d_prat[cs.SEDE] = CONFIG.config[cs.SEDE]
             d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
             d_prat[cs.PROGETTO_INVIATO] = 0
@@ -1279,9 +1168,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
             str_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
             ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
                        sede=CONFIG.config[cs.SEDE], il_direttore=str_dir)
-            ft.remove((basedir, cs.DETA_PDF_FILE), show_error=False)
-            ft.remove((basedir, cs.DETB_PDF_FILE), show_error=False)
-            ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
+            ft.remove((basedir, cs.DECIS_PDF_FILE), show_error=False)
             logging.info('Generato progetto: %s/%s', basedir, cs.PROG_PDF_FILE)
             _avvisi(user, basedir, d_prat, "A")
             return fk.redirect(fk.url_for('pratica1'))
@@ -1325,31 +1212,31 @@ def inviaprogetto():
             fk.flash(msg, category="error")
     return fk.redirect(fk.url_for('pratica1'))
 
-@ACQ.route('/inviadetermina')
-def inviadetermina():
-    "pagina: invia determina per firma digitale direttore"
-    logging.info('URL: /inviadetermina (%s)', fk.request.method)
+@ACQ.route('/inviadecisione')
+def inviadecisione():
+    "pagina: invia decisione di contrarre per firma digitale direttore"
+    logging.info('URL: /inviadecisione (%s)', fk.request.method)
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
-    err = check_determina_a_inviabile(user, basedir, d_prat)
+    err = check_decisione_inviabile(user, basedir, d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error(INVIO_NON_AUTORIZZ, err, user['userid'],
                       d_prat[cs.NUMERO_PRATICA])
     else:
-        testo = cs.TESTO_INVIA_DETERMINA.format(**d_prat)+ \
+        testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
                 cs.DETTAGLIO_PRATICA.format(**d_prat)
         subj = 'Determina da firmare'
-        numdet = d_prat.get(cs.NUMERO_DETERMINA_A).split('/')[0]
-        pdfname = f"determina_{numdet}.pdf"
-        attach = (os.path.join(basedir, cs.DETA_PDF_FILE), pdfname)
+        numdet = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
+        pdfname = f"decisione_{numdet}.pdf"
+        attach = (os.path.join(basedir, cs.DECIS_PDF_FILE), pdfname)
         ret = send_email(d_prat[cs.EMAIL_RESPONSABILE], testo, subj, attach=attach)
         if ret:
             fk.flash("Richiesta di approvazione per  la pratica "
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                      f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
-            d_prat[cs.DET_A_INVIATA] = 1
+            d_prat[cs.DECIS_INVIATA] = 1
             step = 70
             d_prat[cs.STATO_PRATICA] = step
             storia(d_prat, user, step)
@@ -1409,7 +1296,7 @@ def nominarup():
     if fk.request.method == 'POST':
         if rupf.validate():
             d_prat[cs.EMAIL_RUP] = rupf.email_rup.data
-            d_prat[cs.NOME_RUP] = _nome_da_email(d_prat[cs.EMAIL_RUP], True)
+            d_prat[cs.NOME_RUP] = nome_da_email(d_prat[cs.EMAIL_RUP], True)
             step = 30
             d_prat[cs.STATO_PRATICA] = step
             hist = cs.PASSI[step]+f' ({d_prat[cs.NOME_RUP]})'
@@ -1784,7 +1671,7 @@ def pratica1():               # pylint: disable=R0914,R0911
             if d_prat[cs.STATO_PRATICA] > 50 and tipo_allegato == cs.ALL_RDO_MEPA:
                 d_prat[cs.STATO_PRATICA] = 60
                 storia(d_prat, user, 60)
-            elif d_prat[cs.STATO_PRATICA] > 70 and tipo_allegato == cs.ALL_DET_FIRMATA:
+            elif d_prat[cs.STATO_PRATICA] > 70 and tipo_allegato == cs.ALL_DECIS_FIRMATA:
                 d_prat[cs.STATO_PRATICA] = 80
                 storia(d_prat, user, 80)
             else:
@@ -1809,41 +1696,41 @@ def togglestoria():
     salvapratica(basedir, d_prat)
     return pratica_common(user, basedir, d_prat)
 
-@ACQ.route('/modificadetermina_a', methods=('GET', 'POST', ))
-def modificadetermina_a():                     #pylint: disable=R0914
-    "pagina: modifica determina a"
-    logging.info('URL: /modificadetermina_a (%s)', fk.request.method)
+@ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
+def modificadecisione():                     #pylint: disable=R0914
+    "pagina: modifica decisione di contrarre"
+    logging.info('URL: /modificadecisione (%s)', fk.request.method)
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return fk.redirect(fk.url_for('pratica1'))
-    err = check_determina_a_modificabile(user, basedir, d_prat)
+    err = check_decisione_modificabile(user, basedir, d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Gestione determina non autorizzata: %s. Utente %s, pratica %s',
+        logging.error('Gestione decisione di contrarre non autorizzata: %s. Utente %s, pratica %s',
                      err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
-    if cs.NUMERO_DETERMINA_A not in d_prat:
+    if cs.NUMERO_DECISIONE not in d_prat:
         year = ft.thisyear()
-        ndet = ft.find_max_det(year)[0]+1
-        d_prat[cs.NUMERO_DETERMINA_A] = f"{ndet}/{year:4d}"
-        d_prat[cs.DATA_DETERMINA_A] = ft.today(False)
-        logging.info("Nuovo num. determina: %s", d_prat[cs.NUMERO_DETERMINA_A])
-    det = fms.DeterminaA(fk.request.form, **d_prat)
+        ndet = ft.find_max_decis(year)[0]+1
+        d_prat[cs.NUMERO_DECISIONE] = f"{ndet}/{year:4d}"
+        d_prat[cs.DATA_DECISIONE] = ft.today(False)
+        logging.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
+    det = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
             str_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
-            logging.info('Genera determina: %s/%s', basedir, cs.DETA_PDF_FILE)
-            det_template = ft.modello_determina_a(d_prat[cs.MOD_ACQUISTO])
-            det_name = os.path.splitext(cs.DETA_PDF_FILE)[0]
-            ft.makepdf(basedir, det_template, det_name, sede=CONFIG.config[cs.SEDE],
+            logging.info('Genera decisione: %s/%s', basedir, cs.DECIS_PDF_FILE)
+            decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])
+            decis_name = os.path.splitext(cs.DECIS_PDF_FILE)[0]
+            ft.makepdf(basedir, decis_template, decis_name, sede=CONFIG.config[cs.SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user, il_direttore=str_dir)
             ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
             d_prat[cs.PDF_ORDINE] = ''
-            d_prat[cs.PDF_DETERMINA_A] = cs.DETA_PDF_FILE
+            d_prat[cs.PDF_DECISIONE] = cs.DECIS_PDF_FILE
             storia(d_prat, user, 'Determina aggiudicazione generata')
             salvapratica(basedir, d_prat)
             url = fk.url_for('pratica1')
@@ -1853,116 +1740,102 @@ def modificadetermina_a():                     #pylint: disable=R0914
             fk.flash(err, category="error")
         logging.debug("Errori form Determina agg.: %s", "; ".join(errors))
 
-    ddp = {'title': 'Immissione dati per determina',
+    ddp = {'title': 'Immissione dati per decisione di contrarre',
            'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-           'before': '<form method=POST action=/modificadetermina_a '
+           'before': '<form method=POST action=/modificadecisione '
                      'accept-charset="utf-8" novalidate>',
            'after': "</form>",
            'note': cs.OBBLIGATORIO,
            'body': det(d_prat)}
     return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
-@ACQ.route('/cancelladetermina/<fase>', methods=('GET', ))
-def cancelladetermina(tipo):
-    "pagina: cancella determina"
-    logging.info('URL: /cancelladetermina/%s (%s)', tipo, fk.request.method)
+@ACQ.route('/cancelladecisione', methods=('GET', ))
+def cancelladecisione():
+    "pagina: cancella decisione"
+    logging.info('URL: /cancelladecisione (%s)', fk.request.method)
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
-    if tipo == 'a':
-        err = check_determina_a_cancellabile(user, basedir, d_prat)
-    elif tipo == 'b':
-        err = check_determina_b_cancellabile(user, basedir, d_prat)
-    else:
-        raise RuntimeError(f'Tipo determina: {tipo}')
+    err = check_decisione_cancellabile(user, basedir, d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('cancellazione determina non autorizzata: %s. Utente %s, pratica %s',
+        logging.error('cancellazione decisione non autorizzata: %s. Utente %s, pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
     else:
-        if tipo == "a":
-            ft.remove((basedir, cs.DETA_PDF_FILE), show_error=False)
-            ft.remove((basedir, cs.DETB_PDF_FILE), show_error=False)
-            ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-            hist = "Cancellati determina e ordine. " \
-                   f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
-            storia(d_prat, user, hist)
-        else:
-            ft.remove((basedir, cs.DETB_PDF_FILE), show_error=False)
-            ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-            hist = "Cancellati determina agg. e ordine. " \
-                   f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
-            storia(d_prat, user, hist)
+        ft.remove((basedir, cs.DECIS_PDF_FILE), show_error=False)
+        hist = "Cancellata decisione di contrarre. " \
+               f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
+        storia(d_prat, user, hist)
         salvapratica(basedir, d_prat)
     return pratica1()
 
-@ACQ.route('/modificaordine/<fase>', methods=('GET', 'POST'))
-def modificaordine(fase):               # pylint: disable=R0912,R0914
-    "pagina: modifica ordine"
-    logging.info('URL: /modificaordine/%s (%s)', fase, fk.request.method)
-    if not (ret := _check_access()):
-        return fk.redirect(fk.url_for('start'))
-    user, basedir, d_prat = ret
-    if cs.DATA_ORDINE not in d_prat:
-        d_prat[cs.DATA_ORDINE] = ft.today(False)
-    err = check_ordine_modificabile(user, basedir, d_prat, fase)
-    if err.startswith(NOT):
-        fk.flash(err, category="error")
-        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
-                      err, user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
-        url = fk.url_for('pratica1')
-        return fk.redirect(url)
-    if d_prat.get(cs.VERSIONE, 0) == 0:
-        return _aggiornaformato()
-    if not d_prat.get(cs.DESCRIZIONE_ORDINE):
-        d_prat[cs.DESCRIZIONE_ORDINE] = d_prat[cs.DESCRIZIONE_ACQUISTO]
-    if not d_prat.get(cs.COSTO_ORDINE):
-        d_prat[cs.COSTO_ORDINE] = d_prat[cs.COSTO]
-    orn = fms.Ordine(fk.request.form, **d_prat)
-    if fk.request.method == 'POST':
-        if cs.ANNULLA in fk.request.form:
-            fk.flash('Operazione annullata', category="info")
-            return fk.redirect(fk.url_for('pratica1'))
-        if orn.validate():
-            d_prat.update(clean_data(orn.data))
-            if d_prat.get(cs.LINGUA_ORDINE, '') == 'EN':
-                ord_name = cs.ORD_NAME_EN
-            else:
-                ord_name = cs.ORD_NAME_IT
-            d_prat[cs.STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(cs.COSTO_ORDINE), "it")
-            d_prat[cs.STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(cs.COSTO_ORDINE), "uk")
-            d_prat[cs.TITOLO_DIRETTORE_UK] = CONFIG.config[cs.TITOLO_DIRETTORE_UK]
-            logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, cs.ORD_PDF_FILE)
-            file_lista_dettagliata = filename_allegato(cs.ALL_SING,
-                                                       cs.TAB_ALLEGATI[cs.LISTA_DETTAGLIATA_A][0],
-                                                       "", ".pdf", "", d_prat)
-            if ft.findfiles(basedir, file_lista_dettagliata):
-                include = file_lista_dettagliata
-                d_prat[cs.DETTAGLIO_ORDINE] = 1
-            else:
-                include = ""
-                d_prat[cs.DETTAGLIO_ORDINE] = 0
-            pdf_name = os.path.splitext(cs.ORD_PDF_FILE)[0]
-            ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local, include=include,
-                       pratica=d_prat, sede=CONFIG.config[cs.SEDE],
-                       resp_fondi=_test_responsabile(user, d_prat))
-            d_prat[cs.PDF_ORDINE] = cs.ORD_PDF_FILE
-            storia(d_prat, user, 'Ordine generato')
-            salvapratica(basedir, d_prat)
-            url = fk.url_for('pratica1')
-            return fk.redirect(url)
-        errors = orn.get_errors()
-        for err in errors:
-            fk.flash(err, category="error")
-        logging.debug("Errori form Ordine: %s", "; ".join(errors))
-    ddp = {'title': 'Immissione dati per ordine',
-           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-           'before': f'<form method=POST action=/modificaordine/{fase} ' \
-                     'accept-charset="utf-8" novalidate>',
-           'after': "</form>",
-           'note': cs.OBBLIGATORIO,
-           'body': orn(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+#@ACQ.route('/modificaordine/<fase>', methods=('GET', 'POST'))
+#def modificaordine(fase):               # pylint: disable=R0912,R0914
+#    "pagina: modifica ordine"
+#    logging.info('URL: /modificaordine/%s (%s)', fase, fk.request.method)
+#    if not (ret := _check_access()):
+#        return fk.redirect(fk.url_for('start'))
+#    user, basedir, d_prat = ret
+#    if cs.DATA_ORDINE not in d_prat:
+#        d_prat[cs.DATA_ORDINE] = ft.today(False)
+#    err = check_ordine_modificabile(user, basedir, d_prat, fase)
+#    if err.startswith(NOT):
+#        fk.flash(err, category="error")
+#        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
+#                      err, user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
+#        url = fk.url_for('pratica1')
+#        return fk.redirect(url)
+#    if d_prat.get(cs.VERSIONE, 0) == 0:
+#        return _aggiornaformato()
+#    if not d_prat.get(cs.DESCRIZIONE_ORDINE):
+#        d_prat[cs.DESCRIZIONE_ORDINE] = d_prat[cs.DESCRIZIONE_ACQUISTO]
+#    if not d_prat.get(cs.COSTO_ORDINE):
+#        d_prat[cs.COSTO_ORDINE] = d_prat[cs.COSTO]
+#    orn = fms.Ordine(fk.request.form, **d_prat)
+#    if fk.request.method == 'POST':
+#        if cs.ANNULLA in fk.request.form:
+#            fk.flash('Operazione annullata', category="info")
+#            return fk.redirect(fk.url_for('pratica1'))
+#        if orn.validate():
+#            d_prat.update(clean_data(orn.data))
+#            if d_prat.get(cs.LINGUA_ORDINE, '') == 'EN':
+#                ord_name = cs.ORD_NAME_EN
+#            else:
+#                ord_name = cs.ORD_NAME_IT
+#            d_prat[cs.STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(cs.COSTO_ORDINE), "it")
+#            d_prat[cs.STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(cs.COSTO_ORDINE), "uk")
+#            d_prat[cs.TITOLO_DIRETTORE_UK] = CONFIG.config[cs.TITOLO_DIRETTORE_UK]
+#            logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, cs.ORD_PDF_FILE)
+#            file_lista_dettagliata = filename_allegato(cs.ALL_SING,
+#                                                       cs.TAB_ALLEGATI[cs.LISTA_DETTAGLIATA_A][0],
+#                                                       "", ".pdf", "", d_prat)
+#            if ft.findfiles(basedir, file_lista_dettagliata):
+#                include = file_lista_dettagliata
+#                d_prat[cs.DETTAGLIO_ORDINE] = 1
+#            else:
+#                include = ""
+#                d_prat[cs.DETTAGLIO_ORDINE] = 0
+#            pdf_name = os.path.splitext(cs.ORD_PDF_FILE)[0]
+#            ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local, include=include,
+#                       pratica=d_prat, sede=CONFIG.config[cs.SEDE],
+#                       resp_fondi=_test_responsabile(user, d_prat))
+#            d_prat[cs.PDF_ORDINE] = cs.ORD_PDF_FILE
+#            storia(d_prat, user, 'Ordine generato')
+#            salvapratica(basedir, d_prat)
+#            url = fk.url_for('pratica1')
+#            return fk.redirect(url)
+#        errors = orn.get_errors()
+#        for err in errors:
+#            fk.flash(err, category="error")
+#        logging.debug("Errori form Ordine: %s", "; ".join(errors))
+#    ddp = {'title': 'Immissione dati per ordine',
+#           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+#           'before': f'<form method=POST action=/modificaordine/{fase} ' \
+#                     'accept-charset="utf-8" novalidate>',
+#           'after': "</form>",
+#           'note': cs.OBBLIGATORIO,
+#           'body': orn(d_prat)}
+#    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 @ACQ.route('/chiudipratica')
 def chiudipratica():
