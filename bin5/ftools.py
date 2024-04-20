@@ -314,7 +314,7 @@ def checkdir():
 
 CONFIG = tb.jload((checkdir(), 'config.json'))
 
-def _setformatter():
+def setformatter():
     logger = logging.getLogger()
     if not hasattr(logger, 'fHandler'):
         return
@@ -340,7 +340,7 @@ def set_file_logger(path):
     logger.host_info = 'x.x.x.x'
     logger.user_info = '----------'
     logger.addHandler(hndl)
-    _setformatter()
+    setformatter()
 
 def set_mail_logger(mailhost, sender, recipient, subject):
     "imposta logger via e-email"
@@ -354,24 +354,7 @@ def set_mail_logger(mailhost, sender, recipient, subject):
     ehndl.setLevel(logging.ERROR)
     logger.eHandler = ehndl
     logger.addHandler(ehndl)
-    _setformatter()
-
-def set_host_info(hostname):
-    "Imposta informazioni host per logging"
-    logger = logging.getLogger()
-    hsplitted = hostname.split(':')
-    logger.host_info = hsplitted[0]
-    logger.user_info = '----------'
-    _setformatter()
-
-def set_user_info(userid):
-    "Imposta informazioni utente per logging"
-    logger = logging.getLogger()
-    if userid:
-        logger.user_info = userid
-    else:
-        logger.user_info = '----------'
-    _setformatter()
+    setformatter()
 
 I16 = b'1ZxqYcE4LjMc72oy'
 P24 = 'xyCjhWT3fPtOel5MN02RDUYE'
@@ -592,15 +575,6 @@ def html_params(params, escape=True):
         parlist.append(f'{key}={filt(value)}')
     return ' '.join(parlist)
 
-def login_check(session):
-    "Verifica avvenuto login e set informazioni per logger"
-    if 'userid' in session:
-        user = get_user(session['userid'])
-    else:
-        return {}
-    set_user_info(user.get('userid'))
-    return user
-
 def today(fulltime=True):
     "Riporta data odierna"
     if fulltime:
@@ -810,8 +784,8 @@ def _crypt(username, passw):
 def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
-    if user.get('pw') != '-':
-        if _crypt(password, userid) == user['pw']:
+    if (pwd := user.get('pw')) != '-':
+        if _crypt(password, userid) == pwd:
             logging.info('autenticazione locale OK')
             return True, "Accesso autorizzato"
     auth_ok = False

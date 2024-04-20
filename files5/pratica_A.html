@@ -7,7 +7,7 @@
    {% if info.progetto_modificabile %}
       &nbsp;&nbsp;[<a href=/modificaprogetto>Modifica</a>]
    {% endif %}
-   {% if info.progetto_inviabile == 1 %}
+   {% if info.progetto_inviabile %}
       &nbsp;&nbsp;[<a href=/inviaprogetto>Richiedi approvazione</a>]
    {% endif %}
    {% if info.progetto_approvabile %}
@@ -72,9 +72,9 @@
    {% if info.allegati_mancanti %} 
    &nbsp;&nbsp;(<font color="red">Mancanti: {{ info.allegati_mancanti }}</font>)
    {% endif %}
-{% if info.attachA %}
+{% if info.attach %}
 <ul>
-{% for a in info.attachA %}
+{% for a in info.attach %}
 <li> <a href=/vedifile/{{ a[0] }}>{{ a [1]}}</a> 
 {% if info.allegati_cancellabili %}
 &nbsp;&nbsp;[<a href=/cancella/{{ a[0] }}>Cancella</a>]

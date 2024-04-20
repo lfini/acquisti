@@ -35,16 +35,17 @@ TEMPORARY_KEY_PREFIX = "T_"
 
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 
-PASSI_OPERATIVI = { 0: "Generato progetto di acquisto",
-                   10: "Progetto inviato al Resp. fondi per approvazione",
-                   20: "Progetto approvato dal resp. fondi",
-                   30: "RUP indicato",
-                   40: "Inviata richiesta autorizzazione al Direttore",
-                   50: "Autorizzazione concessa e nomina RUP",
-                   60: "Richiesta di Offerta generata e allegata",
-                   70: "Determina di aggiudicazione inviata al Direttore per firma",
-                   80: "Determina di aggiudicazione firmata allegata alla pratica",
-                  }
+PASSI = { 0: "Generato progetto di acquisto",
+         10: "Progetto inviato al Resp. fondi per approvazione",
+         20: "Progetto approvato dal resp. fondi",
+         30: "RUP indicato",
+         40: "Inviata richiesta autorizzazione al Direttore",
+         50: "Autorizzazione concessa e RUP nominato",
+         60: "Richiesta di Offerta generata e allegata",
+         70: "Determina di aggiudicazione inviata al Direttore per firma",
+         80: "Determina di aggiudicazione firmata allegata alla pratica",
+        }
+
 
 # Costanti per menu modalità acquisto
 ACCORDO_QUADRO = "acc.quadro"
@@ -231,7 +232,7 @@ MENU_TRASPORTO = ((NON_APP, "Non applicabile"),
                   (SPECIFICARE, "Specificare"))
 
 MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
-                (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€i a 143k€"),
+                (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a 143k€"),
                 (CONSIP, "Acquisto nella Vetrina delle convenzioni Consip"),
                 (ACCORDO_QUADRO, "Adesione ad accordo quadro"),
                 (MEPA, "Acquisto a catalogo MePA"),
@@ -240,16 +241,20 @@ MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
                )
 
+# Sequenze passi per modalità di acquisto
+SEQUENZE = { TRATT_MEPA_40: [0, 10, 20, 30, 40, 50, 60, 70, 80],
+           }
+
 # Tipi allegato
-ALLEGATO_GENERICO_A = "allegato_gen_a"
-ALLEGATO_GENERICO_B = "allegato_gen_b"
-ALLEGATO_CIG = "all_cig"
-CAPITOLATO_RDO = 'capit_rdo'
-CV_RUP = 'cv_rup'
-DICH_RUP = 'dich_rup'
-DET_FIRMATA = 'det_firmata'
-RDO_MEPA = 'rdo_mepa'
-OFF_DITTA = 'off_ditta'
+ALL_GENERICO = "all_generico"
+ALL_CIG = "all_cig"
+ALL_CV_RUP = 'cv_rup'
+ALL_DICH_RUP = 'dich_rup'
+ALL_PREV_MEPA = "prev_mepa"
+ALL_DET_FIRMATA = 'det_firmata'
+ALL_RDO_MEPA = 'rdo_mepa'
+
+ALL_OFF_DITTA = 'off_ditta'
 LETT_INVITO_A = 'lett_invito_a'
 LETT_INVITO_B = 'lett_invito_b'
 LETT_INVITO_MEPA = 'lett_invito_mepa'
@@ -261,7 +266,6 @@ OFFERTA_DITTA_B = "offerta_ditta_b"
 OFFERTE_DITTE = "offerta_ditta"
 ORDINE_DITTA = "ordine_ditta"
 ORDINE_MEPA = "ordine_mepa"
-PREV_TRATT_MEPA = "prev.tratt.mepa"
 VERBALE_GARA = "verbale_gara"
 
 # Specifica allegati
@@ -271,19 +275,20 @@ ALL_NAME = 2    # Allegato multiplo con nome file
 ALL_PRAT = 3    # Allegato singolo con numero pratica
 
 # Tabella allegati  key   pref.nome file     descrizione  singolo/multiplo
-TAB_ALLEGATI = {ALLEGATO_GENERICO_A: ("A99_", "Allegato generico", ALL_NAME),
-                ALLEGATO_GENERICO_B: ("B99_", "Allegato generico", ALL_NAME),
-                CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
-                DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
-                PREV_TRATT_MEPA: ('A08_Preventivo_trattativa_MePA',
+TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Allegato generico", ALL_NAME),
+#               ALLEGATO_GENERICO_B: ("B99_", "Allegato generico", ALL_NAME),
+                ALL_CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
+                ALL_DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
+                ALL_PREV_MEPA: ('A08_Preventivo_trattativa_MePA',
                                   "Preventivo trattativa diretta MePA", ALL_SING),
-                ALLEGATO_CIG: ("A12_CIG_MePA.", "CIG da MePA", ALL_SING),
-                RDO_MEPA: ("A16_RdO_MePA", "RdO da MePA", ALL_SING),
-                OFF_DITTA: ("A20_Offerta_finale", "Offerta finale ditta", ALL_SING),
-                DET_FIRMATA: ("A24_Determina_Firmata", "Determina con firma digitale", ALL_SING),
+                ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
+                ALL_RDO_MEPA: ("A16_RdO_MePA", "RdO da MePA", ALL_SING),
+                ALL_OFF_DITTA: ("A20_Offerta_finale", "Offerta finale ditta", ALL_SING),
+                ALL_DET_FIRMATA: ("A24_Determina_Firmata",
+                                  "Determina con firma digitale", ALL_SING),
                 DOCUM_STIPULA: ("A29_Documento_di_stipula",
                                 "Documento di stipula su MEPA", ALL_SING),
-                CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
+#               CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
                 LETT_INVITO_A: ('A26_Lettera_Invito', "Lettera di invito", ALL_SPEC),
                 LETT_INVITO_B: ('B06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
                 LETT_INVITO_MEPA: ('A36_Lettera_Invito_MEPA', "Lettera di invito MEPA", ALL_SING),
@@ -314,7 +319,11 @@ Motivazione:
 
 {motivazione_acquisto}
 
-Importo: {str_costo_it}
+Importo netto: {costo_netto} 
+
+I.V.A.: {costo_iva}
+
+Totale: {costo_totale}
 """
 
 MESSAGGIO_DI_PROVA = '''
@@ -364,8 +373,8 @@ per gli adempimenti del caso
 '''
 
 TESTO_RICHIESTA_AUTORIZZAZIONE = '''
-{nome_rup} in qualità di RUP del progetto di acquisto N. {numero_pratica}
-chiede l'autorizzazione del direttore.
+{nome_rup} chiede al direttore la nomina a RUP del progetto di acquisto
+N. {numero_pratica} e l'autorizzazione a procedere.
 
 Per autorizzarlo puoi accedere alla procedura Acquisti:
 
@@ -378,7 +387,7 @@ TESTO_INVIA_DETERMINA = '''
 Ti è stata inviata la determina relativa al progetto di acquisto N. {numero_pratica}
 sotto dettagliato.
 
-La determina in allegato deve essere firmata elettronicamente e riinviata a:
+La determina in allegato deve essere firmata elettronicamente e inviata al RUP:
 
     {nome_rup} ({email_rup})
 
@@ -394,3 +403,10 @@ FILEDIR = os.path.join(PKG_ROOT, AUXFILEDIR)  # path della directory dei files a
 WORKDIR = os.path.join(PKG_ROOT, "work")      # path della directory di lavoro"
 
 CONFIG_FILE = os.path.join(DATADIR, CONFIG_NAME)
+
+# VARIABILI MANTENUTE PER COMPATIBILITA' DURANTE MODIFICHE
+
+RDO_MEPA = 'rdo_mepa'          # modalità acquisto
+ALLEGATO_GENERICO_A = "allegato_gen_a"
+ALLEGATO_GENERICO_B = "allegato_gen_b"
+CAPITOLATO_RDO = 'capit_rdo'

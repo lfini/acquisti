@@ -100,7 +100,7 @@ NO_NON_RESP = 'NO: '+NON_RESP
 NO_NON_RUP = 'NO: '+NON_RUP
 NO_NON_DIR = 'NO: '+NON_DIR
 NO_PDF_CIG = 'NO: Manca allegato CIG'
-NO_PDF_RDO_MEPA = 'NO: Manca allegato Rdo da MePA'
+NO_PDF_RDO_MEPA = 'NO: Manca allegato RdO da MePA'
 NO_PRATICA_CHIUSA = 'NO: Pratica chiusa'
 NO_PRATICA_ANNULLATA = 'NO: Pratica annullata'
 NO_PRATICA_GIA_ANNULLATA = 'NO: Pratica già annullata'
@@ -115,6 +115,7 @@ NO_PROGETTO_NON_AUTORIZ = 'NO: progetto non ancora autorizzato'
 NO_RESP = "NO: Operazione consentita solo al resp. dei fondi"
 NO_RESP_AMM = "NO: Operazione consentita solo al resp. dei fondi o all'Amministrazione"
 NO_RICH_AMM = "NO: Operazione consentita solo al richiedente o all'Amministrazione"
+NO_RICH_INVIATA = "NO: Richiesta già inviata"
 NO_RICH_RESP_AMM = "NO: Operazione consentita solo al richiedente, " \
                    "al responsabile dei fondi o all'Amministrazione"
 NO_RUP_NON_NOMINATO = 'NO: RUP non nominato'
@@ -210,24 +211,24 @@ def _test_pdf_determina(basedir, _unused, fase) -> bool:
 def _test_all_prev_mepa(basedir, d_prat) -> bool:
     "test esistenza preventivo mepa"
     if d_prat[cs.MOD_ACQUISTO] == cs.TRATT_MEPA_40:
-        return bool(ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.PREV_TRATT_MEPA][0]))
+        return bool(ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_PREV_MEPA][0]))
     return True
 
 def _test_all_cv_rup(basedir) -> bool:
     "test esistenza CV RUP"
-    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.CV_RUP][0])
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_CV_RUP][0])
 
 def _test_all_cig(basedir) -> bool:
     "test esistenza CIG in allegato"
-    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALLEGATO_CIG][0])
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_CIG][0])
 
 def _test_all_rdo_mepa(basedir) -> bool:
     "test esistenza RdO da MePA in allegato"
-    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.RDO_MEPA][0])
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_RDO_MEPA][0])
 
 def _test_all_dich_rup(basedir) -> bool:
     "test esistenza dichiarazione RUP"
-    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.DICH_RUP][0])
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_DICH_RUP][0])
 
 def _test_pdf_ordine(basedir, d_prat, fase) -> bool:
     "test esistenza ordine nella fase data"
@@ -328,13 +329,10 @@ def _test_pdf_lista_ditte_invitate(basedir, d_prat, fase) -> bool:
 #       return True
 #   raise FASE_ERROR
 
-def check_allegato_allegabile(user, d_prat, tipo) -> str:
+def check_allegato_allegabile(d_prat) -> str:
     "test: allegato allegabile"
     if not d_prat.get(cs.PRATICA_APERTA):
         return NO_PRATICA_CHIUSA
-    if tipo == cs.ALLEGATO_CIG:
-        if not (ret := check_cig_allegabile(user, d_prat)):
-            return ret
     return YES
 
 def check_allegati_cancellabili(the_user, d_prat) -> str:
@@ -430,6 +428,8 @@ def check_autorizz_richiedibile(the_user, basedir, d_prat) -> str:
         return NO_RUP_NON_NOMINATO
     if not (_test_all_cv_rup(basedir) and _test_all_dich_rup(basedir)):
         return NO_RUP_DICH
+    if d_prat[cs.STATO_PRATICA] >= 40:
+        return NO_RICH_INVIATA
     if d_prat.get(cs.FIRMA_AUTORIZZ_DIR):
         return NO_PROGETTO_AUTORIZ
     return YES
@@ -446,16 +446,6 @@ def check_rich_rup_autorizzabile(the_user, basedir, d_prat) -> str:
         return NO_RUP_NON_NOMINATO
     if not (_test_all_cv_rup(basedir) and _test_all_dich_rup(basedir)):
         return NO_RUP_DICH
-    return YES
-
-def check_cig_allegabile(the_user, d_prat) -> str:
-    "test: cig allegabile"
-    if not d_prat.get(cs.PRATICA_APERTA):
-        return NO_PRATICA_CHIUSA
-    if not _test_rup(the_user, d_prat):
-        return NO_NON_RUP
-    if not d_prat.get(cs.FIRMA_AUTORIZZ_DIR):
-        return NO_PROGETTO_NON_AUTORIZ
     return YES
 
 def check_determina_a_modificabile(the_user, basedir, d_prat) -> str:
@@ -536,7 +526,7 @@ def check_rdo_modificabile(_the_user, _basedir, d_prat) -> str:
         return NO_PRATICA_CHIUSA
     return YES
 
-def check_all_info(the_user, basedir, d_prat) -> dict:
+def make_info(the_user, basedir, d_prat) -> dict:
     "Verifica lo stato della pratica e riporta un dict riassuntivo"
     info = {}
     info['debug'] = YES if bool(DEBUG.local) else NOT
@@ -569,8 +559,6 @@ def check_all_info(the_user, basedir, d_prat) -> dict:
     info['progetto_approvabile'] = check_progetto_approvabile(the_user, basedir, d_prat)
     info['progetto_modificabile'] = check_progetto_modificabile(the_user, basedir, d_prat)
     info['progetto_inviabile'] = check_progetto_inviabile(the_user, basedir, d_prat)
-    if _test_direttore(the_user):
-        info['progetto_inviabile'] = 'NO: da approvare direttamente'
     info['rup_nominabile'] = check_rup_nominabile(the_user, d_prat)
     info['rup_cancellabile'] = check_rup_cancellabile(the_user, basedir, d_prat)
     info['autorizz_richiedibile'] = check_autorizz_richiedibile(the_user, basedir, d_prat)
@@ -579,7 +567,7 @@ def check_all_info(the_user, basedir, d_prat) -> dict:
 
 def check_all(the_user, basedir, d_prat) -> dict:
     "Verifica lo stato della pratica e riporta un dict con valori bool"
-    info = check_all_info(the_user, basedir, d_prat)
+    info = make_info(the_user, basedir, d_prat)
     for key, val in info.items():
         info[key] = val.startswith(YES)
     return info
@@ -623,9 +611,15 @@ def _nome_da_email(embody, prima_nome=True):
         return f'{row[0][1]}, {row[0][2]}'
     return '??, ??'
 
-def _hrecord(username, rec):
-    "generazione line di storia della pratica"
-    return f'{rec} il {ft.today()} ({username})'
+def storia(d_prat, user, rec):
+    'aggiunge record alla storia della pratica'
+    if isinstance(rec, str):
+        text = rec
+    else:
+        text = cs.PASSI[rec]
+    line = f'{text} - {ft.today()} ({user["fullname"]})'
+    d_prat[cs.STORIA_PRATICA].append(line)
+    logging.info(text)
 
 def send_email(eaddr, text, subj, attach=None):
     'invio mail a utente'
@@ -644,11 +638,9 @@ def send_email(eaddr, text, subj, attach=None):
 
 def _check_access(user_only=False):
     "Verifica accesso alla pratica"
-    user = ft.login_check(fk.session)
-    if not user:
-        return fk.redirect(fk.url_for('login'))
     d_prat = None
-    basedir = fk.session.get(BASEDIR_STR)
+    user = user_info()
+    basedir = fk.session.get(BASEDIR_STR, '')
     err_msg = None
     if basedir:
         try:
@@ -661,7 +653,7 @@ def _check_access(user_only=False):
         return (user, basedir, d_prat)
     fk.flash(err_msg, category="error")
     logging.error(err_msg)
-    return fk.redirect(fk.url_for('start'))
+    return None
 
 def word_match(ins, where):
     "funzione ausiliaria per ricerca di parole case insensitive"
@@ -680,37 +672,33 @@ def salvapratica(basedir, d_prat):
     tb.jsave((basedir, cs.PRAT_JFILE), d_prat)
     logging.info('Salvati dati pratica: %s/%s', basedir, cs.PRAT_JFILE)
 
-def menu_allegati_fasea(basedir, pratica):
-    "Genera lista allegati in funzione del tipo di acquisto (fase A)"
-    mod_acquisto = pratica[cs.MOD_ACQUISTO]
+def da_allegare(basedir, d_prat, s_range, tipo):
+    'verifica se la voce di menù allegati deve essere aggiunta'
+    if s_range[0] <= d_prat[cs.STATO_PRATICA] < s_range[1] and \
+        not ft.findfiles(basedir, cs.TAB_ALLEGATI[tipo][0]):
+        return sel_menu(tipo)
+    return None
+
+def menu_allegati(basedir, d_prat):
+    "Genera lista allegati in funzione del tipo di acquisto e del passo"
+    mod_acquisto = d_prat[cs.MOD_ACQUISTO]
     menu = []
 #   if mod_acquisto in (MEPA, CONSIP):
 #       menu.append(sel_menu(ORDINE_MEPA))
     if mod_acquisto == cs.TRATT_MEPA_40:
-        if not ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.PREV_TRATT_MEPA][0]):
-            menu.append(sel_menu(cs.PREV_TRATT_MEPA))
-        if not ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.CV_RUP][0]):
-            menu.append(sel_menu(cs.CV_RUP))
-        if not ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.DICH_RUP][0]):
-            menu.append(sel_menu(cs.DICH_RUP))
-        if not ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALLEGATO_CIG][0]):
-            menu.append(sel_menu(cs.ALLEGATO_CIG))
-        else:
-            if not ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.RDO_MEPA][0]):
-                menu.append(sel_menu(cs.RDO_MEPA))
-        if not ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.DET_FIRMATA][0]):
-            menu.append(sel_menu(cs.DET_FIRMATA))
-#   if mod_acquisto == RDO_MEPA:
-#       menu = [sel_menu(LETT_INVITO_MEPA), sel_menu(LISTA_DITTE_INV)]
-#   if mod_acquisto in (MEPA, RDO_MEPA, INFER_5000, SUPER_5000,
-#                       INFER_1000, SUPER_1000, PROC_NEG, MANIF_INT):
-#       menu.append(sel_menu(DICH_IMPOSTA_BOLLO))
-#   if mod_acquisto in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000):
-#       menu.append(sel_menu(OFFERTA_DITTA_A))
-#       menu.append(sel_menu(LISTA_DETTAGLIATA_A))
-
-#   menu.append(sel_menu(ALLEGATO_CIG))
-    menu.append(sel_menu(cs.ALLEGATO_GENERICO_A))
+        if voce_menu := da_allegare(basedir, d_prat, (0,10), cs.ALL_PREV_MEPA):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (30,40), cs.ALL_CV_RUP):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (30,40), cs.ALL_DICH_RUP):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_CIG):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_RDO_MEPA):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_DET_FIRMATA):
+            menu.append(voce_menu)
+    menu.append(sel_menu(cs.ALL_GENERICO))
     return menu
 
 def menu_allegati_faseb(_pratica):
@@ -775,14 +763,14 @@ def _select(menu, key):
             break
     return ret
 
-ALL_A_MATCH = re.compile(r"A\d\d_")
-ALL_B_MATCH = re.compile(r"B\d\d_")
+ALL_MATCH = re.compile(r"A\d\d_")
+#ALL_B_MATCH = re.compile(r"B\d\d_")
 
 def pratica_common(user, basedir, d_prat):
     "parte comune alle pagine relative alla pratica"
     info = check_all(user, basedir, d_prat)
-    upla = fms.MyUpload(menu_allegati_fasea(basedir, d_prat))
-    uplb = fms.MyUpload(menu_allegati_faseb(d_prat))
+    upla = fms.MyUpload(menu_allegati(basedir, d_prat))
+#   uplb = fms.MyUpload(menu_allegati_faseb(d_prat))
     # Workaround per aggiornare il formato dati pratica vers. 2
     if not d_prat.get(cs.STR_MOD_ACQ) or cs.STR_CRIT_ASS not in d_prat:
         err = f'file pratica non aggiornato. Pratica: {d_prat[cs.NUMERO_PRATICA]}'
@@ -796,22 +784,21 @@ def pratica_common(user, basedir, d_prat):
     atch_files = ft.flist(basedir, filetypes=cs.UPLOAD_TYPES,
                           exclude=(cs.PROG_PDF_FILE, cs.DETA_PDF_FILE,
                                    cs.DETB_PDF_FILE, cs.ORD_PDF_FILE))
-    info['attachA'] = [(a, _clean_name(a)) for a in atch_files if ALL_A_MATCH.match(a)]
-    info['attachB'] = [(a, _clean_name(a)) for a in atch_files if ALL_B_MATCH.match(a)]
-    info['faseB'] = show_faseb(basedir, d_prat)
+    info['attach'] = [(a, _clean_name(a)) for a in atch_files if ALL_MATCH.match(a)]
+#   info['attachB'] = [(a, _clean_name(a)) for a in atch_files if ALL_B_MATCH.match(a)]
+#   info['faseB'] = show_faseb(basedir, d_prat)
     info['ordine'] = show_ordine(d_prat)
     info['rdo'] = 0
     info['allegati_mancanti'] = verifica_allegati(basedir, d_prat)
 #   info['rdo'] = 1 if d_prat.get(MOD_ACQUISTO) == RDO_MEPA else 0
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, uploadA=upla,
-                              uploadB=uplb, sede=CONFIG.config[cs.SEDE])
+                              sede=CONFIG.config[cs.SEDE])
 
 def _modifica_pratica(what):               # pylint: disable=R0912,R0915
     "parte comune alle pagine di modifica pratica"
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if what[0].lower() == 'c':      # Chiudi pratica
         err = check_pratica_chiudibile(user, basedir, d_prat)
@@ -820,9 +807,9 @@ def _modifica_pratica(what):               # pylint: disable=R0912,R0915
             logging.warning('Chiusura pratica rifiutata: %s. Utente %s, pratica %s',
                             err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'], 'Pratica chiusa'))
             d_prat[cs.PRATICA_APERTA] = 0
-            logging.info('Pratica %s chiusa', d_prat[cs.NUMERO_PRATICA])
+            text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} chiusa'
+            storia(d_prat, user, text)
     elif what[0].lower() == 'a':     # Apri pratica
         err = check_pratica_apribile(user, d_prat)
         if err.startswith(NOT):
@@ -830,9 +817,9 @@ def _modifica_pratica(what):               # pylint: disable=R0912,R0915
             logging.error('Apertura pratica non autorizzata: %s. Utente %s, pratica %s',
                           err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'], 'Pratica riaperta'))
+            text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} riaperta'
+            storia(d_prat, user, text)
             d_prat[cs.PRATICA_APERTA] = 1
-            logging.info('Pratica %s riaperta', d_prat[cs.NUMERO_PRATICA])
     elif what[0].lower() == 'n':    # Annulla pratica
         err = check_pratica_annullabile(user, d_prat)
         if err.startswith(NOT):
@@ -841,10 +828,9 @@ def _modifica_pratica(what):               # pylint: disable=R0912,R0915
                           err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
             d_prat[cs.PRATICA_ANNULLATA] = 1
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Pratica annullata e chiusa'))
+            text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} annullata e chiusa'
+            storia(d_prat, user, text)
             d_prat[cs.PRATICA_APERTA] = 0
-            logging.info('Pratica %s annullata', d_prat[cs.NUMERO_PRATICA])
     salvapratica(basedir, d_prat)
     return fk.redirect(fk.url_for('pratica1'))
 
@@ -929,7 +915,7 @@ def _genera_pratica(user):
               cs.EMAIL_RICHIEDENTE: user['email'],
               cs.NOME_RICHIEDENTE: user['name']+' '+user['surname'],
               cs.DATA_RICHIESTA: ft.today(False),
-              cs.STATO_PRATICA: 'Iniziale',
+              cs.STATO_PRATICA: 0,
               cs.PRATICA_APERTA: 1}
     logging.info("Creata nuova pratica (temporanea)")
     return d_prat
@@ -941,26 +927,22 @@ def get_tipo_allegato():
         return allx[0][:-2]
     return ""
 
-
 def filename_allegato(model, prefix, origname, ext, spec, d_prat):    # pylint: disable=R0913
     "Genera nomi file per allegati"
     if model == cs.ALL_SING:
-        name = prefix+ext
-    elif model == cs.ALL_SPEC:
+        return prefix+ext
+    if model == cs.ALL_SPEC:
         if spec:
             cspec = spec.strip("/\\?!;,><|#*\"'$%&£()`§")
             cspec = cspec.replace(" ", "_")
-            name = f"{prefix}_({cspec}){ext}"
-        else:
-            name = ""
-    elif model == cs.ALL_NAME:
-        name = prefix+origname+ext
-    elif model == cs.ALL_PRAT:
-        nprat = d_prat[cs.NUMERO_PRATICA].replace("/", "-")
-        name = f"{prefix}_{nprat}{ext}"
-    else:
+            return f"{prefix}_({cspec}){ext}"
+        return ""
+    if model == cs.ALL_NAME:
+        return prefix+origname+ext
+    if model != cs.ALL_PRAT:
         raise ILL_ATCH
-    return name
+    nprat = d_prat[cs.NUMERO_PRATICA].replace("/", "-")
+    return f"{prefix}_{nprat}{ext}"
 
 def _rdo_validate(dati_pratica):
     "Verifica coerenza dati relativi a RDO su MEPA"
@@ -1034,8 +1016,7 @@ def modificadetermina_b(user, basedir, d_prat):
             str_direttore = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
             ft.makepdf(basedir, det_template, det_name, sede=CONFIG.config[cs.SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user, il_direttore=str_direttore)
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Generata determina B'))
+            storia(d_prat, user, 'Generata determina B')
             return fk.redirect(fk.url_for('pratica1'))
         errors = det.get_errors()
         for err in errors:
@@ -1102,21 +1083,55 @@ def costo_dett(costo):
             _voce(costo['voce_5']),
            ]
 
+def login():
+    "genera pagina di login"
+    if os.stat(cs.CONFIG_FILE).st_mtime > CONFIG.time:
+        CONFIG.time = time.time()
+        CONFIG.config = tb.jload(cs.CONFIG_FILE)
+        logging.info('Riletta configurazione aggiornata')
+    uid = fk.request.form.get('userid')
+    pwd = fk.request.form.get('password')
+    form = fms.MyLoginForm(cs.DATADIR, uid, pwd, CONFIG.config.get(cs.LDAP_HOST),
+                           CONFIG.config.get(cs.LDAP_PORT), formdata=fk.request.form)
+    if fk.request.method == 'POST' and form.validate():
+        ret, why = form.password_ok()
+        if ret:
+            fk.session['userid'] = fk.request.form['userid']
+            return fk.redirect(fk.url_for('start'))
+        logging.error('Accesso negato: userid: "%s" (%s)', uid, why)
+        fk.flash(f'Accesso negato: {why}', category="error")
+    return fk.render_template('login.html', form=form, sede=CONFIG.config[cs.SEDE],
+                              title='Procedura per acquisti')
+
+
 ACQ = fk.Flask(__name__, template_folder=cs.FILEDIR, static_folder=cs.FILEDIR)
 
 @ACQ.before_request
 def before():
     "procedura da eseguire prima di ogni pagina"
-    ft.set_host_info(fk.request.remote_addr)
-    update_lists()
+    logger = logging.getLogger()
+    logger.host_info = fk.request.remote_addr
+    if userid := fk.session.get('userid'):
+        update_lists()
+        logger.user_info = userid
+        ret = None
+    else:
+        logger.user_info = '----------'
+        ret = login()
+    ft.setformatter()
+    return ret
+
+def user_info():
+    'trova record utente'
+    if userid := fk.session.get('userid'):
+        return ft.get_user(userid)
+    return {}
 
 @ACQ.route("/")
 def start():
     "pagina: iniziale"
     logging.info('URL: / (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if not user:
-        return fk.redirect(fk.url_for('login'))
+    user = user_info()
     fk.session[BASEDIR_STR] = ''
     rooturl = ft.host(fk.request.url_root)
     status = {'url0': rooturl, 'footer': 'Procedura '+long_version()}
@@ -1133,9 +1148,7 @@ def start():
 def about():                                 # pylint: disable=R0915
     "pagina: informazioni sulle procedure"
     logging.info('URL: /about (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if not user:
-        return fk.redirect(fk.url_for('login'))
+    user = user_info()
     html = []
     html.append('<table cellpadding=3 border=1>')
     html.append('<tr><th colspan=2> Parametri di sistema </th></tr>')
@@ -1192,37 +1205,15 @@ def clearsession():
     "pagina: logout"
     logging.info('URL: /clearsession (%s)', fk.request.method)
     fk.session.clear()
-    return fk.redirect(fk.url_for('login'))
-
-@ACQ.route("/login", methods=['GET', 'POST'])
-def login():
-    "pagina: login"
-    logging.info('URL: /login (%s)', fk.request.method)
-    if os.stat(cs.CONFIG_FILE).st_mtime > CONFIG.time:
-        CONFIG.time = time.time()
-        CONFIG.config = tb.jload(cs.CONFIG_FILE)
-        logging.info('Riletta configurazione aggiornata')
-    uid = fk.request.form.get('userid')
-    pwd = fk.request.form.get('password')
-    form = fms.MyLoginForm(cs.DATADIR, uid, pwd, CONFIG.config.get(cs.LDAP_HOST),
-                           CONFIG.config.get(cs.LDAP_PORT), formdata=fk.request.form)
-    if fk.request.method == 'POST' and form.validate():
-        ret, why = form.password_ok()
-        if ret:
-            fk.session['userid'] = fk.request.form['userid']
-            return fk.redirect(fk.url_for('start'))
-        logging.error('Accesso negato: userid: "%s" (%s)', uid, why)
-        fk.flash(f'Accesso negato: {why}', category="error")
-    return fk.render_template('login.html', form=form, sede=CONFIG.config[cs.SEDE],
-                              title='Procedura per acquisti')
+    return login()
 
 @ACQ.route('/modificaprogetto', methods=('GET', 'POST'))
 def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
     "pagina: modifica progetto"
     logging.info('URL: /modificaprogetto (%s)', fk.request.method)
-    ret = _check_access(user_only=True)
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access(user_only=True)):
+        return fk.redirect(fk.url_for('start'))
+    print_debug('_check_access:', ret)
     user, basedir, d_prat = ret
     if not d_prat:
         print_debug('Genera nuova pratica per:', user['userid'])
@@ -1257,30 +1248,19 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
             return fk.redirect(fk.url_for('start'))
         if prog.validate():
             if cs.STORIA_PRATICA not in d_prat:
+                d_prat[cs.STORIA_PRATICA] = []
                 year = ft.thisyear()
                 number = ft.find_max_prat(year)+1
                 basedir = ft.namebasedir(year, number)
                 fk.session[BASEDIR_STR] = basedir
                 ft.newdir(basedir)
                 d_prat.update({cs.NUMERO_PRATICA: f'{number}/{year:4d}',
-                               cs.STORIA_PRATICA: [_hrecord(user['fullname'],
-                                                         'Progetto generato')],
                                cs.DATA_RICHIESTA: ft.today(False)})
+                storia(d_prat, user, 0)
             else:
-                d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                       'Progetto modificato'))
+                storia(d_prat, user, 'Modificato progetto di acquisto')
             d_prat.update(clean_data(prog.data))
             d_prat[cs.STR_CODF] = ', '.join(d_prat[cs.LISTA_CODF])
-##########
-#           d_prat[cs.STR_COSTO_IT] = ft.stringa_costo(d_prat.get(cs.COSTO), "it")
-#           d_prat[cs.STR_COSTO_UK] = ft.stringa_costo(d_prat.get(cs.COSTO), "uk")
-#           d_prat[cs.STR_ONERI_IT] = ft.stringa_valore(d_prat.get(cs.ONERI_SICUREZZA), "it")
-#           d_prat[cs.STR_ONERI_UK] = ft.stringa_valore(d_prat.get(cs.ONERI_SICUREZZA), "uk")
-            d_prat[cs.STR_COSTO_IT] = 'T.B.D'
-            d_prat[cs.STR_COSTO_UK] = 'T.B.D'
-            d_prat[cs.STR_ONERI_IT] = 'T.B.D'
-            d_prat[cs.STR_ONERI_UK] = 'T.B.D'
-##########
             d_prat[cs.STR_MOD_ACQ] = _select(cs.MENU_MOD_ACQ, d_prat.get(cs.MOD_ACQUISTO))
             d_prat[cs.STR_CRIT_ASS] = _select(cs.MENU_CRIT_ASS, d_prat.get(cs.CRIT_ASS))
             d_prat[cs.NOME_RESPONSABILE] = _nome_da_email(d_prat[cs.EMAIL_RESPONSABILE], True)
@@ -1288,6 +1268,11 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
             d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
             d_prat[cs.PROGETTO_INVIATO] = 0
             d_prat[cs.FIRMA_APPROV_RESP] = ""
+            totimp, totiva, tottot = costo_totale(d_prat['costo'])
+            d_prat[cs.COSTO_NETTO] = f'{totimp:.2f}'
+            d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
+            d_prat[cs.COSTO_TOTALE] = f'{tottot:.2f}'
+            d_prat[cs.COSTO_DETTAGLIO] = costo_dett(d_prat['costo'])
             d_prat[cs.SAVED] = 1
             salvapratica(basedir, d_prat)
             prog_name = os.path.splitext(cs.PROG_PDF_FILE)[0]
@@ -1310,9 +1295,8 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911
 def inviaprogetto():
     "pagina: invia progetto per approvazione resp. fondi"
     logging.info('URL: /inviaprogetto (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_progetto_inviabile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -1331,9 +1315,10 @@ def inviaprogetto():
             fk.flash("Richiesta di approvazione per  la pratica "
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                      f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
+            step = 10
+            d_prat[cs.STATO_PRATICA] = step
             d_prat[cs.PROGETTO_INVIATO] = 1
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Inviata richiesta approvazione'))
+            storia(d_prat, user, step)
             salvapratica(basedir, d_prat)
         else:
             msg = "Invio per approvazione fallito"
@@ -1344,9 +1329,8 @@ def inviaprogetto():
 def inviadetermina():
     "pagina: invia determina per firma digitale direttore"
     logging.info('URL: /inviadetermina (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_determina_a_inviabile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -1366,9 +1350,9 @@ def inviadetermina():
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                      f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
             d_prat[cs.DET_A_INVIATA] = 1
-            hist = 'Determina inviaa a direttore per firma'
-            d_prat[cs.STATO_PRATICA] = hist
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user.get('fullname'), hist))
+            step = 70
+            d_prat[cs.STATO_PRATICA] = step
+            storia(d_prat, user, step)
             salvapratica(basedir, d_prat)
         else:
             msg = "Invio per firma fallito"
@@ -1379,9 +1363,8 @@ def inviadetermina():
 def approvaprogetto():
     "pagina: approva progetto"
     logging.info('URL: /approvaprogetto (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_progetto_approvabile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -1391,9 +1374,9 @@ def approvaprogetto():
     else:
         sgn = ft.signature((basedir, cs.PROG_PDF_FILE))
         d_prat[cs.FIRMA_APPROV_RESP] = sgn
-        hist = 'Progetto approvato da resp. fondi'
-        d_prat[cs.STATO_PRATICA] = hist
-        d_prat[cs.STORIA_PRATICA].append(_hrecord(user.get('fullname'), hist))
+        step = 20
+        d_prat[cs.STATO_PRATICA] = step
+        storia(d_prat, user, step)
         salvapratica(basedir, d_prat)
         fk.flash(f"L'approvazione del progetto {d_prat[cs.NUMERO_PRATICA]} è stata"
                  " correttamente registrata", category="info")
@@ -1409,9 +1392,8 @@ def approvaprogetto():
 def nominarup():
     "pagina: nomina RUP"
     logging.info('URL: /nominarup (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_rup_nominabile(user, d_prat)
     if err.startswith(NOT):
@@ -1428,9 +1410,10 @@ def nominarup():
         if rupf.validate():
             d_prat[cs.EMAIL_RUP] = rupf.email_rup.data
             d_prat[cs.NOME_RUP] = _nome_da_email(d_prat[cs.EMAIL_RUP], True)
-            hist = f'RUP nominato: {d_prat[cs.NOME_RUP]}'
-            d_prat[cs.STATO_PRATICA] = hist
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user.get('fullname'), hist))
+            step = 30
+            d_prat[cs.STATO_PRATICA] = step
+            hist = cs.PASSI[step]+f' ({d_prat[cs.NOME_RUP]})'
+            storia(d_prat, user, hist)
             salvapratica(basedir, d_prat)
             msg = f"{d_prat[cs.NOME_RUP]} nominato RUP per pratica {d_prat[cs.NUMERO_PRATICA]}"
             logging.info(msg)
@@ -1452,9 +1435,8 @@ def nominarup():
 def autorizza():
     "autorizzazione del direttore"
     logging.info('URL: /autorizza (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_rich_rup_autorizzabile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -1470,13 +1452,12 @@ def autorizza():
     nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
     ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
                nominarup=True, il_direttore=str_dir, sede=CONFIG.config[cs.SEDE])
-    hist = 'Nomina RUP e autorizzazione del direttore completate'
-    d_prat[cs.STATO_PRATICA] = hist
-    d_prat[cs.STORIA_PRATICA].append(_hrecord(user.get('fullname'), hist))
-    logging.info(hist)
+    step = 50
+    d_prat[cs.STATO_PRATICA] = step
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
     sgn = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
     d_prat[cs.FIRMA_AUTORIZZ_DIR] = sgn
+    storia(d_prat, user, step)
     salvapratica(basedir, d_prat)
     return pratica1()
 
@@ -1484,9 +1465,8 @@ def autorizza():
 def rich_autorizzazione():
     "pagina: richiesta autorizzazione del direttore"
     logging.info('URL: /rich_autorizzazione (%s)', fk.request.method)     #pylint: disable=W1203
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_autorizz_richiedibile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -1494,9 +1474,9 @@ def rich_autorizzazione():
         logging.error('Invio richiesta di autorizzazione non consentito: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
-    hist = 'Richiesta autorizzazione inviata da RUP a direttore'
-    d_prat[cs.STATO_PRATICA] = hist
-    d_prat[cs.STORIA_PRATICA].append(_hrecord(user.get('fullname'), hist))
+    step = 40
+    d_prat[cs.STATO_PRATICA] = step
+    storia(d_prat, user, step)
     subj = 'Richiesta autorizzazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
     body = cs.TESTO_RICHIESTA_AUTORIZZAZIONE.format(url=fk.request.root_url, **d_prat)
     ret = send_email(CONFIG.config[cs.EMAIL_DIRETTORE], body, subj)
@@ -1515,9 +1495,8 @@ def rich_autorizzazione():
 def rimuovirup():
     "pagina: rimuovi RUP"
     logging.info('URL: /rimuovirup (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_rup_cancellabile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -1539,9 +1518,8 @@ def rimuovirup():
 def cancella(name):
     "pagina: cancella allegato"
     logging.info('URL: /cancella/%s (%s)', name, fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_allegati_cancellabili(user, d_prat)
     if err.startswith(NOT):
@@ -1549,7 +1527,7 @@ def cancella(name):
         logging.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
     else:
-        d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'], f'Rimosso allegato {name}'))
+        storia(d_prat, user, f'Rimosso allegato {name}')
         ft.remove((basedir, name))
     salvapratica(basedir, d_prat)
     return pratica1()
@@ -1564,9 +1542,8 @@ def vedicodf():
 def vedifile(filename):
     "pagina: visualizza file PDF"
     logging.info('URL: /vedifile/%s (%s)', filename, fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     basedir = ret[1]
     return fk.send_from_directory(basedir, filename, as_attachment=True)
 
@@ -1589,9 +1566,7 @@ PRAT_DAP = 'Elenco pratiche da approvare '
 def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,R0912
     "pagina: lista pratiche"
     logging.info('URL: /pratiche/%s/%s/%s (%s)', filtro, anno, ascendente, fk.request.method)
-    user = ft.login_check(fk.session)
-    if not user:
-        return fk.redirect(fk.url_for('login'))
+    user = user_info()
     fk.session[BASEDIR_STR] = ''
     anno = int(anno)
     if not anno:
@@ -1670,87 +1645,85 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
 def trovapratica():               # pylint: disable=R0912,R0914,R0915
     "pagina: trova pratica"
     logging.info('URL: /trovapratica (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if not user:
-        return fk.redirect(fk.url_for('login'))
     fk.session[BASEDIR_STR] = ''
-    if _test_admin(user):
-        if cs.ANNULLA in fk.request.form:
-            fk.flash('Operazione annullata', category="info")
-            return fk.redirect(fk.url_for('start'))
-        prf = fms.TrovaPratica(fk.request.form)
-        user_menu = [(x[6], x[6]) for  x in ft.GlobLists.USERLIST.rows]
-        user_menu.sort(key=lambda x: x[1])
-        user_menu.insert(0, ('*', 'Tutti'))
-        prf.trova_responsabile.choices = user_menu
-        prf.trova_richiedente.choices = user_menu
-        years = ft.get_years(cs.DATADIR)
-        years.sort(reverse=True)
-        year_menu = list(zip(years, years))
-        prf.trova_anno.choices = year_menu
-        if fk.request.method == 'POST':
-            theyear = prf.data['trova_anno']
-            ricerca = f" anno={prf.data['trova_anno']} + (pratiche "
-            vaperta = int(prf.data.get('trova_prat_aperta', '-1'))
-            if vaperta == 1:
-                ricerca += 'aperte)'
-                aperta_func = lambda x: x.get(cs.PRATICA_APERTA, 0) == 1
-            elif vaperta == 0:
-                ricerca += 'chiuse)'
-                aperta_func = lambda x: x.get(cs.PRATICA_APERTA, 1) == 0
-            else:
-                ricerca += 'aperte e chiuse)'
-                aperta_func = lambda x: True
-            nome_resp = prf.data['trova_responsabile']
-            if nome_resp:
-                resp_func = lambda x: word_match(nome_resp,
-                                                 x.get(cs.NOME_RESPONSABILE, ''))
-                ricerca += f' + (resp.={nome_resp})'
-            else:
-                resp_func = lambda x: True
-            nome_rich = prf.data['trova_richiedente']
-            if nome_rich:
-                rich_func = lambda x: word_match(nome_rich,
-                                                 x.get(cs.NOME_RICHIEDENTE, ''))
-                ricerca += f' + (richied.={nome_rich})'
-            else:
-                rich_func = lambda x: True
-            if prf.data['trova_parola']:
-                parola_func = lambda x: word_match(prf.data.get('trova_parola', ''),
-                                                   x.get(cs.DESCRIZIONE_ACQUISTO, ''))
-                ricerca += f" + (contiene parola={prf.data['trova_parola']})"
-            else:
-                parola_func = lambda x: True
-            selector = lambda x: aperta_func(x) and rich_func(x) and resp_func(x) and parola_func(x)
-            if prf.data['elenco_ascendente']:
-                sort_func = _pratica_ascendente
-            else:
-                sort_func = lambda x: -1*_pratica_ascendente(x)
+    user = user_info()
+    if not _test_admin(user):
+        logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
+        fk.session.clear()
+        return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return fk.redirect(fk.url_for('start'))
+    prf = fms.TrovaPratica(fk.request.form)
+    user_menu = [(x[6], x[6]) for  x in ft.GlobLists.USERLIST.rows]
+    user_menu.sort(key=lambda x: x[1])
+    user_menu.insert(0, ('*', 'Tutti'))
+    prf.trova_responsabile.choices = user_menu
+    prf.trova_richiedente.choices = user_menu
+    years = ft.get_years(cs.DATADIR)
+    years.sort(reverse=True)
+    year_menu = list(zip(years, years))
+    prf.trova_anno.choices = year_menu
+    if fk.request.method == 'POST':
+        theyear = prf.data['trova_anno']
+        ricerca = f" anno={prf.data['trova_anno']} + (pratiche "
+        vaperta = int(prf.data.get('trova_prat_aperta', '-1'))
+        if vaperta == 1:
+            ricerca += 'aperte)'
+            aperta_func = lambda x: x.get(cs.PRATICA_APERTA, 0) == 1
+        elif vaperta == 0:
+            ricerca += 'chiuse)'
+            aperta_func = lambda x: x.get(cs.PRATICA_APERTA, 1) == 0
+        else:
+            ricerca += 'aperte e chiuse)'
+            aperta_func = lambda x: True
+        nome_resp = prf.data['trova_responsabile']
+        if nome_resp:
+            resp_func = lambda x: word_match(nome_resp,
+                                             x.get(cs.NOME_RESPONSABILE, ''))
+            ricerca += f' + (resp.={nome_resp})'
+        else:
+            resp_func = lambda x: True
+        nome_rich = prf.data['trova_richiedente']
+        if nome_rich:
+            rich_func = lambda x: word_match(nome_rich,
+                                             x.get(cs.NOME_RICHIEDENTE, ''))
+            ricerca += f' + (richied.={nome_rich})'
+        else:
+            rich_func = lambda x: True
+        if prf.data['trova_parola']:
+            parola_func = lambda x: word_match(prf.data.get('trova_parola', ''),
+                                               x.get(cs.DESCRIZIONE_ACQUISTO, ''))
+            ricerca += f" + (contiene parola={prf.data['trova_parola']})"
+        else:
+            parola_func = lambda x: True
+        selector = lambda x: aperta_func(x) and rich_func(x) and resp_func(x) and parola_func(x)
+        if prf.data['elenco_ascendente']:
+            sort_func = _pratica_ascendente
+        else:
+            sort_func = lambda x: -1*_pratica_ascendente(x)
 
-            try:
-                lista = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, theyear,
-                                   content_filter=selector, sort=sort_func)
-            except Exception:               # pylint: disable=W0703
-                err_msg = _errore_doclist(theyear)
-                fk.flash(err_msg, category="error")
-                logging.error(err_msg)
-                return fk.redirect(fk.url_for('start'))
-            title = 'Trova Pratiche'
-            subtitle = 'Risultato per ricerca: '+ricerca+'<br>'+ \
-                       f'N. pratiche selezionate: {len(lista)}'
-            return fk.render_template('lista_pratiche_per_anno.html', filtro='', pre=[],
-                                      post=[], year=theyear, dlist=lista.records, title=title,
-                                      sede=CONFIG.config[cs.SEDE], subtitle=subtitle)
-        ddp = {'title': 'Trova pratiche',
-               'subtitle': 'Specifica criteri di ricerca',
-               'before': '<form method=POST action=/trovapratica '
-                         'accept-charset="utf-8" novalidate>',
-               'after': '</form>',
-               'body': prf()}
-        return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
-    logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
-    fk.session.clear()
-    return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
+        try:
+            lista = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, theyear,
+                               content_filter=selector, sort=sort_func)
+        except Exception:               # pylint: disable=W0703
+            err_msg = _errore_doclist(theyear)
+            fk.flash(err_msg, category="error")
+            logging.error(err_msg)
+            return fk.redirect(fk.url_for('start'))
+        title = 'Trova Pratiche'
+        subtitle = 'Risultato per ricerca: '+ricerca+'<br>'+ \
+                   f'N. pratiche selezionate: {len(lista)}'
+        return fk.render_template('lista_pratiche_per_anno.html', filtro='', pre=[],
+                                  post=[], year=theyear, dlist=lista.records, title=title,
+                                  sede=CONFIG.config[cs.SEDE], subtitle=subtitle)
+    ddp = {'title': 'Trova pratiche',
+           'subtitle': 'Specifica criteri di ricerca',
+           'before': '<form method=POST action=/trovapratica '
+                     'accept-charset="utf-8" novalidate>',
+           'after': '</form>',
+           'body': prf()}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
@@ -1758,19 +1731,17 @@ def pratica0(num, year):
     logging.info('URL: /pratica0/%s/%s (%s)', num, year, fk.request.method)
     basedir = ft.namebasedir(year, num)
     fk.session[BASEDIR_STR] = basedir
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     return pratica_common(user, basedir, d_prat)
 
 @ACQ.route('/pratica1', methods=('GET', 'POST'))
-def pratica1():               # pylint: disable=R0914
+def pratica1():               # pylint: disable=R0914,R0911
     "pagina: pratica, modo 1 (iterazione modifica)"
     logging.info('URL: /pratica1 (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if fk.request.method == 'POST':
         if 'upload_file' in fk.request.files:
@@ -1778,52 +1749,57 @@ def pratica1():               # pylint: disable=R0914
                 fle = fk.request.files['upload_file']
             except Exception as exc:               # pylint: disable=W0703
                 fk.flash(f"Errore caricamento file: {exc}", category="error")
-            else:
-                tipo_allegato = get_tipo_allegato()
-                logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
-                err = check_allegato_allegabile(user, d_prat, tipo_allegato)
-                if err.startswith(NOT):
-                    fk.flash(err, category="error")
-                    logging.error(err)
-                    return pratica_common(user, basedir, d_prat)
-                origname, ext = os.path.splitext(fle.filename)
-                origname = secure_filename(origname)
-                ext = ext.lower()
-                if ext not in cs.UPLOAD_TYPES:
-                    fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
-                elif tipo_allegato in (cs.LISTA_DETTAGLIATA_A, cs.LISTA_DETTAGLIATA_B) and \
-                     ext not in cs.PDF_TYPES:
-                    fk.flash(f"L'allegato non è in formato PDF: {fle.filename}", category="error")
-                else:
-                    prefix, mod_allegato = (cs.TAB_ALLEGATI[tipo_allegato][0],
-                                            cs.TAB_ALLEGATI[tipo_allegato][2])
-                    spec = fk.request.form.get(cs.SIGLA_DITTA, "")
-                    name = filename_allegato(mod_allegato, prefix, origname, ext, spec, d_prat)
-                    if not name:
-                        fk.flash("Devi specificare una sigla per la ditta!", category="error")
-                        return pratica_common(user, basedir, d_prat)
-                    fpath = os.path.join(basedir, name)
-                    if os.path.exists(fpath):
-                        fk.flash(f'File "{name}" già esistente!', category='error')
-                        fk.flash('Devi modificare il nome del file '
-                                 '(o rimuovere quello esistente)', category="error")
-                        return pratica_common(user, basedir, d_prat)
+                return pratica_common(user, basedir, d_prat)
+            tipo_allegato = get_tipo_allegato()
+            logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
+            err = check_allegato_allegabile(d_prat)
+            if err.startswith(NOT):
+                fk.flash(err, category="error")
+                logging.error(err)
+                return pratica_common(user, basedir, d_prat)
+            origname, ext = os.path.splitext(fle.filename)
+            origname = secure_filename(origname)
+            ext = ext.lower()
+            if ext not in cs.UPLOAD_TYPES:
+                fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
+                return pratica_common(user, basedir, d_prat)
+#           elif tipo_allegato in (cs.LISTA_DETTAGLIATA_A, cs.LISTA_DETTAGLIATA_B) and \
+#                ext not in cs.PDF_TYPES:
+#               fk.flash(f"L'allegato non è in formato PDF: {fle.filename}", category="error")
+            prefix, mod_allegato = (cs.TAB_ALLEGATI[tipo_allegato][0],
+                                    cs.TAB_ALLEGATI[tipo_allegato][2])
+            spec = fk.request.form.get(cs.SIGLA_DITTA, "")
+            name = filename_allegato(mod_allegato, prefix, origname, ext, spec, d_prat)
+            if not name:
+                fk.flash("Devi specificare una sigla per la ditta!", category="error")
+                return pratica_common(user, basedir, d_prat)
+            fpath = os.path.join(basedir, name)
+            if os.path.exists(fpath):
+                fk.flash(f'File "{name}" già esistente!', category='error')
+                fk.flash('Devi modificare il nome del file '
+                         '(o rimuovere quello esistente)', category="error")
+                return pratica_common(user, basedir, d_prat)
 
-                    fle.save(fpath)        # Archivia file da upload
-                    msg = 'Allegato file '+name
-                    d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'], msg))
-                    salvapratica(basedir, d_prat)
-                    ft.protect(fpath)
-                    logging.info('Allegato file %s', fpath)
+            fle.save(fpath)        # Archivia file da upload
+            if d_prat[cs.STATO_PRATICA] > 50 and tipo_allegato == cs.ALL_RDO_MEPA:
+                d_prat[cs.STATO_PRATICA] = 60
+                storia(d_prat, user, 60)
+            elif d_prat[cs.STATO_PRATICA] > 70 and tipo_allegato == cs.ALL_DET_FIRMATA:
+                d_prat[cs.STATO_PRATICA] = 80
+                storia(d_prat, user, 80)
+            else:
+                msg = 'Allegato file '+name
+                storia(d_prat, user, msg)
+            salvapratica(basedir, d_prat)
+            ft.protect(fpath)
     return pratica_common(user, basedir, d_prat)
 
 @ACQ.route('/togglestoria', methods=('GET', 'POST', ))
 def togglestoria():
     "pagina: abilita/disabilita storia pratica"
     logging.info('URL: /togglestoria (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     sst = d_prat.get(cs.VEDI_STORIA, 0)
     if sst:
@@ -1837,9 +1813,8 @@ def togglestoria():
 def modificadetermina_a():                     #pylint: disable=R0914
     "pagina: modifica determina a"
     logging.info('URL: /modificadetermina_a (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
@@ -1866,16 +1841,10 @@ def modificadetermina_a():                     #pylint: disable=R0914
             det_name = os.path.splitext(cs.DETA_PDF_FILE)[0]
             ft.makepdf(basedir, det_template, det_name, sede=CONFIG.config[cs.SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user, il_direttore=str_dir)
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Determina agg. generata'))
             ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
             d_prat[cs.PDF_ORDINE] = ''
             d_prat[cs.PDF_DETERMINA_A] = cs.DETA_PDF_FILE
-            totimp, totiva, tottot = costo_totale(d_prat['costo'])
-            d_prat[cs.COSTO_NETTO] = f'{totimp:.2f}'
-            d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
-            d_prat[cs.COSTO_TOTALE] = f'{tottot:.2f}'
-            d_prat[cs.COSTO_DETTAGLIO] = costo_dett(d_prat['costo'])
+            storia(d_prat, user, 'Determina aggiudicazione generata')
             salvapratica(basedir, d_prat)
             url = fk.url_for('pratica1')
             return fk.redirect(url)
@@ -1897,9 +1866,8 @@ def modificadetermina_a():                     #pylint: disable=R0914
 def cancelladetermina(tipo):
     "pagina: cancella determina"
     logging.info('URL: /cancelladetermina/%s (%s)', tipo, fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if tipo == 'a':
         err = check_determina_a_cancellabile(user, basedir, d_prat)
@@ -1916,17 +1884,15 @@ def cancelladetermina(tipo):
             ft.remove((basedir, cs.DETA_PDF_FILE), show_error=False)
             ft.remove((basedir, cs.DETB_PDF_FILE), show_error=False)
             ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Cancellati determine e ordine'))
-            logging.info("Cancellati determine e ordine. Pratica N. %s",
-                         d_prat.get(cs.NUMERO_PRATICA, ''))
+            hist = "Cancellati determina e ordine. " \
+                   f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
+            storia(d_prat, user, hist)
         else:
             ft.remove((basedir, cs.DETB_PDF_FILE), show_error=False)
             ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'],
-                                                   'Cancellati determina agg. e ordine'))
-            logging.info("Cancellati determina agg. e ordine. Pratica N. %s",
-                         d_prat.get(cs.NUMERO_PRATICA, ''))
+            hist = "Cancellati determina agg. e ordine. " \
+                   f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
+            storia(d_prat, user, hist)
         salvapratica(basedir, d_prat)
     return pratica1()
 
@@ -1934,9 +1900,8 @@ def cancelladetermina(tipo):
 def modificaordine(fase):               # pylint: disable=R0912,R0914
     "pagina: modifica ordine"
     logging.info('URL: /modificaordine/%s (%s)', fase, fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if cs.DATA_ORDINE not in d_prat:
         d_prat[cs.DATA_ORDINE] = ft.today(False)
@@ -1982,7 +1947,7 @@ def modificaordine(fase):               # pylint: disable=R0912,R0914
                        pratica=d_prat, sede=CONFIG.config[cs.SEDE],
                        resp_fondi=_test_responsabile(user, d_prat))
             d_prat[cs.PDF_ORDINE] = cs.ORD_PDF_FILE
-            d_prat[cs.STORIA_PRATICA].append(_hrecord(user['fullname'], 'Ordine generato'))
+            storia(d_prat, user, 'Ordine generato')
             salvapratica(basedir, d_prat)
             url = fk.url_for('pratica1')
             return fk.redirect(url)
@@ -2027,9 +1992,8 @@ def files(name):
 def devel():                     #pylint: disable=R0915
     'operazioni per supporto sviluppo'
     logging.info('URL: /devel (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     if not _test_developer(user):
         fk.session.clear()
@@ -2042,7 +2006,7 @@ def devel():                     #pylint: disable=R0915
             text += '   '+key+': '+fk.request.form.get(key)+'\n'
         text += '</blockquote>'
     elif 'vedichecks' in fk.request.form:
-        info = check_all_info(user, basedir, d_prat)
+        info = make_info(user, basedir, d_prat)
         keys = list(info.keys())
         keys.sort()
         text = "<h4>Checks su pratica N. "+d_prat[cs.NUMERO_PRATICA]+"</h4><pre>\n"
@@ -2058,25 +2022,24 @@ def devel():                     #pylint: disable=R0915
         text = f'<h4>{cs.CONFIG_FILE}</h4>'
         text += '<pre>'+ ppt.pformat(CONFIG.config)+'</pre>'
     elif 'vedirequest' in fk.request.form:
-        ppt = PrettyPrinter(indent=4)
-        text = '<h4>{Request (parziale):}</h4><pre>\n'
-        text += f'application: {fk.request.application}\n'
-        text += f'args: {fk.request.args}\n'
-        text += f'base_url: {fk.request.base_url}\n'
-        text += f'full_path: {fk.request.full_path}\n'
-        text += f'host: {fk.request.host}\n'
-        text += f'host_url: {fk.request.host_url}\n'
-        text += f'path: {fk.request.path}\n'
-        text += f'remote_addr: {fk.request.remote_addr}\n'
-        text += f'remote_user: {fk.request.remote_user}\n'
-        text += f'root_path: {fk.request.root_path}\n'
-        text += f'root_url: {fk.request.root_url}\n'
-        text += f'server: {fk.request.server}\n'
-        text += f'url: {fk.request.url}\n'
-        text += f'url_root: {fk.request.url_root}\n'
-        text += f'url_rule: {fk.request.url_rule}\n'
-        text += f'user_agent: {fk.request.user_agent}\n'
-        text += '</pre>'
+        lines = ['<h4>Request (parziale):</h4><pre>']
+        lines.append(f'application: {fk.request.application}')
+        lines.append(f'base_url: {fk.request.base_url}')
+        lines.append(f'full_path: {fk.request.full_path}')
+        lines.append(f'host: {fk.request.host}')
+        lines.append(f'host_url: {fk.request.host_url}')
+        lines.append(f'path: {fk.request.path}')
+        lines.append(f'remote_addr: {fk.request.remote_addr}')
+        lines.append(f'remote_user: {fk.request.remote_user}')
+        lines.append(f'root_path: {fk.request.root_path}')
+        lines.append(f'root_url: {fk.request.root_url}')
+        lines.append(f'server: {fk.request.server}')
+        lines.append(f'url: {fk.request.url}')
+        lines.append(f'url_root: {fk.request.url_root}')
+        lines.append(f'url_rule: {fk.request.url_rule}')
+        lines.append(f'user_agent: {fk.request.user_agent}')
+        lines.append('</pre>')
+        text = '\n'.join(lines)
     else:
         fk.session.clear()
         raise RuntimeError("Accesso illegale")
@@ -2088,22 +2051,12 @@ def user_tbd():
     logging.info('URL: /user (%s)', fk.request.method)
     return fk.render_template('tbd.html', goto='/', sede=CONFIG.config[cs.SEDE])
 
-def remove_prefix(adict, prefix):
-    "rimuove da dict tutte le chiavi che inizino per la stringa data"
-    toremove = []
-    for key in adict:
-        if key.startswith(prefix):
-            toremove.append(key)
-    for key in toremove:
-        del adict[key]
-
 @ACQ.route('/procedura_rdo', methods=('GET', 'POST'))
 def procedura_rdo():
     "Trattamento pagina per procedura RDO"
     logging.info('URL: /procedura_rdo (%s)', fk.request.method)
-    ret = _check_access()
-    if not isinstance(ret, tuple):
-        return ret
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
     err = check_rdo_modificabile(user, basedir, d_prat)
     if err.startswith(NOT):
@@ -2157,45 +2110,40 @@ def procedura_rdo():
 def housekeeping():
     "Inizio procedura housekeeping"
     logging.info('URL: /housekeeping (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        status = {'footer': f"Procedura housekeeping.py. Vers. {__version__} - " \
-                            f"L. Fini, {__date__}",
-                  'host': ft.host(fk.request.url_root)}
+    user = user_info()
+    status = {'footer': f"Procedura housekeeping.py. Vers. {__version__} - " \
+                        f"L. Fini, {__date__}",
+              'host': ft.host(fk.request.url_root)}
 
-        if _test_admin(user):
-            return fk.render_template('start_housekeeping.html',
-                                      user=user,
-                                      sede=CONFIG.config[cs.SEDE],
-                                      status=status).encode('utf8')
-        fk.session.clear()
-        return fk.render_template('noaccess.html')
-    return fk.redirect(fk.url_for('login'))
+    if _test_admin(user):
+        return fk.render_template('start_housekeeping.html',
+                                  user=user,
+                                  sede=CONFIG.config[cs.SEDE],
+                                  status=status).encode('utf8')
+    fk.session.clear()
+    return fk.render_template('noaccess.html')
 
 @ACQ.route("/sortcodf/<field>")
 def sortcodf(field):
     "Riporta codici Fu.Ob. con ordine specificato"
     logging.info('URL: /sortcodf/%s (%s)', field, fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if _test_admin(user):
-            ncodf = ft.FTable((cs.DATADIR, 'codf.json'), sortable=('Codice', 'email_Responsabile'))
-            msgs = fk.get_flashed_messages()
-            return ncodf.render("Lista Codici Fu.Ob.",
-                                select_url=("/editcodf",
-                                            "Per modificare, clicca sul simbolo: "
-                                            "<font color=red><b>&ofcir;</b></font>"),
-                                sort_url=('/sortcodf', '<font color=red>&dtrif;</font>'),
-                                menu=(('/addcodf', "Aggiungi Codice Fu.Ob."),
-                                      ('/downloadcodf', "Scarica CSV"),
-                                      ('/housekeeping', 'Torna')),
-                                sort_on=field,
-                                messages=msgs,
-                                footer=f"Procedura housekeeping.py. Vers. {__version__}. "\
-                                       f"&nbsp;-&nbsp; L. Fini, {__date__}")
+    user = user_info()
+    if not _test_admin(user):
         return fk.render_template('noaccess.html').encode('utf8')
-    return fk.redirect(fk.url_for('login'))
-
+    ncodf = ft.FTable((cs.DATADIR, 'codf.json'), sortable=('Codice', 'email_Responsabile'))
+    msgs = fk.get_flashed_messages()
+    return ncodf.render("Lista Codici Fu.Ob.",
+                        select_url=("/editcodf",
+                                    "Per modificare, clicca sul simbolo: "
+                                    "<font color=red><b>&ofcir;</b></font>"),
+                        sort_url=('/sortcodf', '<font color=red>&dtrif;</font>'),
+                        menu=(('/addcodf', "Aggiungi Codice Fu.Ob."),
+                              ('/downloadcodf', "Scarica CSV"),
+                              ('/housekeeping', 'Torna')),
+                        sort_on=field,
+                        messages=msgs,
+                        footer=f"Procedura housekeeping.py. Vers. {__version__}. "\
+                               f"&nbsp;-&nbsp; L. Fini, {__date__}")
 
 @ACQ.route("/codf")
 def codf():
@@ -2208,84 +2156,80 @@ def codf():
 def addcodf():
     "Aggiungi codice Fu.Ob."
     logging.info('URL: /addcodf (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if _test_admin(user):
-            cfr = fms.CodfForm(formdata=fk.request.form)
-            ulist = ft.FTable((cs.DATADIR, 'userlist.json')).as_dict('email', True)
-            resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
-            resp_menu.sort(key=lambda x: x[1])
-            cfr.email_Responsabile.choices = resp_menu
-            ncodf = ft.FTable((cs.DATADIR, 'codf.json'))
-            if fk.request.method == 'POST':
-                if 'annulla' in fk.request.form:
-                    fk.flash('Operazione annullata')
-                    return fk.redirect(fk.url_for('housekeeping'))
-                if cfr.validate():
-                    data = ncodf.get_row(0, as_dict=True, default='') # get an empty row
-                    data.update(cfr.data)
-                    ncodf.insert_row(data)
-                    ncodf.save()
-                    msg = f"Aggiunto Codice Fu.Ob.: {data['Codice']}"
-                    logging.info(msg)
-                    fk.flash(msg)
-                    return fk.redirect(fk.url_for('codf'))
-                logging.debug("Validation errors: %s", cfr.errlist)
-            return ncodf.render_item_as_form('Aggiungi Codice Fu.Ob.', cfr,
-                                             fk.url_for('addcodf'),
-                                             errors=cfr.errlist)
+    user = user_info()
+    if not _test_admin(user):
         return fk.render_template('noaccess.html').encode('utf8')
-    return fk.redirect(fk.url_for('login'))
+    cfr = fms.CodfForm(formdata=fk.request.form)
+    ulist = ft.FTable((cs.DATADIR, 'userlist.json')).as_dict('email', True)
+    resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
+    resp_menu.sort(key=lambda x: x[1])
+    cfr.email_Responsabile.choices = resp_menu
+    ncodf = ft.FTable((cs.DATADIR, 'codf.json'))
+    if fk.request.method == 'POST':
+        if 'annulla' in fk.request.form:
+            fk.flash('Operazione annullata')
+            return fk.redirect(fk.url_for('housekeeping'))
+        if cfr.validate():
+            data = ncodf.get_row(0, as_dict=True, default='') # get an empty row
+            data.update(cfr.data)
+            ncodf.insert_row(data)
+            ncodf.save()
+            msg = f"Aggiunto Codice Fu.Ob.: {data['Codice']}"
+            logging.info(msg)
+            fk.flash(msg)
+            return fk.redirect(fk.url_for('codf'))
+        logging.debug("Validation errors: %s", cfr.errlist)
+    return ncodf.render_item_as_form('Aggiungi Codice Fu.Ob.', cfr,
+                                     fk.url_for('addcodf'),
+                                     errors=cfr.errlist)
 
 @ACQ.route('/editcodf/<nrec>', methods=('GET', 'POST'))
 def editcodf(nrec):
     "Modifica tabella codici Fu.Ob."
     logging.info('URL: /editcodf/%s (%s)', nrec, fk.request.method)
     nrec = int(nrec)
-    user = ft.login_check(fk.session)
-    if user:
-        if _test_admin(user):
-            ncodf = ft.FTable((cs.DATADIR, 'codf.json'))
-            row = ncodf.get_row(nrec, as_dict=True)
-            ulist = ft.FTable((cs.DATADIR, 'userlist.json')).as_dict('email')
-            resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
-            resp_menu.sort(key=lambda x: x[1])
-            if fk.request.method == 'GET':
-                logging.debug("Codice row=%s", row)
-                cfr = fms.CodfForm(**row)
-                cfr.email_Responsabile.choices = resp_menu
-            else:
-                cfr = fms.CodfForm(formdata=fk.request.form)
-                cfr.email_Responsabile.choices = resp_menu
-                if 'cancella' in fk.request.form:
-                    ncodf.delete_row(nrec)
-                    ncodf.sort(1)
-                    ncodf.save()
-                    msg = "Cancellato Codice Fu.Ob.: " \
-                          f"{row['Codice']} ({row['email_Responsabile']})"
-                    fk.flash(msg)
-                    logging.info(msg)
-                    return fk.redirect(fk.url_for('codf'))
-                if 'annulla' in fk.request.form:
-                    fk.flash('Operazione annullata')
-                    return fk.redirect(fk.url_for('housekeeping'))
-                if cfr.validate():
-                    if 'avanti' in fk.request.form:
-                        row.update(cfr.data)
-                        ncodf.insert_row(row, nrec)
-                        print("row:", row, "   nrec:", nrec)
-                        ncodf.save()
-                        msg = "Modificato Codice Fu.Ob.: " \
-                              f"{row['Codice']} ({row['email_Responsabile']})"
-                        fk.flash(msg)
-                        logging.info(msg)
-                    return fk.redirect(fk.url_for('codf'))
-                logging.debug("Validation errors: %s", cfr.errlist)
-            return ncodf.render_item_as_form('Modifica Codice Fu.Ob.', cfr,
-                                             fk.url_for('editcodf', nrec=str(nrec)),
-                                             errors=cfr.errlist, nrow=nrec)
+    user = user_info()
+    if not _test_admin(user):
         return fk.render_template('noaccess.html').encode('utf8')
-    return fk.redirect(fk.url_for('login'))
+    ncodf = ft.FTable((cs.DATADIR, 'codf.json'))
+    row = ncodf.get_row(nrec, as_dict=True)
+    ulist = ft.FTable((cs.DATADIR, 'userlist.json')).as_dict('email')
+    resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
+    resp_menu.sort(key=lambda x: x[1])
+    if fk.request.method == 'GET':
+        logging.debug("Codice row=%s", row)
+        cfr = fms.CodfForm(**row)
+        cfr.email_Responsabile.choices = resp_menu
+    else:
+        cfr = fms.CodfForm(formdata=fk.request.form)
+        cfr.email_Responsabile.choices = resp_menu
+        if 'cancella' in fk.request.form:
+            ncodf.delete_row(nrec)
+            ncodf.sort(1)
+            ncodf.save()
+            msg = "Cancellato Codice Fu.Ob.: " \
+                  f"{row['Codice']} ({row['email_Responsabile']})"
+            fk.flash(msg)
+            logging.info(msg)
+            return fk.redirect(fk.url_for('codf'))
+        if 'annulla' in fk.request.form:
+            fk.flash('Operazione annullata')
+            return fk.redirect(fk.url_for('housekeeping'))
+        if cfr.validate():
+            if 'avanti' in fk.request.form:
+                row.update(cfr.data)
+                ncodf.insert_row(row, nrec)
+                print("row:", row, "   nrec:", nrec)
+                ncodf.save()
+                msg = "Modificato Codice Fu.Ob.: " \
+                      f"{row['Codice']} ({row['email_Responsabile']})"
+                fk.flash(msg)
+                logging.info(msg)
+            return fk.redirect(fk.url_for('codf'))
+        logging.debug("Validation errors: %s", cfr.errlist)
+    return ncodf.render_item_as_form('Modifica Codice Fu.Ob.', cfr,
+                                     fk.url_for('editcodf', nrec=str(nrec)),
+                                     errors=cfr.errlist, nrow=nrec)
 
 @ACQ.route('/downloadcodf', methods=('GET', 'POST'))
 def downloadcodf():
@@ -2301,123 +2245,113 @@ def downloadutenti():
 
 def download(_unused):
     "Download"
-    user = ft.login_check(fk.session)
-    if user:
-        return fk.render_template('tbd.html', goto='/')
-    return fk.redirect(fk.url_for('login'))
+    return fk.render_template('tbd.html', goto='/')
 
 @ACQ.route("/utenti")
 def utenti():
     "Genera lista utenti"
     logging.info('URL: /utenti (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if _test_admin(user):
-            users = ft.FTable((cs.DATADIR, 'userlist.json'))
-            msgs = fk.get_flashed_messages()
-            return users.render("Lista utenti",
-                                select_url=("/edituser",
-                                            "Per modificare, clicca sul simbolo: "\
-                                            "<font color=red><b>&ofcir;</b></font>"),
-                                menu=(('/adduser', "Aggiungi utente"),
-                                      ('/downloadutenti', "Scarica CSV"),
-                                      ('/housekeeping', 'Torna')),
-                                sort_on="surname",
-                                messages=msgs,
-                                footer=f"Procedura housekeeping.py. Vers. {__version__} "\
-                                       f"- L. Fini, {__date__}")
-        return fk.render_template('noaccess.html').encode('utf8')
-    return fk.redirect(fk.url_for('login'))
+    user = user_info()
+    if _test_admin(user):
+        users = ft.FTable((cs.DATADIR, 'userlist.json'))
+        msgs = fk.get_flashed_messages()
+        return users.render("Lista utenti",
+                            select_url=("/edituser",
+                                        "Per modificare, clicca sul simbolo: "\
+                                        "<font color=red><b>&ofcir;</b></font>"),
+                            menu=(('/adduser', "Aggiungi utente"),
+                                  ('/downloadutenti', "Scarica CSV"),
+                                  ('/housekeeping', 'Torna')),
+                            sort_on="surname",
+                            messages=msgs,
+                            footer=f"Procedura housekeeping.py. Vers. {__version__} "\
+                                   f"- L. Fini, {__date__}")
+    return fk.render_template('noaccess.html').encode('utf8')
 
 
 @ACQ.route('/adduser', methods=('GET', 'POST'))
 def adduser():
     "Aggiungi utente"
     logging.info('URL: /adduser (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if _test_admin(user):
-            cfr = fms.UserForm(formdata=fk.request.form)
-            users = ft.FTable((cs.DATADIR, 'userlist.json'))
-            if fk.request.method == 'POST':
-                if 'annulla' in fk.request.form:
-                    fk.flash('Operazione annullata')
-                    return fk.redirect(fk.url_for('housekeeping'))
-                if cfr.validate():
-                    data = users.get_row(0, as_dict=True, default='') # get an empty row
-                    data.update(cfr.data)
-                    data['pw'] = '-'
-                    users.insert_row(data)
-                    users.save()
-                    msg = f"Aggiunto Utente: {data['surname']} {data['name']}"
-                    logging.info(msg)
-                    fk.flash(msg)
-                    return fk.redirect(fk.url_for('utenti'))
-                logging.debug("Validation errors: %s", cfr.errlist)
-            return users.render_item_as_form('Aggiungi utente', cfr,
-                                             fk.url_for('adduser'),
-                                             errors=cfr.errlist,
-                                             ignore=('pw', 'flags'))
-        return fk.render_template('noaccess.html').encode('utf8')
-    return fk.redirect(fk.url_for('login'))
+    user = user_info()
+    if _test_admin(user):
+        cfr = fms.UserForm(formdata=fk.request.form)
+        users = ft.FTable((cs.DATADIR, 'userlist.json'))
+        if fk.request.method == 'POST':
+            if 'annulla' in fk.request.form:
+                fk.flash('Operazione annullata')
+                return fk.redirect(fk.url_for('housekeeping'))
+            if cfr.validate():
+                data = users.get_row(0, as_dict=True, default='') # get an empty row
+                data.update(cfr.data)
+                data['pw'] = '-'
+                users.insert_row(data)
+                users.save()
+                msg = f"Aggiunto Utente: {data['surname']} {data['name']}"
+                logging.info(msg)
+                fk.flash(msg)
+                return fk.redirect(fk.url_for('utenti'))
+            logging.debug("Validation errors: %s", cfr.errlist)
+        return users.render_item_as_form('Aggiungi utente', cfr,
+                                         fk.url_for('adduser'),
+                                         errors=cfr.errlist,
+                                         ignore=('pw', 'flags'))
+    return fk.render_template('noaccess.html').encode('utf8')
 
 @ACQ.route('/edituser/<nrec>', methods=('GET', 'POST'))
 def edituser(nrec):
     "Modifica dati utente"
     logging.info('URL: /edituser/%s (%s)', nrec, fk.request.method)
     nrec = int(nrec)
-    user = ft.login_check(fk.session)
-    if user:
-        if _test_admin(user):
-            users = ft.FTable((cs.DATADIR, 'userlist.json'))
-            users.sort(3)
-            row = users.get_row(nrec, as_dict=True)
-            if fk.request.method == 'GET':
-                logging.debug("Userlist row=%s", row)
-                cfr = fms.UserForm(**row)
-                logging.debug("UserForm inizializzato: %s", cfr.data)
-            else:
-                cfr = fms.UserForm(formdata=fk.request.form)
-                if 'annulla' in fk.request.form:
-                    fk.flash('Operazione annullata')
-                    return fk.redirect(fk.url_for('housekeeping'))
-                if 'cancella' in fk.request.form:
-                    row = users.get_row(nrec, as_dict=True)
-                    users.delete_row(nrec)
+    user = user_info()
+    if _test_admin(user):
+        users = ft.FTable((cs.DATADIR, 'userlist.json'))
+        users.sort(3)
+        row = users.get_row(nrec, as_dict=True)
+        if fk.request.method == 'GET':
+            logging.debug("Userlist row=%s", row)
+            cfr = fms.UserForm(**row)
+            logging.debug("UserForm inizializzato: %s", cfr.data)
+        else:
+            cfr = fms.UserForm(formdata=fk.request.form)
+            if 'annulla' in fk.request.form:
+                fk.flash('Operazione annullata')
+                return fk.redirect(fk.url_for('housekeeping'))
+            if 'cancella' in fk.request.form:
+                row = users.get_row(nrec, as_dict=True)
+                users.delete_row(nrec)
+                users.sort(3)
+                users.save()
+                msg = f"Cancellato utente N. {nrec}: {row['name']} {row['surname']}"
+                logging.info(msg)
+                fk.flash(msg)
+                return fk.redirect(fk.url_for('utenti'))
+            if cfr.validate():
+                if 'avanti' in fk.request.form:
+                    logging.debug("Pressed: avanti. Modifica utente")
+                    row.update(cfr.data)
+                    users.insert_row(row, nrec)
                     users.sort(3)
                     users.save()
-                    msg = f"Cancellato utente N. {nrec}: {row['name']} {row['surname']}"
+                    msg = f"Modificato utente: {row['name']} {row['surname']}"
                     logging.info(msg)
                     fk.flash(msg)
-                    return fk.redirect(fk.url_for('utenti'))
-                if cfr.validate():
-                    if 'avanti' in fk.request.form:
-                        logging.debug("Pressed: avanti. Modifica utente")
-                        row.update(cfr.data)
-                        users.insert_row(row, nrec)
-                        users.sort(3)
-                        users.save()
-                        msg = f"Modificato utente: {row['name']} {row['surname']}"
-                        logging.info(msg)
-                        fk.flash(msg)
-                    return fk.redirect(fk.url_for('utenti'))
-                logging.debug("Validation errors: %s", cfr.errlist)
-            return users.render_item_as_form('Modifica utente', cfr,
-                                             fk.url_for('edituser', nrec=str(nrec)),
-                                             nrow=nrec, errors=cfr.errlist,
-                                             ignore=('pw', 'flags'))
-        return fk.render_template('noaccess.html').encode('utf8')
-    return fk.redirect(fk.url_for('login'))
+                return fk.redirect(fk.url_for('utenti'))
+            logging.debug("Validation errors: %s", cfr.errlist)
+        return users.render_item_as_form('Modifica utente', cfr,
+                                         fk.url_for('edituser', nrec=str(nrec)),
+                                         nrow=nrec, errors=cfr.errlist,
+                                         ignore=('pw', 'flags'))
+    return fk.render_template('noaccess.html').encode('utf8')
 
 @ACQ.route('/environ', methods=('GET',))
 def environ():
     "Mostra informazioni su environment"
     logging.info('URL: /environ (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if not _test_developer(user):
-            fk.session.clear()
-            return fk.render_template('noaccess.html')
+    user = user_info()
+    if not _test_developer(user):
+        fk.session.clear()
+        return fk.render_template('noaccess.html')
     html = ["<ul>"]
     keys = list(os.environ.keys())
     keys.sort()
@@ -2447,38 +2381,34 @@ def environ():
 def testmail():
     "Invia messaggio di prova all'indirizzo di webmaster"
     logging.info('URL: /testmail (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if not _test_developer(user):
-            fk.session.clear()
-            return fk.render_template('noaccess.html')
-        thetime = time.asctime()
-        if smtp := CONFIG.config.get(cs.SMTP_HOST) == '-':
-            host = 'GMail API'
-        else:
-            host = f'SMTP server: {smtp}'
-        recipient = [CONFIG.config.get(cs.EMAIL_WEBMASTER)]
-        sender = CONFIG.config.get(cs.EMAIL_UFFICIO, "")
-        subj = "Messaggio di prova da procedura 'acquisti'"
-        body = cs.MESSAGGIO_DI_PROVA.format(host)
-        ret = send_email(recipient, body, subj)
-        succ = 'SI' if ret else 'NO'
-        return fk.render_template('testmail.html', time=thetime, sender=sender,
-                                  recipients=recipient,
-                                  server=host, state=succ).encode('utf8')
-    return fk.redirect(fk.url_for('login'))
+    user = user_info()
+    if not _test_developer(user):
+        fk.session.clear()
+        return fk.render_template('noaccess.html')
+    thetime = time.asctime()
+    if smtp := CONFIG.config.get(cs.SMTP_HOST) == '-':
+        host = 'GMail API'
+    else:
+        host = f'SMTP server: {smtp}'
+    recipient = [CONFIG.config.get(cs.EMAIL_WEBMASTER)]
+    sender = CONFIG.config.get(cs.EMAIL_UFFICIO, "")
+    subj = "Messaggio di prova da procedura 'acquisti'"
+    body = cs.MESSAGGIO_DI_PROVA.format(host)
+    ret = send_email(recipient, body, subj)
+    succ = 'SI' if ret else 'NO'
+    return fk.render_template('testmail.html', time=thetime, sender=sender,
+                              recipients=recipient,
+                              server=host, state=succ).encode('utf8')
 
 @ACQ.route('/force_excp', methods=('GET',))
-def force_excp():
+def force_excp():                       #pylint: disable=R1710
     "Causa una eccezione"
     logging.info('URL: /force_excp (%s)', fk.request.method)
-    user = ft.login_check(fk.session)
-    if user:
-        if not _test_developer(user):
-            fk.session.clear()
-            return fk.render_template('noaccess.html')
-        1/0                                 # pylint: disable=W0104
-    return fk.redirect(fk.url_for('login'))
+    user = user_info()
+    if not _test_developer(user):
+        fk.session.clear()
+        return fk.render_template('noaccess.html')
+    1/0                                 # pylint: disable=W0104
 
 #############################################################################
 ############################### Inizializzazioni ############################
