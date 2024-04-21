@@ -1459,43 +1459,43 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
     if not anno:
         anno = ft.thisyear()
     if int(ascendente):
-        tosort = _pratica_ascendente
+        sort_f = _pratica_ascendente
     else:
-        tosort = _pratica_discendente
+        sort_f = _pratica_discendente
     if filtro[:3] == 'ALL':
         if not _test_admin(user):
-            logging.error('Visualizzazione pratiche non autorizzata. Utente: %s', user['userid'])
+            logging.error('Visualizzazione pratiche come amministrativo non autorizzata. '\
+                          'Utente: %s', user['userid'])
             fk.session.clear()
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
         ruolo = lambda x: True
-        str_ruolo = ''
         if filtro[-1] == 'A':
             stato = lambda x: x.get(cs.PRATICA_APERTA)
-            title = PRAT_APE+str_ruolo
+            title = PRAT_APE
         else:
             stato = lambda x: not x.get(cs.PRATICA_APERTA)
-            title = PRAT_CHI+str_ruolo
+            title = PRAT_CHI
     elif filtro[:3] == 'RIC':
-        ruolo = lambda x: _test_richiedente(user, x)
-        str_ruolo = 'Come richiedente'
-        if filtro[-1] == 'A':
+        ruolo = lambda x, u=user: _test_richiedente(u, x)
+        str_ruolo = 'come richiedente'
+        if filtro[-1] == 'A':           # pratica aperta
             stato = lambda x: x.get(cs.PRATICA_APERTA)
             title = PRAT_APE+str_ruolo
-        else:
+        else:                           # pratica chiusa
             stato = lambda x: not x.get(cs.PRATICA_APERTA)
             title = PRAT_CHI+str_ruolo
     elif filtro[:3] == 'RES':
-        ruolo = lambda x: _test_responsabile(user, x)
-        str_ruolo = 'Come responsabile dei fondi'
-        if filtro[-1] == '0':
-            stato = lambda x: bool(x.get(cs.FIRMA_APPROV_RESP))
-            title = PRAT_APP+str_ruolo
-        else:
+        ruolo = lambda x, u=user: _test_responsabile(u, x)
+        str_ruolo = 'come responsabile dei fondi'
+        if filtro[-1] == '0':            # pratica da approvare
             stato = lambda x: not x.get(cs.FIRMA_APPROV_RESP)
             title = PRAT_DAP+str_ruolo
+        else:                            # pratica approvata
+            stato = lambda x: x.get(cs.FIRMA_APPROV_RESP)
+            title = PRAT_APP+str_ruolo
     elif filtro[:3] == 'RUP':
-        ruolo = lambda x: _test_rup(user, x)
-        str_ruolo = 'Come RUP'
+        ruolo = lambda x, u=user: _test_rup(u, x)
+        str_ruolo = 'come RUP'
         if filtro[-1] == 'A':
             stato = lambda x: x.get(cs.PRATICA_APERTA)
             title = PRAT_APE+str_ruolo
@@ -1503,8 +1503,13 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
             stato = lambda x: not x.get(cs.PRATICA_APERTA)
             title = PRAT_CHI+str_ruolo
     elif filtro[:3] == 'DIR':
+        if not _test_direttore(user):
+            logging.error('Visualizzazione pratiche come direttore non autorizzata. '\
+                          'Utente: %s', user['userid'])
+            fk.session.clear()
+            return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
         ruolo = lambda x: True
-        str_ruolo = 'Come Direttore'
+        str_ruolo = 'come Direttore'
         if filtro[-1] == '0':
             stato = lambda x: bool(x.get(cs.FIRMA_AUTORIZZ_DIR))
             title = PRAT_APP+str_ruolo
@@ -1514,9 +1519,9 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
     else:
         err = f'Ruolo non valido in lista pratiche ({filtro[:3]})'
         raise RuntimeError(err)
-    tofilt = lambda x: ruolo(x) and stato(x)
+    f_filter = lambda x: ruolo(x) and stato(x)
     try:
-        doclist = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=tofilt, sort=tosort)
+        doclist = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=f_filter, sort=sort_f)
     except Exception:               # pylint: disable=W0703
         err_msg = _errore_doclist(anno)
         fk.flash(err_msg, category="error")
@@ -1586,13 +1591,13 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
             parola_func = lambda x: True
         selector = lambda x: aperta_func(x) and rich_func(x) and resp_func(x) and parola_func(x)
         if prf.data['elenco_ascendente']:
-            sort_func = _pratica_ascendente
+            sort_f = _pratica_ascendente
         else:
-            sort_func = lambda x: -1*_pratica_ascendente(x)
+            sort_f = lambda x: -1*_pratica_ascendente(x)
 
         try:
             lista = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, theyear,
-                               content_filter=selector, sort=sort_func)
+                               content_filter=selector, sort=sort_f)
         except Exception:               # pylint: disable=W0703
             err_msg = _errore_doclist(theyear)
             fk.flash(err_msg, category="error")

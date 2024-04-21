@@ -34,12 +34,8 @@ Pratica N. {{ value }}
 <tr><td><b>Resp. fondi:</b></td><td> {{ pratica.nome_responsabile }} </td></tr>
 <tr><td><b>RUP:</b></td><td> {{ pratica.nome_rup }} </td></tr>
 <tr><td><b>Mod. acquisto:</b></td><td> {{ pratica.str_mod_acq }} </td></tr>
-<tr><td><b>Stato:</b></td><td>  
-{% if info.alarm %}
-   <font color=red>{{ info.stato_pratica }}</font>
-{% else %}
-   {{ info.stato_pratica }}
-{% endif %}
+<tr><td><b>Stato:</b></td><td>  {% if pratica.pratica_aperta %} Aperta {% else %} Chiusa {% endif %} </td></tr>
+<tr><td><b>Passo:</b></td><td>  {{ info.stato_pratica }} </td></tr>
 <tr><td valign=top align=left><b>Storia:</b></td>
     <td align=left>
 {% if pratica._vedi_storia==1 %}
