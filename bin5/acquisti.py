@@ -76,7 +76,7 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.8'
+__version__ = '5.0.9'
 __date__ = '21/04/2024'
 
 __start__ = time.asctime(time.localtime())
@@ -216,6 +216,9 @@ def _test_all_rdo_mepa(basedir) -> bool:
 def _test_all_dich_rup(basedir) -> bool:
     "test esistenza dichiarazione RUP"
     return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_DICH_RUP][0])
+
+def _test_all_decis_firmata(basedir) -> bool:
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_DECIS_FIRMATA][0])
 
 def _test_pdf_ordine(basedir, d_prat, fase) -> bool:
     "test esistenza ordine nella fase data"
@@ -632,23 +635,9 @@ def menu_allegati(basedir, d_prat):
             menu.append(voce_menu)
         if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_RDO_MEPA):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_DECIS_FIRMATA):
+        if voce_menu := da_allegare(basedir, d_prat, (70,80), cs.ALL_DECIS_FIRMATA):
             menu.append(voce_menu)
     menu.append(sel_menu(cs.ALL_GENERICO))
-    return menu
-
-def menu_allegati_faseb(_pratica):
-    "Genera lista allegati in funzione del tipo di acquisto (fase B)"
-#   mod_acquisto = pratica[MOD_ACQUISTO]
-    menu = []
-#   if mod_acquisto == MANIF_INT:
-#       menu = [sel_menu(LETT_INVITO_B),
-#               sel_menu(OFFERTA_DITTA_B),
-#               sel_menu(VERBALE_GARA),
-#               sel_menu(LISTA_DETTAGLIATA_B)]
-#   elif mod_acquisto == RDO_MEPA:
-#       menu.append(sel_menu(CAPITOLATO_RDO))
-    menu.append(sel_menu(cs.ALLEGATO_GENERICO_B))
     return menu
 
 def clean_dict(adict):
@@ -706,7 +695,6 @@ def pratica_common(user, basedir, d_prat):
     "parte comune alle pagine relative alla pratica"
     info = check_all(user, basedir, d_prat)
     upla = fms.MyUpload(menu_allegati(basedir, d_prat))
-#   uplb = fms.MyUpload(menu_allegati_faseb(d_prat))
     # Workaround per aggiornare il formato dati pratica vers. 2
     if not d_prat.get(cs.STR_MOD_ACQ) or cs.STR_CRIT_ASS not in d_prat:
         err = f'file pratica non aggiornato. Pratica: {d_prat[cs.NUMERO_PRATICA]}'
@@ -798,8 +786,8 @@ def verifica_allegati(basedir, d_prat):
             ret.append("CIG")
         if not _test_all_rdo_mepa(basedir):
             ret.append("RdO da MePA")
-        if d_prat.get(cs.DECIS_INVIATA):
-            ret.append("Det. firmata")
+        if d_prat.get(cs.STATO_PRATICA, 0) >= 70 and not _test_all_decis_firmata(basedir):\
+            ret.append("Decis. firmata")
 #   if not _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
 #       ret.append("Manca Lista ditte invitate")
 #   if not _test_pdf_capitolato_rdo(basedir, d_prat, fase):
@@ -1227,7 +1215,7 @@ def inviadecisione():
     else:
         testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
                 cs.DETTAGLIO_PRATICA.format(**d_prat)
-        subj = 'Determina da firmare'
+        subj = 'Decisione di contrarre da firmare'
         numdet = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
         pdfname = f"decisione_{numdet}.pdf"
         attach = (os.path.join(basedir, cs.DECIS_PDF_FILE), pdfname)
@@ -1259,8 +1247,7 @@ def approvaprogetto():
         logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
     else:
-        sgn = ft.signature((basedir, cs.PROG_PDF_FILE))
-        d_prat[cs.FIRMA_APPROV_RESP] = sgn
+        d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.PROG_PDF_FILE))
         step = 20
         d_prat[cs.STATO_PRATICA] = step
         storia(d_prat, user, step)
@@ -1342,8 +1329,7 @@ def autorizza():
     step = 50
     d_prat[cs.STATO_PRATICA] = step
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
-    sgn = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
-    d_prat[cs.FIRMA_AUTORIZZ_DIR] = sgn
+    d_prat[cs.FIRMA_AUTORIZZ_DIR] = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
     storia(d_prat, user, step)
     salvapratica(basedir, d_prat)
     return pratica1()
@@ -1510,7 +1496,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
         ruolo = lambda x: True
         str_ruolo = 'come Direttore'
-        if filtro[-1] == '0':
+        if filtro[-1] == '1':
             stato = lambda x: bool(x.get(cs.FIRMA_AUTORIZZ_DIR))
             title = PRAT_APP+str_ruolo
         else:
@@ -1676,7 +1662,7 @@ def pratica1():               # pylint: disable=R0914,R0911
             if d_prat[cs.STATO_PRATICA] > 50 and tipo_allegato == cs.ALL_RDO_MEPA:
                 d_prat[cs.STATO_PRATICA] = 60
                 storia(d_prat, user, 60)
-            elif d_prat[cs.STATO_PRATICA] > 70 and tipo_allegato == cs.ALL_DECIS_FIRMATA:
+            elif d_prat[cs.STATO_PRATICA] > 60 and tipo_allegato == cs.ALL_DECIS_FIRMATA:
                 d_prat[cs.STATO_PRATICA] = 80
                 storia(d_prat, user, 80)
             else:

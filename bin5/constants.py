@@ -128,7 +128,7 @@ COSTO_ORDINE = 'costo_ordine'                   # dati_pratica
 COSTO_TOTALE = 'costo_totale'                   # dati_pratica
 CRIT_ASS = 'criterio_assegnazione'              # dati_pratica
 CUP = 'cup'                                     # dati_pratica
-DATA_DECISIONE = 'data_decisione'           # dati_pratica
+DATA_DECISIONE = 'data_decisione'               # dati_pratica
 DATA_DETERMINA_B = 'data_determina_b'           # dati_pratica
 DATA_ORDINE = 'data_ordine'                     # dati_pratica
 DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
@@ -350,7 +350,7 @@ Per approvare progetto e fondi, puoi accedere alla procedura Acquisti:
 
      {}
 
-e selezionare: Elenco pratiche aperte (come resp. fondi)
+e selezionare: Elenco pratiche da approvare (come resp. fondi)
 """
 
 TESTO_NOTIFICA_APPROVAZIONE = """
@@ -379,14 +379,14 @@ Per autorizzarlo puoi accedere alla procedura Acquisti:
 
      {url}
 
-e selezionare: Elenco pratiche aperte (come Direttore)
+e selezionare: Elenco pratiche da approvare (come Direttore)
 '''
 
 TESTO_INVIA_DECISIONE = '''
 Ti è stata inviata la decisione di contrarre relativa al progetto di acquisto
 N. {numero_pratica} sotto dettagliato.
 
-Il documento in allegato deve essere firmato elettronicamente e inviata al RUP:
+Il documento in allegato deve essere firmato elettronicamente e inviato al RUP:
 
     {nome_rup} ({email_rup})
 
