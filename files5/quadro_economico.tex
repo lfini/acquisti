@@ -1,0 +1,20 @@
+%% Quadro economico della fornitura
+\begin{quote}
+\begin{tabular}{lrrl|r}
+	Voce  &   Importo netto  & I.V.A & & totale \\
+\hline
+((* for voce in pratica.costo_dettaglio *))
+    ((* if voce[0]|length *))
+	((* if voce[2] *))
+	((* set iva = '('+voce[2]+'\%)' *))
+	((* else *))
+	((* set iva = '' *))
+	((* endif *))
+	(((voce[0])))  &  (((voce[1]))) & (((voce[3]))) & (((iva))) & (((voce[4]))) \\
+    ((* endif *))
+((* endfor *))
+\hline
+	\textbf{Totale} & (((pratica.costo_netto))) & && \textbf{(((pratica.costo_totale)))} \\
+\end{tabular}
+\end{quote}
+
