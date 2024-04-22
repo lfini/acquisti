@@ -21,7 +21,8 @@ Decisione N. ((( pratica.numero_decisione )))
 \begin{center}
 \framebox{%
 \begin{minipage}{0.9\linewidth}
-Decisione di contrarre del ((( pratica.data_decisione ))) – Affidamento diretto di oggetto
+Decisione di contrarre del ((( pratica.data_decisione ))) – Affidamento diretto
+	della fornitura di ((( pratica.descrizione_acquisto )))
 CIG: ((( pratica.numero_cig ))) - CUP: ((( pratica.numero_cup )))
 \end{minipage}}
 
@@ -459,40 +460,23 @@ Art. 1: Le premesse di cui al presente atto sono parte integrante e
 sostanziale dello stesso e ne costituiscono le motivazioni ai sensi
 dell’Art. 3 della Legge n. 241/90 e s.m.i.
 
-Art. 2: che il Responsabile Unico di Progetto, in base all’Art. 15 del
+Art. 2: che il/la Responsabile Unico/a di Progetto, in base all’Art. 15 del
 D. Lgs 36/2023 e Allegato I.2 del suddetto decreto è ((( pratica.nome_rup ))),
-il quale possiede le competenze necessarie a svolgere tale ruolo
-e che, dal punto di vista tecnico scientifico, è affiancato da
-((( pratica.nome_richiedente )))
+che possiede le competenze necessarie a svolgere tale ruolo
+e che, dal punto di vista tecnico scientifico, è affiancato/a da
+((( pratica.nome_richiedente ))).
 
 Art. 3: Di aggiornare e approvare il quadro economico come di seguito riportato:
 
-\begin{quote}
-\begin{tabular}{lrrl|r}
-	Voce  &   Importo netto  & I.V.A & & totale \\
-\hline
-((* for voce in pratica.costo_dettaglio *))
-    ((* if voce[0]|length *))
-	((* if voce[2] *))
-	((* set iva = '('+voce[2]+'\%)' *))
-	((* else *))
-	((* set iva = '' *))
-	((* endif *))
-	(((voce[0])))  &  (((voce[1]))) & (((voce[3]))) & (((iva))) & (((voce[4]))) \\
-    ((* endif *))
-((* endfor *))
-\hline
-	\textbf{Totale} & & && \textbf{(((pratica.costo_totale)))} \\
-\end{tabular}
-\end{quote}
+((* include 'quadro_economico.tex' *))
 
-A gravare su Ob.~Fu. numero ((( pratica.cram ))) – Responsabile dei
-Fondi: ((( pratica.nome_responsabile )))
+A gravare su Ob.~Fu. numero ((( pratica.stringa_codf ))) – Responsabile dei
+Fondi: ((( pratica.nome_responsabile ))).
 
-Art. 4: Di autorizzare l’affidamento diretto oggetto a
+Art. 4: Di autorizzare l’affidamento diretto della fornitura di ((( pratica.descrizione_acquisto ))) a
 ((( pratica.fornitore_nome ))) con sede in  ((( pratica.fornitore_sede )))
 codice fiscale: ((( pratica.fornitore_codfisc ))) e partita IVA:
-((( pratica.fornitore_partiva ))), per complessivi Euro ((( pratica.costo_netto)))
+((( pratica.fornitore_partiva ))), per complessivi Euro ((( pratica.costo_netto))).
 
 Art. 5: Di autorizzare la relativa spesa, per un importo complessivo
 pari a ((( pratica.costo_totale ))) Euro comprensivo della Imposta sul

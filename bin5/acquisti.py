@@ -76,8 +76,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.9'
-__date__ = '21/04/2024'
+__version__ = '5.0.10'
+__date__ = '22/04/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1218,12 +1218,13 @@ def inviadecisione():
         subj = 'Decisione di contrarre da firmare'
         numdet = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
         pdfname = f"decisione_{numdet}.pdf"
+        recipient = CONFIG.config[cs.EMAIL_DIRETTORE]
         attach = (os.path.join(basedir, cs.DECIS_PDF_FILE), pdfname)
-        ret = send_email(d_prat[cs.EMAIL_RESPONSABILE], testo, subj, attach=attach)
+        ret = send_email(recipient, testo, subj, attach=attach)
         if ret:
             fk.flash("Richiesta di approvazione per  la pratica "
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
-                     f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
+                     f"{recipient}", category="info")
             d_prat[cs.DECIS_INVIATA] = 1
             step = 70
             d_prat[cs.STATO_PRATICA] = step
@@ -1262,10 +1263,10 @@ def approvaprogetto():
         send_email(CONFIG.config[cs.EMAIL_UFFICIO], body, subj)
     return fk.redirect(fk.url_for('pratica1'))
 
-@ACQ.route('/nominarup', methods=('GET', 'POST'))
-def nominarup():
+@ACQ.route('/indicarup', methods=('GET', 'POST'))
+def indicarup():
     "pagina: nomina RUP"
-    logging.info('URL: /nominarup (%s)', fk.request.method)
+    logging.info('URL: /indicarup (%s)', fk.request.method)
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
@@ -1298,7 +1299,7 @@ def nominarup():
         fk.flash('Scelta RUP non valida', category="error")
     body = rupf()
     ddp = {'title': 'Nomina RUP',
-           'before': '<form method=POST action=/nominarup '
+           'before': '<form method=POST action=/indicarup '
                      'accept-charset="utf-8" novalidate>',
            'after': '</form>',
            'note': 'Questa è una nota',

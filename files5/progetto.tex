@@ -20,7 +20,7 @@
 \textbf{Soggetto richiedente: ((( pratica.nome_richiedente )))} \\
 
 In qualità di:          %
-((* if resp_fondi *)) Responsabile dei fondi (Ob. Fu ((( pratica.stringa_codf ))))
+((* if resp_fondi *)) Responsabile dei fondi (Ob.~Fu ((( pratica.stringa_codf ))))
 ((* else *)) dipendente
 ((* endif *))
 
@@ -55,8 +55,8 @@ L’esplorazione informale di mercato sin qui condotta ha consentito infatti di 
 \item presenza su MePA di almeno una ditta di riferimento che assicurasse le condizioni (tecniche e di budget) ritenute ottimali;
 \item una ditta in grado di rispondere efficacemente al quadro esigenziale connesso al presente affidamento,
 individuata sul mercato all’esito di una informale esplorazione e specificamente:
-((( pratica.fornitore_nome ))) con sede legale in ((( pratica.fornitore_sede )))
-Cod.Fisc.: (((pratica.fornitore_codfisc ))), Part.IVA: ((( pratica.fornitore_partiva )))
+((( pratica.fornitore_nome ))) con sede legale in ((( pratica.fornitore_sede ))),
+Cod.Fisc.: (((pratica.fornitore_codfisc ))), Part.IVA: ((( pratica.fornitore_partiva ))),
 con la quale avviare una procedura di affidamento su piattaforma “MePA”.
 \end{itemize}
 
@@ -91,18 +91,13 @@ utilizzatori e della effettiva localizzazione dei beni da inventariare.
 ((( pratica.sede.sede_it ))). ((( pratica.sede.indirizzo )))
 \par\noindent\rule{\textwidth}{0.4pt}
 
-\textbf{Spesa complessiva stimata (IVA esclusa): }
+\textbf{Quadro economico della fornitura: }
 
-Oggetto dell'affidamento: ((( pratica.costo.importo ))) (((pratica.costo.valuta )))
+((* include 'quadro_economico.tex' *))
 
-Costi di trasporto: ((( pratica.costo_trasporto )))  (((pratica.costo.valuta )))
-
-\textit{IVA: vedi e.mail 17/3}
-
-\textit{TOTALE: valore Euro: vedi e-mail 17/3}
-
+\begin{minipage}{\linewidth}
 A gravare su: Ob. Fu ((( pratica.stringa_codf ))) - 
-Responsabile Fondi: ((( pratica.nome_responsabile )))
+Responsabile Fondi: ((( pratica.nome_responsabile ))).
 \vspace{0.5cm}
 
 \begin{flushright}
@@ -115,8 +110,10 @@ Il Richiedente
 \end{center}
 \end{minipage}
 \end{flushright}
+\end{minipage}
 
 ((* if autorizzazioni *))
+\begin{minipage}{\linewidth}
 \begin{center}
 	VISTO SI AUTORIZZA
 \end{center}
@@ -130,11 +127,14 @@ Il Responsabile dei fondi
 \end{center}
 \end{minipage}
 \end{flushright}
+\end{minipage}
 
+\begin{minipage}{\linewidth}
 \begin{center}
 	VISTO SI AUTORIZZA
 \end{center}
 ((* include 'direttore.tex' *))
+\end{minipage}
 ((* endif *))
 
 \end{document}
