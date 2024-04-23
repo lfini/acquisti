@@ -121,6 +121,7 @@ PROG_PDF_FILE = "progetto.pdf"
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
 COSTO = 'costo'                                 # dati_pratica
+COSTO_DECISIONE = 'costo_decisione'             # dati_pratica
 COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
 COSTO_IVA = 'costo_iva'                         # dati pratica
 COSTO_NETTO = 'costo_netto'                     # dati pratica

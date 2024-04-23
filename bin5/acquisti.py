@@ -76,8 +76,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.10'
-__date__ = '22/04/2024'
+__version__ = '5.0.11'
+__date__ = '23/04/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -980,6 +980,13 @@ def login():
     return fk.render_template('login.html', form=form, sede=CONFIG.config[cs.SEDE],
                               title='Procedura per acquisti')
 
+def update_costo(d_prat, spec):
+    'Aggiorna dati relativi al costo (spec: costo, costo_decisione)'
+    totimp, totiva, tottot = costo_totale(d_prat[spec])
+    d_prat[cs.COSTO_NETTO] = f'{totimp:.2f}'
+    d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
+    d_prat[cs.COSTO_TOTALE] = f'{tottot:.2f}'
+    d_prat[cs.COSTO_DETTAGLIO] = costo_dett(d_prat[spec])
 
 ACQ = fk.Flask(__name__, template_folder=cs.FILEDIR, static_folder=cs.FILEDIR)
 
@@ -1145,11 +1152,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
             d_prat[cs.PROGETTO_INVIATO] = 0
             d_prat[cs.FIRMA_APPROV_RESP] = ""
-            totimp, totiva, tottot = costo_totale(d_prat['costo'])
-            d_prat[cs.COSTO_NETTO] = f'{totimp:.2f}'
-            d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
-            d_prat[cs.COSTO_TOTALE] = f'{tottot:.2f}'
-            d_prat[cs.COSTO_DETTAGLIO] = costo_dett(d_prat['costo'])
+            update_costo(d_prat, cs.COSTO)
             d_prat[cs.SAVED] = 1
             salvapratica(basedir, d_prat)
             prog_name = os.path.splitext(cs.PROG_PDF_FILE)[0]
@@ -1290,11 +1293,9 @@ def indicarup():
             hist = cs.PASSI[step]+f' ({d_prat[cs.NOME_RUP]})'
             storia(d_prat, user, hist)
             salvapratica(basedir, d_prat)
-            msg = f"{d_prat[cs.NOME_RUP]} nominato RUP per pratica {d_prat[cs.NUMERO_PRATICA]}"
+            msg = f"{d_prat[cs.NOME_RUP]} indicato come RUP per pratica {d_prat[cs.NUMERO_PRATICA]}"
             logging.info(msg)
             fk.flash(msg, category='info')
-            text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)
-            send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
             return pratica1()
         fk.flash('Scelta RUP non valida', category="error")
     body = rupf()
@@ -1331,6 +1332,8 @@ def autorizza():
     d_prat[cs.STATO_PRATICA] = step
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
     d_prat[cs.FIRMA_AUTORIZZ_DIR] = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
+    text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)
+    send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     storia(d_prat, user, step)
     salvapratica(basedir, d_prat)
     return pratica1()
@@ -1378,14 +1381,14 @@ def rimuovirup():
         logging.error('Cancellazione RUP non autorizzata: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
-    if cs.EMAIL_RUP in d_prat:
-        msg = f"RUP: {d_prat[cs.NOME_RUP]} cancellato"
-        logging.info(msg)
-        _mydel(cs.EMAIL_RUP, d_prat)
-        _mydel(cs.NOME_RUP, d_prat)
-        ft.remove((basedir, cs.NOMINARUP_PDF_FILE), show_error=False)
-        salvapratica(basedir, d_prat)
-        fk.flash(msg, category="info")
+    msg = f"RUP: {d_prat[cs.NOME_RUP]} cancellato"
+    logging.info(msg)
+    _mydel(cs.EMAIL_RUP, d_prat)
+    _mydel(cs.NOME_RUP, d_prat)
+    d_prat[cs.STATO_PRATICA] = 20
+    ft.remove((basedir, cs.NOMINARUP_PDF_FILE), show_error=False)
+    salvapratica(basedir, d_prat)
+    fk.flash(msg, category="info")
     return pratica1()
 
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
@@ -1709,11 +1712,13 @@ def modificadecisione():                     #pylint: disable=R0914
         ndet = ft.find_max_decis(year)[0]+1
         d_prat[cs.NUMERO_DECISIONE] = f"{ndet}/{year:4d}"
         d_prat[cs.DATA_DECISIONE] = ft.today(False)
+        d_prat[cs.COSTO_DECISIONE] = d_prat[cs.COSTO].copy()
         logging.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     det = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
+            update_costo(d_prat, cs.COSTO_DECISIONE)
             str_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
             logging.info('Genera decisione: %s/%s', basedir, cs.DECIS_PDF_FILE)
             decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])

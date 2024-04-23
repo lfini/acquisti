@@ -311,7 +311,7 @@ class NominaRUP(FormWErrors):
         return html
 
 class ProgettoAcquisto(FormWErrors):
-    "Form per richiesta acquisto"
+    "Form per progetto di acquisto"
     data_richiesta = MyTextField('Data richiesta (g/m/aaaa)', True)
     descrizione_acquisto = MyTextField('Descrizione', True)
     descrizione_ordine = MyTextAreaField('Descrizione per ordine '\
@@ -332,12 +332,8 @@ class ProgettoAcquisto(FormWErrors):
     fornitore_sede = MyTextField('Indirizzo fornitore', True)
     fornitore_codfisc = MyTextField('Codice Fiscale', True)
     fornitore_partiva = MyTextField('Partita Iva', True)
-    rif_offerta = MyTextField('Riferimento offerta', True)
-    costo = MyFormField(Costo, 'Costo del bene', True)
-    oneri_sicurezza = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
-    newform = wt.HiddenField()
-
-    note_richiesta = MyTextAreaField('Note', False, [wt.validators.Optional()])
+    costo = MyFormField(Costo, 'Quadro economico', True)
+    note_progetto = MyTextAreaField('Note', False, [wt.validators.Optional()])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -365,15 +361,12 @@ class ProgettoAcquisto(FormWErrors):
                 html += render_field(self.fornitore_sede, sep='', size=50)+BRK
                 html += render_field(self.fornitore_codfisc)+BRK
                 html += render_field(self.fornitore_partiva)+E_TRTD
-#               html += render_field(self.rif_offerta, sep='', size=50)+E_TRTD
             html += B_TRTD+render_field(self.costo, sameline=True)+E_TRTD
-
 #           if self.modalita_acquisto.data in (RDO_MEPA, PROC_NEG):
 #               html += B_TRTD+render_field(self.criterio_assegnazione)+E_TRTD
 #               html += B_TRTD+render_field(self.oneri_sicurezza)+E_TRTD
-            html += B_TRTD+render_field(self.note_richiesta, rows=10, cols=80)+E_TRTD
+            html += B_TRTD+render_field(self.note_progetto, rows=10, cols=80)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
-        html += self.newform()
         return html
 
     def validate(self, extra_validators=None):                                   #pylint: disable=R0912
@@ -383,8 +376,6 @@ class ProgettoAcquisto(FormWErrors):
             self.errlist.append("Manca descrizione acquisto")
         if not self.motivazione_acquisto.data:
             self.errlist.append("Manca motivazione acquisto")
-#       if not self.rif_offerta.data:
-#           self.errlist.append("Manca il riferimento all'offerta")
         if not self.lista_codf.data:
             self.errlist.append("Manca codice Fu.Ob.")
         if not self.email_responsabile.data:
@@ -415,6 +406,7 @@ class Decisione(FormWErrors):
                                    [wt.validators.InputRequired("Manca numero decisione")])
     data_decisione = MyTextField('Data (g/m/aaaa)', True,
                                  [wt.validators.Optional("Manca data decisione")])
+    costo_decisione = MyFormField(Costo, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
     numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
@@ -430,6 +422,7 @@ class Decisione(FormWErrors):
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione)+BRK
         html += render_field(self.data_decisione)+BRK
+        html += B_TRTD+render_field(self.costo_decisione, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo)+BRK
         html += render_field(self.numero_cup)+BRK
@@ -552,25 +545,6 @@ class Ordine(FormWErrors):
         if not self.cig.data:
             self.errlist.append("Manca specifica CIG")
         return len(self.errlist) == 0
-
-class AggiornaFormato(FormWErrors):
-    "Classe per aggiornamento formato pratiche vers.0/1"
-    nuovo_costo = MyFormField(Costo, "Costo", True)
-    nuova_modalita_acquisto = MyRadioField('Modalit&agrave; di acquisto', True,
-                                           choices=cs.MENU_MOD_ACQ,
-                                           widget=radio_widget)
-    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
-    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
-
-    def __call__(self, d_prat):
-        "rendering del form"
-        html = B_TRTD+Markup('Vedi richiesta originale: <a href=/vedifile/richiesta.pdf>'\
-                'richiesta.pdf</a>')+E_TRTD
-        html += B_TRTD+Markup('Costo: '+d_prat.get("costo", ""))+BRK+ \
-                render_field(self.nuovo_costo)+E_TRTD
-        html += B_TRTD+render_field(self.nuova_modalita_acquisto)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
-        return html
 
 class TrovaPratica(FormWErrors):
     "form per ricerca pratiche"

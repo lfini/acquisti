@@ -98,8 +98,14 @@ utilizzatori e della effettiva localizzazione dei beni da inventariare.
 \begin{minipage}{\linewidth}
 A gravare su: Ob. Fu ((( pratica.stringa_codf ))) - 
 Responsabile Fondi: ((( pratica.nome_responsabile ))).
-\vspace{0.5cm}
 
+((* if pratica.nota_progetto *))
+\vspace{0.5cm}
+\textbf{Note:}
+	((( pratica.note_progetto )))
+((* endif *))
+
+\vspace{0.5cm}
 \begin{flushright}
 \begin{minipage}[c]{6cm}
 \begin{center}
