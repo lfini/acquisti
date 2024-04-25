@@ -1,8 +1,7 @@
 \documentclass[a4paper,12pt]{letter}
 \usepackage[T1]{fontenc} 
 \usepackage[utf8]{inputenc}
-\usepackage[printwatermark]{xwatermark}
-\usepackage{xcolor}
+\usepackage{watermark}
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
@@ -11,7 +10,7 @@
 ((* include 'header.tex' *))
 
 ((* if warning *))
-\newwatermark*[allpages,color=red!50,angle=45,scale=2,xpos=0,ypos=0]{((( warning )))}
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( warning ))) }}}
 ((* endif *))
 
 \begin{document}
