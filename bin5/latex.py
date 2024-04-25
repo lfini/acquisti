@@ -33,11 +33,12 @@ import ftools as ft             # Necessario per test
 # VERSION 3.1    17/10/2019  - path pdflatex configurabile
 # VERSION 3.2    17/10/2019  - Corretto formato per inclusione
 # VERSION 3.3    13/07/2021  - Corretto test offline
-# VERSION 3.3    28/2/2021   - Migliorato test offline
+# VERSION 3.4    28/2/2023   - Migliorato test offline
+# VERSION 3.5    24/4/2024   - Semplificato path programma pdflatex
 
 __author__ = 'Luca Fini'
-__version__ = '3.4'
-__date__ = '28/2/2023'
+__version__ = '3.5'
+__date__ = '24/4/2024'
 
 class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
@@ -127,9 +128,9 @@ CHLIST = {35: "\\#",
           250: "\\'u",
           8364: "\\euro{}"}
 
-def set_path(dirpath):
+def set_path(pdflatex):
     "Imposta path per pdflatex"
-    PDFLATEX.cmd = os.path.join(dirpath, "pdflatex")
+    PDFLATEX.cmd = pdflatex
 
 def tempnam(destdir='./', prefix='', suffix=''):
     "Genera un nome file temporaneo"

@@ -13,10 +13,12 @@ from collections import OrderedDict
 import readline                         # pylint: disable=W0611
 
 import ftools
-from constants import *                 # pylint: disable=W0401
+import constants as cs
 from table import jload, jsave
 
-__version__ = "1.2"
+__version__ = "1.3"
+
+MY_VERSION = 1
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -36,8 +38,8 @@ NOTA: specificare "-" se si utilizza GMail API per  l'invio di messaggi.
 ************************************************************************
 """
 
-LATEX_PATH_DESC = """Directory di installazione di pdflatex
-[es: /usr/local/bin]
+LATEX_PATH_DESC = """Path del programma pdflatex
+[es: /usr/local/bin/pdflatex]
 """
 
 EMAIL_UFFICIO_DESC = """Indirizzo EMail dell'ufficio ordini.
@@ -104,41 +106,41 @@ Dovrebbe corrispondere all'identità GMail utilizzata per l'invio di messaggi.
 (Es.: acquisti.oaa@gmail.com)
 """
 
-SEDE = OrderedDict([(SEDE_IT, SEDE_DESC),
-                    (SEDE_UK, SEDE_UK_DESC),
-                    (INDIRIZZO, INDIRIZZO_DESC),
-                    (CITTA, CITTA_DESC),
-                    (WEBSITE, WEBSITE_DESC),
+SEDE = OrderedDict([(cs.SEDE_IT, SEDE_DESC),
+                    (cs.SEDE_UK, SEDE_UK_DESC),
+                    (cs.INDIRIZZO, INDIRIZZO_DESC),
+                    (cs.CITTA, CITTA_DESC),
+                    (cs.WEBSITE, WEBSITE_DESC),
                    ])
 
-PARAMS = OrderedDict([(NOME_WEBMASTER, NOME_WEBMASTER_DESC),
-                      (EMAIL_WEBMASTER, EMAIL_WEBMASTER_DESC),
-                      (NOME_DIRETTORE, NOME_DIRETTORE_DESC),
-                      (GENDER_DIRETTORE, GENDER_DIRETTORE_DESC),
-                      (EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
-                      (TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
-                      (TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
-                      (EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
-                      (LATEX_PATH, LATEX_PATH_DESC),
+PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
+                      (cs.EMAIL_WEBMASTER, EMAIL_WEBMASTER_DESC),
+                      (cs.NOME_DIRETTORE, NOME_DIRETTORE_DESC),
+                      (cs.GENDER_DIRETTORE, GENDER_DIRETTORE_DESC),
+                      (cs.EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
+                      (cs.TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
+                      (cs.TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
+                      (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
+                      (cs.LATEX_PATH, LATEX_PATH_DESC),
                      ])
 
-TECH = OrderedDict([(SMTP_HOST, SMTP_HOST_DESC),
-                    (EMAIL_PROCEDURA, EMAIL_PROCEDURA_DESC),
-                    (LDAP_HOST, LDAP_HOST_DESC),
-                    (LDAP_PORT, LDAP_PORT_DESC),
+TECH = OrderedDict([(cs.SMTP_HOST, SMTP_HOST_DESC),
+                    (cs.EMAIL_PROCEDURA, EMAIL_PROCEDURA_DESC),
+                    (cs.LDAP_HOST, LDAP_HOST_DESC),
+                    (cs.LDAP_PORT, LDAP_PORT_DESC),
                    ]
                   )
 
 def creadirs():
     "Crea struttura directory di lavoro"
-    approvdir = os.path.join(DATADIR, 'approv')
+    approvdir = os.path.join(cs.DATADIR, 'approv')
 
     print()
-    if os.path.exists(DATADIR):
-        print(f"Directory {DATADIR} già esistente")
+    if os.path.exists(cs.DATADIR):
+        print(f"Directory {cs.DATADIR} già esistente")
     else:
-        os.makedirs(DATADIR)
-        print(f"Creata directory {DATADIR}")
+        os.makedirs(cs.DATADIR)
+        print(f"Creata directory {cs.DATADIR}")
 
     if os.path.exists(approvdir):
         print(f"Directory {approvdir} già esistente")
@@ -146,11 +148,11 @@ def creadirs():
         os.makedirs(approvdir)
         print(f"Creata directory {approvdir}")
 
-    if os.path.exists(WORKDIR):
-        print(f"Directory {WORKDIR} già esistente")
+    if os.path.exists(cs.WORKDIR):
+        print(f"Directory {cs.WORKDIR} già esistente")
     else:
-        os.makedirs(WORKDIR)
-        print(f"Creata directory {WORKDIR}")
+        os.makedirs(cs.WORKDIR)
+        print(f"Creata directory {cs.WORKDIR}")
     print()
 
 def ask_one(name, old_config, new_config, help_text):
@@ -196,8 +198,8 @@ def main():
         print(__doc__)
         sys.exit()
 
-    cfile_name = os.path.join(DATADIR, "config.json")
-    cfile_save = os.path.join(DATADIR, "config.save")
+    cfile_name = os.path.join(cs.DATADIR, cs.CONFIG_NAME)
+    cfile_save = os.path.join(cs.DATADIR, cs.CONFIG_SAVE)
 
     if os.path.exists(cfile_name):
         old_config = jload(cfile_name)
@@ -206,7 +208,7 @@ def main():
 
     if "-c" in sys.argv:
         creadirs()
-        old_sede = old_config.get("sede", {})
+        old_sede = old_config.get(cs.SEDE, {})
         if not isinstance(old_sede, dict):
             old_sede = {}
 
@@ -214,10 +216,10 @@ def main():
         new_params = ask_dict(PARAMS, old_config)
         new_tech = ask_dict(TECH, old_config)
 
-        new_config = {"sede": new_sede}
+        new_config = {cs.CONFIG_VERSION: MY_VERSION, cs.SEDE: new_sede}
         new_config.update(new_params)
         new_config.update(new_tech)
-        new_config["flask_key"] = ftools.randstr(30)
+        new_config[cs.FLASK_KEY] = ftools.randstr(30)
 
         print()
         print()
@@ -232,9 +234,10 @@ def main():
         if old_config:
             show(old_config, cfile_name)
         else:
-            print()
-            print("Configurazione non definita. Usa '-h' per istruzioni")
-            print()
+            print("Configurazione non definita.")
+        print()
+        print('Usa "-c" per creare/modificare la configurazione')
+        print()
 
 if __name__ == "__main__":
     main()

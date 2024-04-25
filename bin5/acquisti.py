@@ -76,8 +76,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.11'
-__date__ = '23/04/2024'
+__version__ = '5.0.12'
+__date__ = '25/04/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -993,6 +993,8 @@ ACQ = fk.Flask(__name__, template_folder=cs.FILEDIR, static_folder=cs.FILEDIR)
 @ACQ.before_request
 def before():
     "procedura da eseguire prima di ogni pagina"
+    if CONFIG.config.get(cs.CONFIG_VERSION, -1) != cs.CONFIG_REQUIRED:
+        raise RuntimeError('File configurazione incompatibile')
     logger = logging.getLogger()
     logger.host_info = fk.request.remote_addr
     if userid := fk.session.get('userid'):
@@ -1156,9 +1158,8 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             d_prat[cs.SAVED] = 1
             salvapratica(basedir, d_prat)
             prog_name = os.path.splitext(cs.PROG_PDF_FILE)[0]
-            str_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
             ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
-                       sede=CONFIG.config[cs.SEDE], il_direttore=str_dir)
+                       sede=CONFIG.config[cs.SEDE], warning='da approvare da resp.fondi')
             ft.remove((basedir, cs.DECIS_PDF_FILE), show_error=False)
             logging.info('Generato progetto: %s/%s', basedir, cs.PROG_PDF_FILE)
             _avvisi(user, basedir, d_prat, "A")
@@ -1204,7 +1205,7 @@ def inviaprogetto():
     return fk.redirect(fk.url_for('pratica1'))
 
 @ACQ.route('/inviadecisione')
-def inviadecisione():
+def inviadecisione():                    #pylint: disable=R0914
     "pagina: invia decisione di contrarre per firma digitale direttore"
     logging.info('URL: /inviadecisione (%s)', fk.request.method)
     if not (ret := _check_access()):
@@ -1216,6 +1217,11 @@ def inviadecisione():
         logging.error(INVIO_NON_AUTORIZZ, err, user['userid'],
                       d_prat[cs.NUMERO_PRATICA])
     else:
+        decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])
+        decis_name = os.path.splitext(cs.DECIS_PDF_FILE)[0]
+        firma_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
+        ft.makepdf(basedir, decis_template, decis_name, sede=CONFIG.config[cs.SEDE],
+                   debug=DEBUG.local, pratica=d_prat, user=user, il_direttore=firma_dir)
         testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
                 cs.DETTAGLIO_PRATICA.format(**d_prat)
         subj = 'Decisione di contrarre da firmare'
@@ -1251,6 +1257,10 @@ def approvaprogetto():
         logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
     else:
+        prog_name = os.path.splitext(cs.PROG_PDF_FILE)[0]
+        ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
+                   sede=CONFIG.config[cs.SEDE], il_responsabile=True,
+                   warning='in attesa autorizz. direttore')
         d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.PROG_PDF_FILE))
         step = 20
         d_prat[cs.STATO_PRATICA] = step
@@ -1321,13 +1331,14 @@ def autorizza():
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
     prog_name = os.path.splitext(cs.PROG_PDF_FILE)[0]
-    str_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
-    ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat, nominarup=True,
-               autorizzazioni=True, il_direttore=str_dir, sede=CONFIG.config[cs.SEDE])
-
+    firma_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
+    ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
+               nominarup=True, il_direttore=firma_dir,
+               il_responsabile=True, sede=CONFIG.config[cs.SEDE])
+    d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.PROG_PDF_FILE))
     nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
     ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
-               nominarup=True, il_direttore=str_dir, sede=CONFIG.config[cs.SEDE])
+               nominarup=True, il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
     step = 50
     d_prat[cs.STATO_PRATICA] = step
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
@@ -1438,9 +1449,10 @@ PRAT_APE = 'Elenco pratiche aperte '
 PRAT_CHI = 'Elenco pratiche chiuse '
 PRAT_APP = 'Elenco pratiche approvate '
 PRAT_DAP = 'Elenco pratiche da approvare '
+PRAT_NOR = 'Elenco pratiche in attesa di indicazione del RUP'
 
 @ACQ.route('/pratiche/<filtro>/<anno>/<ascendente>')
-def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,R0912
+def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,R0912,R0914
     "pagina: lista pratiche"
     logging.info('URL: /pratiche/%s/%s/%s (%s)', filtro, anno, ascendente, fk.request.method)
     user = user_info()
@@ -1452,7 +1464,8 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         sort_f = _pratica_ascendente
     else:
         sort_f = _pratica_discendente
-    if filtro[:3] == 'ALL':
+    oper = filtro[:3]
+    if oper == 'ALL':      # Lista praticahe aperte/chiuse
         if not _test_admin(user):
             logging.error('Visualizzazione pratiche come amministrativo non autorizzata. '\
                           'Utente: %s', user['userid'])
@@ -1465,7 +1478,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         else:
             stato = lambda x: not x.get(cs.PRATICA_APERTA)
             title = PRAT_CHI
-    elif filtro[:3] == 'RIC':
+    elif oper == 'RIC':   # Lista pratiche aperte/chiuse come richiedente
         ruolo = lambda x, u=user: _test_richiedente(u, x)
         str_ruolo = 'come richiedente'
         if filtro[-1] == 'A':           # pratica aperta
@@ -1474,7 +1487,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         else:                           # pratica chiusa
             stato = lambda x: not x.get(cs.PRATICA_APERTA)
             title = PRAT_CHI+str_ruolo
-    elif filtro[:3] == 'RES':
+    elif oper == 'RES':   # Lista pratiche da approvare/approvate come resp. fondi
         ruolo = lambda x, u=user: _test_responsabile(u, x)
         str_ruolo = 'come responsabile dei fondi'
         if filtro[-1] == '0':            # pratica da approvare
@@ -1483,7 +1496,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         else:                            # pratica approvata
             stato = lambda x: x.get(cs.FIRMA_APPROV_RESP)
             title = PRAT_APP+str_ruolo
-    elif filtro[:3] == 'RUP':
+    elif oper == 'RUP':   # Lista pratiche aperte/chiuse come RUP
         ruolo = lambda x, u=user: _test_rup(u, x)
         str_ruolo = 'come RUP'
         if filtro[-1] == 'A':
@@ -1492,7 +1505,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         else:
             stato = lambda x: not x.get(cs.PRATICA_APERTA)
             title = PRAT_CHI+str_ruolo
-    elif filtro[:3] == 'DIR':
+    elif oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate come Direttore
         if not _test_direttore(user):
             logging.error('Visualizzazione pratiche come direttore non autorizzata. '\
                           'Utente: %s', user['userid'])
@@ -1506,8 +1519,17 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         else:
             stato = lambda x: not x.get(cs.FIRMA_AUTORIZZ_DIR)
             title = PRAT_DAP+str_ruolo
+    elif oper == 'NOR':    # Lista pratiche in attesa di indicazione del RUP
+        if not _test_admin(user):
+            logging.error('Visualizzazione pratiche come amministrativo non autorizzata. '\
+                          'Utente: %s', user['userid'])
+            fk.session.clear()
+            return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
+        ruolo = lambda x: True
+        title = PRAT_NOR
+        stato = lambda x: not x.get(cs.EMAIL_RUP)
     else:
-        err = f'Ruolo non valido in lista pratiche ({filtro[:3]})'
+        err = f'Operazione non valida in lista pratiche ({oper})'
         raise RuntimeError(err)
     f_filter = lambda x: ruolo(x) and stato(x)
     try:
@@ -1719,12 +1741,11 @@ def modificadecisione():                     #pylint: disable=R0914
         if det.validate():
             d_prat.update(clean_data(det.data))
             update_costo(d_prat, cs.COSTO_DECISIONE)
-            str_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
-            logging.info('Genera decisione: %s/%s', basedir, cs.DECIS_PDF_FILE)
+            logging.info('Genera decisione provvisoria: %s/%s', basedir, cs.DECIS_PDF_FILE)
             decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])
             decis_name = os.path.splitext(cs.DECIS_PDF_FILE)[0]
             ft.makepdf(basedir, decis_template, decis_name, sede=CONFIG.config[cs.SEDE],
-                       debug=DEBUG.local, pratica=d_prat, user=user, il_direttore=str_dir)
+                       debug=DEBUG.local, pratica=d_prat, user=user, warning='provvisorio')
             ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
             d_prat[cs.PDF_ORDINE] = ''
             d_prat[cs.PDF_DECISIONE] = cs.DECIS_PDF_FILE
@@ -1914,12 +1935,6 @@ def devel():                     #pylint: disable=R0915
         fk.session.clear()
         raise RuntimeError("Accesso illegale")
     return text
-
-@ACQ.route('/user')
-def user_tbd():
-    "pagina T.B.D."
-    logging.info('URL: /user (%s)', fk.request.method)
-    return fk.render_template('tbd.html', goto='/', sede=CONFIG.config[cs.SEDE])
 
 @ACQ.route('/procedura_rdo', methods=('GET', 'POST'))
 def procedura_rdo():

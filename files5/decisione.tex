@@ -1,12 +1,18 @@
 \documentclass[a4paper,12pt]{letter}
 \usepackage[T1]{fontenc} 
 \usepackage[utf8]{inputenc}
+\usepackage[printwatermark]{xwatermark}
+\usepackage{xcolor}
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
-%% Template: progetto.tex. Version 1.0
+%% Template: decisione.tex. Version 1.0
 
 ((* include 'header.tex' *))
+
+((* if warning *))
+\newwatermark*[allpages,color=red!50,angle=45,scale=2,xpos=0,ypos=0]{((( warning )))}
+((* endif *))
 
 \begin{document}
 \topaddr

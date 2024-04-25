@@ -8,6 +8,11 @@ __version__ = "2.2"
 __date__ = "6/3/2024"
 __author__ = "Luca Fini"
 
+CONFIG_NAME = 'config.json'      # nome file di configurazione
+CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
+CONFIG_VERSION = 'config_version'
+CONFIG_REQUIRED = 1              # versione file configurazione richiesta
+
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
 
@@ -32,8 +37,6 @@ NOME_DITTA = "nome_ditta"
 SEDE_DITTA = "sede_ditta"
 
 TEMPORARY_KEY_PREFIX = "T_"
-
-CONFIG_NAME = 'config.json'      # nome file di configurazione
 
 PASSI = { 0: "Generato progetto di acquisto",
          10: "Progetto inviato al resp. dei fondi per approvazione",
