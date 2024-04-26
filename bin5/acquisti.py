@@ -76,8 +76,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.12'
-__date__ = '25/04/2024'
+__version__ = '5.0.13'
+__date__ = '26/04/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1298,6 +1298,9 @@ def indicarup():
         if rupf.validate():
             d_prat[cs.EMAIL_RUP] = rupf.email_rup.data
             d_prat[cs.NOME_RUP] = nome_da_email(d_prat[cs.EMAIL_RUP], True)
+            nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
+            ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
+                       sede=CONFIG.config[cs.SEDE], warning='in attesa firma direttore')
             step = 30
             d_prat[cs.STATO_PRATICA] = step
             hist = cs.PASSI[step]+f' ({d_prat[cs.NOME_RUP]})'
@@ -1338,7 +1341,7 @@ def autorizza():
     d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.PROG_PDF_FILE))
     nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
     ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
-               nominarup=True, il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
+               il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
     step = 50
     d_prat[cs.STATO_PRATICA] = step
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
@@ -1527,7 +1530,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
         ruolo = lambda x: True
         title = PRAT_NOR
-        stato = lambda x: not x.get(cs.EMAIL_RUP)
+        stato = lambda x: (not x.get(cs.EMAIL_RUP)) and x.get(cs.FIRMA_APPROV_RESP)
     else:
         err = f'Operazione non valida in lista pratiche ({oper})'
         raise RuntimeError(err)
