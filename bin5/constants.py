@@ -126,6 +126,7 @@ CAPITOLO = 'capitolo'                           # dati_pratica
 COSTO = 'costo'                                 # dati_pratica
 COSTO_DECISIONE = 'costo_decisione'             # dati_pratica
 COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
+COSTO_BASE = 'costo_base'                       # dati pratica
 COSTO_IVA = 'costo_iva'                         # dati pratica
 COSTO_NETTO = 'costo_netto'                     # dati pratica
 COSTO_ORDINE = 'costo_ordine'                   # dati_pratica

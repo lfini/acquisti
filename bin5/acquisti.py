@@ -76,8 +76,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.13'
-__date__ = '26/04/2024'
+__version__ = '5.0.14'
+__date__ = '30/04/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -919,24 +919,31 @@ def costo_totale(costo):
     'calcola costi per elementi separati: importo, iva, totale'
     totimp = 0.0
     totiva = 0.0
+    totbase = 0.0
     imp, iva = costo_voce(costo['voce_1'])
     totimp += imp
     totiva += iva
+    totbase += imp if costo['voce_1']['inbase'] else 0
     imp, iva = costo_voce(costo['voce_2'])
     totimp += imp
     totiva += iva
+    totbase += imp if costo['voce_2']['inbase'] else 0
     imp, iva = costo_voce(costo['voce_3'])
     totimp += imp
     totiva += iva
+    totbase += imp if costo['voce_3']['inbase'] else 0
     imp, iva = costo_voce(costo['voce_4'])
     totimp += imp
     totiva += iva
+    totbase += imp if costo['voce_4']['inbase'] else 0
     imp, iva = costo_voce(costo['voce_5'])
     totimp += imp
     totiva += iva
+    totbase += imp if costo['voce_5']['inbase'] else 0
     totimp = round(totimp, 2)
     totiva = round(totiva, 2)
-    return totimp, totiva, totimp+totiva
+    totbase = round(totbase, 2)
+    return totimp, totiva, totimp+totiva, totbase
 
 def _voce(voce):
     'genera rappresentazione come lista di una voce di costo'
@@ -982,10 +989,11 @@ def login():
 
 def update_costo(d_prat, spec):
     'Aggiorna dati relativi al costo (spec: costo, costo_decisione)'
-    totimp, totiva, tottot = costo_totale(d_prat[spec])
+    totimp, totiva, tottot, totbase = costo_totale(d_prat[spec])
     d_prat[cs.COSTO_NETTO] = f'{totimp:.2f}'
     d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
     d_prat[cs.COSTO_TOTALE] = f'{tottot:.2f}'
+    d_prat[cs.COSTO_BASE] = f'{totbase:.2f}'
     d_prat[cs.COSTO_DETTAGLIO] = costo_dett(d_prat[spec])
 
 ACQ = fk.Flask(__name__, template_folder=cs.FILEDIR, static_folder=cs.FILEDIR)
@@ -1748,7 +1756,8 @@ def modificadecisione():                     #pylint: disable=R0914
             decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])
             decis_name = os.path.splitext(cs.DECIS_PDF_FILE)[0]
             ft.makepdf(basedir, decis_template, decis_name, sede=CONFIG.config[cs.SEDE],
-                       debug=DEBUG.local, pratica=d_prat, user=user, warning='provvisorio')
+                       debug=DEBUG.local, pratica=d_prat, user=user,
+                       warning='P R O V V I S O R I O')
             ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
             d_prat[cs.PDF_ORDINE] = ''
             d_prat[cs.PDF_DECISIONE] = cs.DECIS_PDF_FILE
