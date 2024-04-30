@@ -249,7 +249,8 @@ class _Costo(FormWErrors):
         ret += Markup('<tr><td>voce&nbsp;5:</td>')+self.voce_5.form(show_ck)+Markup('</tr>\n')
         ret += Markup('</table>\n')
         if show_ck:
-            ret += Markup('Togliere la spunta alle voci che non contribuiscono al prezzo base di asta\n')
+            ret += Markup('Togliere la spunta alle voci che non contribuiscono' \
+                          'al prezzo base di asta\n')
         return ret
 
     def renderme(self, **_unused):            #pylint: disable=R0201
@@ -314,12 +315,15 @@ class MyLoginForm(FormWErrors):
 class NominaRUP(FormWErrors):
     'Form per nomina RUP'
     email_rup = MySelectField('', True, [])
+    interno_rup = MyTextField('Tel. Interno', True,
+                              [wt.validators.InputRequired("Manca num. telef. interno")])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def __call__(self):
         "rendering del form"
-        html = B_TRTD+render_field(self.email_rup, size=15)+E_TRTD
+        html = B_TRTD+render_field(self.email_rup, size=20)+BRK+BRK
+        html += render_field(self.interno_rup, sameline=True, size=3)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
@@ -562,65 +566,23 @@ def new_lista_ditte(label, m_entries=5):
     "Instanzia una lista ditte con dato numero di campi"
     return MyFieldList(wt.FormField(Ditta), label, True, min_entries=m_entries)
 
-class PraticaRDO(FormWErrors):
-    "form per specifiche della pratica RDO"
-    inizio_gara = MyTextField('Data inizio (g/m/aaaa)', True)
-    fine_gara = MyTextField('Data/ora fine (g/m/aaaa ora:min)', True)
-    lista_ditte = new_lista_ditte("Elenco ditte che hanno presentato offerta")
-    prezzo_gara = MyFormField(Costo2, "Prezzo di gara", True)
-    oneri_sic_gara = MyFormField(ImportoPiuIva, "Oneri sicurezza", True)
-    T_more = wt.SubmitField("+Ditte")
+class RdO(FormWErrors):
+    "form per specifiche per la generazione di RdO"
+    termine = MyTextField('Data scadenza (g/m/aaaa)', True)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def __init__(self, *pw, **kw):
-        super().__init__(*pw, **kw)
-        self.min_entries = 2
-
     def __call__(self, **kw):
         "Rendering del form"
-        html = B_TRTD+render_field(self.inizio_gara)+BRK
-        html += render_field(self.fine_gara)+E_TRTD
-        html += B_TRTD+Markup(f"<b>{self.lista_ditte.a_label}</b><br>")
-        html += Markup("<table border=1><tr><th>n.</th><th>Denominazione</th>"\
-                          "<th>Indirizzo</th><th>Vincitore</th><th>"\
-                          "<img src=/files/del-20.png></th></tr></td></tr>")
-        for idx, ditta in enumerate(self.lista_ditte):
-            html += B_TRTD+Markup(f"{(idx+1)}</td>")+ \
-                                     ditta.renderme(number=idx, **kw)+Markup("</tr>")
-        html += E_TRTD+Markup("</table><br>")
-        html += Markup("<div align=right>")+self.T_more()+Markup("</div>")+E_TRTD
-        html += B_TRTD+render_field(self.prezzo_gara)
-        html += BRK+render_field(self.oneri_sic_gara)+E_TRTD
+        html = B_TRTD+render_field(self.termine)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-    def increment(self):
-        "Incrementa numero di ditte"
-        self.lista_ditte.append_entry()
-        self.lista_ditte.append_entry()
-
     def validate(self, extra_validators=None):
         "Validazione"
-        tt0 = ft.date_to_time(self.inizio_gara.data)
+        tt0 = ft.date_to_time(self.termine.data)
         if tt0 is None:
-            self.errlist.append("Errore data inzio (usa formato: g/m/a)")
-        tt1 = None
-        if len(self.fine_gara.data.split()) == 2:
-            tt1 = ft.date_to_time(self.fine_gara.data)
-        if tt1 is None:
-            self.errlist.append("Errore data/ora fine (usa formato: g/m/a o:m)")
-        if tt0 and tt1:
-            if tt1-tt0 < 86400:
-                self.errlist.append("Date inizio e fine inconsistenti")
-        if len(self.lista_ditte.data) < 1:
-            self.errlist.append("Manca elenco ditte")
-        n_vinc = 0      # Conta numero di vincitori
-        for ditta in self.lista_ditte:
-            if ditta.vincitore.data:
-                n_vinc += 1
-        if n_vinc > 1:
-            self.errlist.append("E' ammesso un solo vincitore")
+            self.errlist.append("Errore data termine (usa formato: g/m/a)")
         return not self.errlist
 
 class CodfForm(FormWErrors):

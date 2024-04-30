@@ -31,9 +31,22 @@
    {% endif %}
 {% endif %}
 <p>
-{% if info.pdf_nominarup %}
 <b>Nomina RUP: </b>
+{% if info.pdf_nominarup %}
    [<a href=/vedifile/nominarup.pdf>Vedi</a>]
+{% endif %}
+<p>
+
+<b>Rich. di Offerta:</b>
+{% if info.pdf_rdo %}
+   [<a href=/vedifile/rdo.pdf>Vedi</a>]
+{% endif %}
+{% if info.rdo_modificabile %}
+   {% if info.pdf_rdo %}
+      [<a href=/modificardo>Modifica</a>]
+   {% else %}
+      [<a href=/modificardo>Genera</a>]
+   {% endif %}
 {% endif %}
 <p>
 <b>Decisione: </b>
@@ -52,19 +65,6 @@
   {% if info.decis_modificabile %}
       [<a href=/modificadecisione>Genera</a>]
   {% endif %}
-{% endif %}
-{% if info.ordine == 1 %}
-<b>Ordine:</b>
-   {% if info.pdf_ordine %}
-      [<a href=/vedifile/ordine.pdf>Vedi</a>]
-      {% if info.ord_a_modificabile %}
-          &nbsp;&nbsp;[<a href=/modificaordine/A>Modifica</a>]
-      {% endif %}
-   {% else %}
-      {% if info.ord_a_modificabile %}
-          [<a href=/modificaordine/A>Genera</a>]
-      {% endif %}
-   {% endif %}
 {% endif %}
 <p>
 

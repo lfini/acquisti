@@ -44,7 +44,7 @@ PASSI = { 0: "Generato progetto di acquisto",
          30: "RUP indicato",
          40: "Inviata richiesta di autorizzazione e nomina RUP al Direttore",
          50: "Autorizzazione concessa e RUP nominato",
-         60: "Richiesta di Offerta generata e allegata",
+         60: "Richiesta di Offerta generata",
          70: "Decisione di contrarre inviata al Direttore per firma",
          80: "Decisione di contrarre firmata allegata alla pratica",
         }
@@ -117,9 +117,9 @@ WEBSITE = 'website'
 # nomi file generati
 DECIS_PDF_FILE = "decisione.pdf"
 DETB_PDF_FILE = "determina_b.pdf"
-ORD_PDF_FILE = "ordine.pdf"
 NOMINARUP_PDF_FILE = "nominarup.pdf"
 PROG_PDF_FILE = "progetto.pdf"
+RDO_PDF_FILE = "rdo.pdf"
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
@@ -178,9 +178,9 @@ ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
-PDF_DECISIONE = 'pdf_decisione'             # dati_pratica
+PDF_DECISIONE = 'pdf_decisione'                 # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
-PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
+PDF_RDO = 'pdf_rdo'                             # dati_pratica
 PDF_PROGETTO = 'pdf_progetto'                   # dati_pratica
 PRAT_JFILE = 'pratica.json'
 PRATICA_ANNULLATA = 'pratica_annullata'         # dati_pratica

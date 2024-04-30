@@ -99,6 +99,7 @@ NO_NON_RICH = 'NO: '+NON_RICH
 NO_NON_RESP = 'NO: '+NON_RESP
 NO_NON_RUP = 'NO: '+NON_RUP
 NO_NON_DIR = 'NO: '+NON_DIR
+NO_PASSO_ERRATO = 'NO: operazione non prevista a questo passo'
 NO_PDF_CIG = 'NO: Manca allegato CIG'
 NO_PDF_RDO_MEPA = 'NO: Manca allegato RdO da MePA'
 NO_PRATICA_CHIUSA = 'NO: Pratica chiusa'
@@ -220,20 +221,6 @@ def _test_all_dich_rup(basedir) -> bool:
 def _test_all_decis_firmata(basedir) -> bool:
     return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_DECIS_FIRMATA][0])
 
-def _test_pdf_ordine(basedir, d_prat, fase) -> bool:
-    "test esistenza ordine nella fase data"
-    if not basedir:
-        raise NO_BASEDIR
-    if fase == "A":
-        if d_prat[cs.MOD_ACQUISTO] == cs.TRATT_MEPA_40:
-            return True
-    elif fase == "B":
-        return True
-    else:
-        raise FASE_ERROR
-    pdf_path = os.path.join(basedir, cs.ORD_PDF_FILE)
-    return os.path.exists(pdf_path)
-
 def _test_pdf_progetto(basedir) -> bool:
     "test: esistenza documento progetto"
     if not basedir:
@@ -248,82 +235,12 @@ def _test_pdf_nominarup(basedir) -> bool:
     pdf_path = os.path.join(basedir, cs.NOMINARUP_PDF_FILE)
     return os.path.exists(pdf_path)
 
-def _test_pdf_ordine_mepa(basedir, d_prat, fase) -> bool:
-    "test: esistenza ordine mepa"
+def _test_pdf_rdo(basedir) -> bool:
+    "test: esistenza documento autorizzazione"
     if not basedir:
         raise NO_BASEDIR
-    if fase == "A":
-        if d_prat[cs.MOD_ACQUISTO] == cs.TRATT_MEPA_40:
-            return True
-        return False
-    if fase == "B":
-        return True
-    raise FASE_ERROR
-
-def _test_pdf_trattativa_mepa(basedir, d_prat, fase) -> bool:
-    "test: esistenza trattativa diretta mepa"
-    raise ToBeImplemented("_test_pdf_trattativa_mepa")
-#   if fase == "A":
-#       if d_prat[MOD_ACQUISTO] == TRATT_MEPA_40:
-#           return ft.findfiles(basedir, TAB_ALLEGATI[DOCUM_STIPULA][0])
-#       return True
-#   if fase == "B":
-#       return True
-#   raise FASE_ERROR
-
-def _test_pdf_offerta_ditta(basedir, d_prat, fase) -> bool:
-    "test: esistenza offerte da ditte"
-    raise ToBeImplemented("_test_pdf_offerta_ditta")
-#   if fase == "A":
-#       if d_prat[MOD_ACQUISTO] in (INFER_5000, SUPER_5000, INFER_1000, SUPER_1000, PROC_NEG):
-#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_A][0])))
-#       return True
-#   if fase == "B":
-#       if d_prat.get(MOD_ACQUISTO_B, "") in (PROC_NEG, SUPER_5000, SUPER_1000):
-#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[OFFERTA_DITTA_B][0])))
-#       return True
-#   raise FASE_ERROR
-
-def _test_pdf_lettera_invito(basedir, d_prat, fase) -> bool:
-    "test: esistenza lettere di invito"
-    raise ToBeImplemented("_test_pdf_lettera_invito")
-#   if fase == "A":
-#       if d_prat[MOD_ACQUISTO] == PROC_NEG:
-#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_A][0])))
-#       return True
-#   if fase == "B":
-#       if d_prat[MOD_ACQUISTO] in (PROC_NEG, MANIF_INT):
-#           return bool(len(ft.findfiles(basedir, TAB_ALLEGATI[LETT_INVITO_B][0])))
-#       return True
-#   raise FASE_ERROR
-
-def _test_pdf_capitolato_rdo(basedir, d_prat, fase) -> bool:
-    "test: esistenza capitolato RDO"
-    raise ToBeImplemented("_test_pdf_capitolato_rdo")
-#   if fase == "A":
-#       if d_prat[MOD_ACQUISTO] in (RDO_MEPA, ):
-#           return len(ft.findfiles(basedir, TAB_ALLEGATI[CAPITOLATO_RDO][0]))
-#       return True
-#   if fase == "B":
-#       return True
-#   raise FASE_ERROR
-
-def _test_pdf_lista_ditte_invitate(basedir, d_prat, fase) -> bool:
-    "test: esistenza lista ditte invitate"
-    raise ToBeImplemented("_test_pdf_lista_ditte_invitate")
-#   if fase == "A":
-#       if d_prat[MOD_ACQUISTO] == RDO_MEPA:
-#           return len(ft.findfiles(basedir, TAB_ALLEGATI[LISTA_DITTE_INV][0]))
-#       return True
-#   if fase == "B":
-#       return True
-#   raise FASE_ERROR
-
-def check_allegato_allegabile(d_prat) -> str:
-    "test: allegato allegabile"
-    if not d_prat.get(cs.PRATICA_APERTA):
-        return NO_PRATICA_CHIUSA
-    return YES
+    pdf_path = os.path.join(basedir, cs.RDO_PDF_FILE)
+    return os.path.exists(pdf_path)
 
 def check_allegati_cancellabili(the_user, d_prat) -> str:
     "test: allegati cancellabili"
@@ -438,6 +355,19 @@ def check_rich_rup_autorizzabile(the_user, basedir, d_prat) -> str:
         return NO_RUP_DICH
     return YES
 
+def check_rdo_modificabile(the_user, basedir, d_prat) -> str:
+    "test: rdo modificabile"
+    if d_prat.get(cs.PRATICA_APERTA) != 1:
+        return NO_PRATICA_CHIUSA
+    if not _test_rup(the_user, d_prat):
+        return NO_NON_RUP
+    if d_prat.get(cs.STATO_PRATICA, 0) < 50 or \
+       d_prat.get(cs.STATO_PRATICA, 0) >= 70:
+        return NO_PASSO_ERRATO
+    if not _test_all_cig(basedir):
+        return NO_PDF_CIG
+    return YES
+
 def check_decisione_modificabile(the_user, basedir, d_prat) -> str:
     "test: decisione di contrarre modificabile"
     if d_prat.get(cs.PRATICA_APERTA) != 1:
@@ -496,12 +426,6 @@ def check_pratica_annullabile(the_user, d_prat) -> str:
         return YES
     return NO_NON_ADMIN
 
-def check_rdo_modificabile(_the_user, _basedir, d_prat) -> str:
-    "test: rdo modificabile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:
-        return NO_PRATICA_CHIUSA
-    return YES
-
 def make_info(the_user, basedir, d_prat) -> dict:
     "Verifica lo stato della pratica e riporta un dict riassuntivo"
     info = {}
@@ -510,14 +434,11 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['admin'] = YES if _test_admin(the_user) else NOT
     info['responsabile'] = YES if _test_responsabile(the_user, d_prat) else NOT
     info['direttore'] = YES if _test_direttore(the_user) else NOT
-    info[cs.PDF_PROGETTO] = YES if _test_pdf_progetto(basedir) else NOT
-    info[cs.PDF_NOMINARUP] = YES if _test_pdf_nominarup(basedir) else NOT
     info['all_prev_mepa'] = YES if _test_all_prev_mepa(basedir, d_prat) else NOT
     info['all_cv_rup'] = YES if _test_all_cv_rup(basedir) else NOT
     info['all_dich_rup'] = YES if _test_all_dich_rup(basedir) else NOT
     info['all_cig'] = YES if _test_all_cig(basedir) else NOT
     info['all_rdo_mepa'] = YES if _test_all_rdo_mepa(basedir) else NOT
-    info[cs.PDF_DECISIONE] = YES if _test_pdf_decisione(basedir) else NOT
     info['allegati_cancellabili'] = check_allegati_cancellabili(the_user, d_prat)
     info['autorizz_richiedibile'] = check_autorizz_richiedibile(the_user, basedir, d_prat)
     info['decis_modificabile'] = check_decisione_modificabile(the_user, basedir, d_prat)
@@ -532,6 +453,11 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['rich_rup_autorizzabile'] = check_rich_rup_autorizzabile(the_user, basedir, d_prat)
     info['rup_nominabile'] = check_rup_nominabile(the_user, d_prat)
     info['rup_cancellabile'] = check_rup_cancellabile(the_user, basedir, d_prat)
+    info['rdo_modificabile'] = check_rdo_modificabile(the_user, basedir, d_prat)
+    info[cs.PDF_PROGETTO] = YES if _test_pdf_progetto(basedir) else NOT
+    info[cs.PDF_NOMINARUP] = YES if _test_pdf_nominarup(basedir) else NOT
+    info[cs.PDF_DECISIONE] = YES if _test_pdf_decisione(basedir) else NOT
+    info[cs.PDF_RDO] = YES if _test_pdf_rdo(basedir) else NOT
     return info
 
 def check_all(the_user, basedir, d_prat) -> dict:
@@ -706,8 +632,7 @@ def pratica_common(user, basedir, d_prat):
             if firma_file != firma:
                 info['alarm'] = 1
     atch_files = ft.flist(basedir, filetypes=cs.UPLOAD_TYPES,
-                          exclude=(cs.PROG_PDF_FILE, cs.DECIS_PDF_FILE,
-                                   cs.DETB_PDF_FILE, cs.ORD_PDF_FILE))
+                          exclude=(cs.PROG_PDF_FILE, cs.DECIS_PDF_FILE, cs.RDO_PDF_FILE))
     info['attach'] = [(a, _clean_name(a)) for a in atch_files if ALL_MATCH.match(a)]
 #   info['attachB'] = [(a, _clean_name(a)) for a in atch_files if ALL_B_MATCH.match(a)]
 #   info['faseB'] = show_faseb(basedir, d_prat)
@@ -1667,11 +1592,6 @@ def pratica1():               # pylint: disable=R0914,R0911
                 return pratica_common(user, basedir, d_prat)
             tipo_allegato = get_tipo_allegato()
             logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
-            err = check_allegato_allegabile(d_prat)
-            if err.startswith(NOT):
-                fk.flash(err, category="error")
-                logging.error(err)
-                return pratica_common(user, basedir, d_prat)
             origname, ext = os.path.splitext(fle.filename)
             origname = secure_filename(origname)
             ext = ext.lower()
@@ -1723,6 +1643,50 @@ def togglestoria():
         d_prat[cs.VEDI_STORIA] = 1
     salvapratica(basedir, d_prat)
     return pratica_common(user, basedir, d_prat)
+\
+@ACQ.route('/modificardo', methods=('GET', 'POST'))
+def modificardo():
+    "Gestione form per produzione di RdO"
+    logging.info('URL: /modificardo (%s)', fk.request.method)
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
+    user, basedir, d_prat = ret
+    err = check_rdo_modificabile(user, basedir, d_prat)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        logging.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
+                      err, user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
+    else:
+        if fk.request.method == 'POST':
+            if cs.ANNULLA in fk.request.form:
+                fk.flash('Operazione annullata', category="info")
+                return fk.redirect(fk.url_for('pratica1'))
+            rdo = fms.RdO(fk.request.form)
+            if cs.AVANTI in fk.request.form:
+                if rdo.validate():
+                    rdo_data = rdo.data.copy()
+                    d_prat.update(clean_data(rdo_data))
+                    logging.info('Genera rdo: %s/%s', basedir, cs.RDO_PDF_FILE)
+                    rdo_template = os.path.splitext(cs.RDO_PDF_FILE)[0]
+                    rdo_name = os.path.splitext(cs.RDO_PDF_FILE)[0]
+                    ft.makepdf(basedir, rdo_template, rdo_name, sede=CONFIG.config[cs.SEDE],
+                               debug=DEBUG.local, pratica=d_prat, user=user)
+                    salvapratica(basedir, d_prat)
+                    return fk.redirect(fk.url_for('pratica1'))
+                errors = rdo.get_errors()
+                for err in errors:
+                    fk.flash(err, category="error")
+                logging.debug("Errori form RdO: %s", "; ".join(errors))
+        else:
+            rdo = fms.RdO(**d_prat)
+        ddp = {'title': 'Immissione dati per RDO su MePA',
+               'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+               'before': '<form method=POST action=/modificardo '\
+                         'accept-charset="utf-8" novalidate>',
+               'after': "</form>",
+               'note': cs.OBBLIGATORIO,
+               'body': rdo(**d_prat)}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 @ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
 def modificadecisione():                     #pylint: disable=R0914
@@ -1758,8 +1722,6 @@ def modificadecisione():                     #pylint: disable=R0914
             ft.makepdf(basedir, decis_template, decis_name, sede=CONFIG.config[cs.SEDE],
                        debug=DEBUG.local, pratica=d_prat, user=user,
                        warning='P R O V V I S O R I O')
-            ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-            d_prat[cs.PDF_ORDINE] = ''
             d_prat[cs.PDF_DECISIONE] = cs.DECIS_PDF_FILE
             storia(d_prat, user, 'Determina aggiudicazione generata')
             salvapratica(basedir, d_prat)
@@ -1798,74 +1760,6 @@ def cancelladecisione():
         storia(d_prat, user, hist)
         salvapratica(basedir, d_prat)
     return pratica1()
-
-#@ACQ.route('/modificaordine/<fase>', methods=('GET', 'POST'))
-#def modificaordine(fase):               # pylint: disable=R0912,R0914
-#    "pagina: modifica ordine"
-#    logging.info('URL: /modificaordine/%s (%s)', fase, fk.request.method)
-#    if not (ret := _check_access()):
-#        return fk.redirect(fk.url_for('start'))
-#    user, basedir, d_prat = ret
-#    if cs.DATA_ORDINE not in d_prat:
-#        d_prat[cs.DATA_ORDINE] = ft.today(False)
-#    err = check_ordine_modificabile(user, basedir, d_prat, fase)
-#    if err.startswith(NOT):
-#        fk.flash(err, category="error")
-#        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
-#                      err, user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
-#        url = fk.url_for('pratica1')
-#        return fk.redirect(url)
-#    if d_prat.get(cs.VERSIONE, 0) == 0:
-#        return _aggiornaformato()
-#    if not d_prat.get(cs.DESCRIZIONE_ORDINE):
-#        d_prat[cs.DESCRIZIONE_ORDINE] = d_prat[cs.DESCRIZIONE_ACQUISTO]
-#    if not d_prat.get(cs.COSTO_ORDINE):
-#        d_prat[cs.COSTO_ORDINE] = d_prat[cs.COSTO]
-#    orn = fms.Ordine(fk.request.form, **d_prat)
-#    if fk.request.method == 'POST':
-#        if cs.ANNULLA in fk.request.form:
-#            fk.flash('Operazione annullata', category="info")
-#            return fk.redirect(fk.url_for('pratica1'))
-#        if orn.validate():
-#            d_prat.update(clean_data(orn.data))
-#            if d_prat.get(cs.LINGUA_ORDINE, '') == 'EN':
-#                ord_name = cs.ORD_NAME_EN
-#            else:
-#                ord_name = cs.ORD_NAME_IT
-#            d_prat[cs.STR_COSTO_ORD_IT] = ft.stringa_costo(d_prat.get(cs.COSTO_ORDINE), "it")
-#            d_prat[cs.STR_COSTO_ORD_UK] = ft.stringa_costo(d_prat.get(cs.COSTO_ORDINE), "uk")
-#            d_prat[cs.TITOLO_DIRETTORE_UK] = CONFIG.config[cs.TITOLO_DIRETTORE_UK]
-#            logging.info('Genera ordine [%s]: %s/%s', ord_name, basedir, cs.ORD_PDF_FILE)
-#            file_lista_dettagliata = filename_allegato(cs.ALL_SING,
-#                                                       cs.TAB_ALLEGATI[cs.LISTA_DETTAGLIATA_A][0],
-#                                                       "", ".pdf", "", d_prat)
-#            if ft.findfiles(basedir, file_lista_dettagliata):
-#                include = file_lista_dettagliata
-#                d_prat[cs.DETTAGLIO_ORDINE] = 1
-#            else:
-#                include = ""
-#                d_prat[cs.DETTAGLIO_ORDINE] = 0
-#            pdf_name = os.path.splitext(cs.ORD_PDF_FILE)[0]
-#            ft.makepdf(basedir, ord_name, pdf_name, debug=DEBUG.local, include=include,
-#                       pratica=d_prat, sede=CONFIG.config[cs.SEDE],
-#                       resp_fondi=_test_responsabile(user, d_prat))
-#            d_prat[cs.PDF_ORDINE] = cs.ORD_PDF_FILE
-#            storia(d_prat, user, 'Ordine generato')
-#            salvapratica(basedir, d_prat)
-#            url = fk.url_for('pratica1')
-#            return fk.redirect(url)
-#        errors = orn.get_errors()
-#        for err in errors:
-#            fk.flash(err, category="error")
-#        logging.debug("Errori form Ordine: %s", "; ".join(errors))
-#    ddp = {'title': 'Immissione dati per ordine',
-#           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-#           'before': f'<form method=POST action=/modificaordine/{fase} ' \
-#                     'accept-charset="utf-8" novalidate>',
-#           'after': "</form>",
-#           'note': cs.OBBLIGATORIO,
-#           'body': orn(d_prat)}
-#    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 @ACQ.route('/chiudipratica')
 def chiudipratica():
@@ -1947,58 +1841,6 @@ def devel():                     #pylint: disable=R0915
         fk.session.clear()
         raise RuntimeError("Accesso illegale")
     return text
-
-@ACQ.route('/procedura_rdo', methods=('GET', 'POST'))
-def procedura_rdo():
-    "Trattamento pagina per procedura RDO"
-    logging.info('URL: /procedura_rdo (%s)', fk.request.method)
-    if not (ret := _check_access()):
-        return fk.redirect(fk.url_for('start'))
-    user, basedir, d_prat = ret
-    err = check_rdo_modificabile(user, basedir, d_prat)
-    if err.startswith(NOT):
-        fk.flash(err, category="error")
-        logging.error('Modifica ordine non autorizzata: %s. Utente %s, Pratica %s', \
-                      err, user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
-    else:
-        if fk.request.method == 'POST':
-            if cs.ANNULLA in fk.request.form:
-                fk.flash('Operazione annullata', category="info")
-                return fk.redirect(fk.url_for('pratica1'))
-            rdo = fms.PraticaRDO(fk.request.form)
-            if cs.MORE in fk.request.form:
-                m_entries = len(rdo.data[cs.LISTA_DITTE])+2
-# Trucco per rendere variabile la dimensione del form per lista ditte
-                class LocalForm(fms.PraticaRDO): pass     # pylint: disable=C0115,C0321,R0903
-                LocalForm.lista_ditte = fms.new_lista_ditte("Lista ditte", m_entries)
-# Fine trucco
-                logging.debug("Richiesto incremento numero ditte: %d", m_entries)
-                rdo = LocalForm(fk.request.form)
-            elif cs.AVANTI in fk.request.form:
-                if rdo.validate():
-                    _mydel(cs.LISTA_DITTE, d_prat)
-                    rdo_data = rdo.data.copy()
-                    clean_lista(rdo_data)
-                    d_prat.update(clean_data(rdo_data))
-                    salvapratica(basedir, d_prat)
-                    ft.remove((basedir, cs.DETB_PDF_FILE), show_error=False)
-                    ft.remove((basedir, cs.ORD_PDF_FILE), show_error=False)
-                    logging.debug("Aggiornata pratica con dati RDO")
-                    return fk.redirect(fk.url_for('pratica1'))
-                errors = rdo.get_errors()
-                for err in errors:
-                    fk.flash(err, category="error")
-                logging.debug("Errori form PraticaRDO: %s", "; ".join(errors))
-        else:
-            rdo = fms.PraticaRDO(**d_prat)
-        ddp = {'title': 'Immissione dati per RDO su MEPA',
-               'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-               'before': '<form method=POST action=/procedura_rdo '\
-                         'accept-charset="utf-8" novalidate>',
-               'after': "</form>",
-               'note': cs.OBBLIGATORIO,
-               'body': rdo(**d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 #############################################################################
 ################### Pagine housekeeping #####################################
