@@ -424,8 +424,6 @@ class Decisione(FormWErrors):
     costo_decisione = MyFormField(Costo2, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
-    numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
-    numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -440,8 +438,6 @@ class Decisione(FormWErrors):
         html += B_TRTD+render_field(self.costo_decisione, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo)+BRK
-        html += render_field(self.numero_cup)+BRK
-        html += render_field(self.numero_cig)+BRK
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
@@ -453,10 +449,6 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca data decisione")
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
-        if not self.numero_cup.data:
-            self.errlist.append("Manca indicazione numero CUP")
-        if not self.numero_cig.data:
-            self.errlist.append("Manca indicazione numero CIG")
         return len(self.errlist) == 0
 
 class DeterminaB(FormWErrors):
@@ -568,19 +560,27 @@ def new_lista_ditte(label, m_entries=5):
 
 class RdO(FormWErrors):
     "form per specifiche per la generazione di RdO"
+    numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
+    numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     termine = MyTextField('Data scadenza (g/m/aaaa)', True)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def __call__(self, **kw):
         "Rendering del form"
-        html = B_TRTD+render_field(self.termine)+E_TRTD
+        html = B_TRTD+render_field(self.numero_cup)+BRK
+        html += render_field(self.numero_cig)+BRK
+        html += B_TRTD+render_field(self.termine)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, extra_validators=None):
         "Validazione"
         tt0 = ft.date_to_time(self.termine.data)
+        if not self.numero_cup.data:
+            self.errlist.append("Manca indicazione numero CUP")
+        if not self.numero_cig.data:
+            self.errlist.append("Manca indicazione numero CIG")
         if tt0 is None:
             self.errlist.append("Errore data termine (usa formato: g/m/a)")
         return not self.errlist

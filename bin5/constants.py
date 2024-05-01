@@ -3,6 +3,7 @@ Definizione delle costanti per procedura acquisti
 """
 
 import os.path
+from enum import IntEnum
 
 __version__ = "2.2"
 __date__ = "6/3/2024"
@@ -38,15 +39,45 @@ SEDE_DITTA = "sede_ditta"
 
 TEMPORARY_KEY_PREFIX = "T_"
 
-PASSI = { 0: "Generato progetto di acquisto",
-         10: "Progetto inviato al resp. dei fondi per approvazione",
-         20: "Progetto approvato dal resp. dei fondi",
-         30: "RUP indicato",
-         40: "Inviata richiesta di autorizzazione e nomina RUP al Direttore",
-         50: "Autorizzazione concessa e RUP nominato",
-         60: "Richiesta di Offerta generata",
-         70: "Decisione di contrarre inviata al Direttore per firma",
-         80: "Decisione di contrarre firmata allegata alla pratica",
+class CdP(IntEnum):
+    'Codici passi operativi'
+    INI = 0
+    GPA = 1
+    PIR = 10
+    PAR = 20
+    RUI = 30
+    RAL = 35
+    IRD = 40
+    AUD = 50
+    ROG = 60
+    DCG = 70
+    DCI = 80
+    DCF = 90
+    FIN = 100
+
+
+
+#                 Descrizione stato                         # Azione successiva
+#                 ------------------                        # ---------------------------
+PASSI = {CdP.INI: "Iniziale",                               # Richiedente genera progetto acquisto
+                                                            # e allega preventivo MePA
+         CdP.GPA: "Generato progetto di acquisto",          # Invia richiesta al resp. fondi
+         CdP.PIR: "Progetto inviato al resp. dei fondi",    # Resp. Fondi approva
+         CdP.PAR: "Progetto approvato dal resp. dei fondi", # Indicazione RUP e generazione
+                                                            #   nomina provvisoria
+         CdP.RUI: "RUP indicato",                           # RUP allega CV e Dichiarazione
+         CdP.RAL: "CV e dichiarazione RUP allegati",        # RUP invia richiesta di autorizzazione
+                                                            #   e nomina al direttore
+         CdP.IRD: "Inviata richiesta di autorizzazione e nomina RUP al Direttore",
+                                                            # Direttore autorizza.
+         CdP.AUD: "Autorizzazione concessa e RUP nominato", # RUP genera RdO e allega CIG
+         CdP.ROG: "RdO generata e CIG allegato",            # RUP Genera decisione di contrarre
+         CdP.DCG: "Decisione di contrarre generata",        # RUP invia decisione al direttore
+                                                            #    per firma
+         CdP.DCI: "Decisione di contrarre inviata al Direttore per firma",
+                                                            # RUP riceve e allega decisione firmata
+         CdP.DCF: "Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
+         CdP.FIN: "Pratica conclusa",
         }
 
 # Costanti per menu modalità acquisto
@@ -177,6 +208,7 @@ NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
 ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
+PASSO = 'passo'                                 # dati_pratica
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
 PDF_DECISIONE = 'pdf_decisione'                 # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
@@ -191,7 +223,6 @@ PROGETTO_INVIATO = 'progetto_inviato'           # dati_pratica
 RUP = 'rup'                                     # dati_pratica
 SAVED = '_saved'                                # dati_pratica
 SIGLA_DITTA = 'sigla_ditta'                     # form MyUpload1
-STATO_PRATICA = 'stato_pratica'                 # dati_pratica
 STORIA_PRATICA = 'storia_pratica'               # dati_pratica
 STR_COSTO_IT = 'str_costo_it'                   # dati_pratica
 STR_CODF = 'stringa_codf'                       # dati_pratica
@@ -256,7 +287,6 @@ ALL_CV_RUP = 'cv_rup'
 ALL_DICH_RUP = 'dich_rup'
 ALL_PREV_MEPA = "prev_mepa"
 ALL_DECIS_FIRMATA = 'decis_firmata'
-ALL_RDO_MEPA = 'rdo_mepa'
 
 ALL_OFF_DITTA = 'off_ditta'
 LETT_INVITO_A = 'lett_invito_a'
@@ -279,32 +309,30 @@ ALL_NAME = 2    # Allegato multiplo con nome file
 ALL_PRAT = 3    # Allegato singolo con numero pratica
 
 # Tabella allegati  key   pref.nome file     descrizione  singolo/multiplo
-TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Allegato generico", ALL_NAME),
-#               ALLEGATO_GENERICO_B: ("B99_", "Allegato generico", ALL_NAME),
-                ALL_CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
-                ALL_DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
+TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "documento generico", ALL_NAME),
+                ALL_CV_RUP: ('A04_CV_RUP', "curric. vitae del RUP", ALL_SING),
+                ALL_DICH_RUP: ('A05_Dich_RUP', "dichiaraz. ass. conflitto int. del RUP", ALL_SING),
                 ALL_PREV_MEPA: ('A08_Preventivo_trattativa_MePA',
                                   "Preventivo trattativa diretta MePA", ALL_SING),
                 ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
-                ALL_RDO_MEPA: ("A16_RdO_MePA", "RdO da MePA", ALL_SING),
-                ALL_OFF_DITTA: ("A20_Offerta_finale", "Offerta finale ditta", ALL_SING),
                 ALL_DECIS_FIRMATA: ("A24_Decisione_Firmata",
                                   "Decisione di contrarre con firma digitale", ALL_SING),
-                DOCUM_STIPULA: ("A29_Documento_di_stipula",
-                                "Documento di stipula su MEPA", ALL_SING),
+#               DOCUM_STIPULA: ("A29_Documento_di_stipula",
+#                               "Documento di stipula su MEPA", ALL_SING),
 #               CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
-                LETT_INVITO_A: ('A26_Lettera_Invito', "Lettera di invito", ALL_SPEC),
-                LETT_INVITO_B: ('B06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
-                LETT_INVITO_MEPA: ('A36_Lettera_Invito_MEPA', "Lettera di invito MEPA", ALL_SING),
-                LISTA_DETTAGLIATA_A: ('A40_Lista_dettagliata_per_ordine',
-                                      "Lista dettagliata allegata all'ordine", ALL_SING),
-                LISTA_DETTAGLIATA_B: ('B40_Lista_dettagliata_per_ordine',
-                                      "Lista dettagliata allegata all'ordine", ALL_SING),
-                LISTA_DITTE_INV: ('A08_Lista_ditte_invitate', "Lista ditte invitate", ALL_SING),
-                OFFERTA_DITTA_A: ('A50_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
-                OFFERTA_DITTA_B: ('B10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
-                ORDINE_MEPA: ('A60_Bozza_Ordine_MEPA', "Bozza ordine MEPA", ALL_SING),
-                VERBALE_GARA: ('B50_Verbale_Gara', "Verbale di gara", ALL_SING)}
+#               LETT_INVITO_A: ('A26_Lettera_Invito', "Lettera di invito", ALL_SPEC),
+#               LETT_INVITO_B: ('B06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
+#               LETT_INVITO_MEPA: ('A36_Lettera_Invito_MEPA', "Lettera di invito MEPA", ALL_SING),
+#               LISTA_DETTAGLIATA_A: ('A40_Lista_dettagliata_per_ordine',
+#                                     "Lista dettagliata allegata all'ordine", ALL_SING),
+#               LISTA_DETTAGLIATA_B: ('B40_Lista_dettagliata_per_ordine',
+#                                     "Lista dettagliata allegata all'ordine", ALL_SING),
+#               LISTA_DITTE_INV: ('A08_Lista_ditte_invitate', "Lista ditte invitate", ALL_SING),
+#               OFFERTA_DITTA_A: ('A50_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
+#               OFFERTA_DITTA_B: ('B10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
+#               ORDINE_MEPA: ('A60_Bozza_Ordine_MEPA', "Bozza ordine MEPA", ALL_SING),
+#               VERBALE_GARA: ('B50_Verbale_Gara', "Verbale di gara", ALL_SING),
+               }
 
 ################################################### Varie stringhe
 ACCESSO_NON_PREVISTO = "Sequenza di accesso non prevista. URL: "

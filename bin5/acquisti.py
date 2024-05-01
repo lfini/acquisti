@@ -22,6 +22,7 @@ from pprint import PrettyPrinter
 import wtforms as wt
 import flask as fk
 import constants as cs
+from constants import CdP
 
 #    cope with compatibility with older werkzeug versions
 try:
@@ -210,10 +211,6 @@ def _test_all_cig(basedir) -> bool:
     "test esistenza CIG in allegato"
     return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_CIG][0])
 
-def _test_all_rdo_mepa(basedir) -> bool:
-    "test esistenza RdO da MePA in allegato"
-    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_RDO_MEPA][0])
-
 def _test_all_dich_rup(basedir) -> bool:
     "test esistenza dichiarazione RUP"
     return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_DICH_RUP][0])
@@ -335,7 +332,7 @@ def check_autorizz_richiedibile(the_user, basedir, d_prat) -> str:     #pylint: 
         return NO_RUP_NON_NOMINATO
     if not (_test_all_cv_rup(basedir) and _test_all_dich_rup(basedir)):
         return NO_RUP_DICH
-    if d_prat[cs.STATO_PRATICA] >= 40:
+    if d_prat[cs.PASSO] >= CdP.IRD:
         return NO_RICH_INVIATA
     if d_prat.get(cs.FIRMA_AUTORIZZ_DIR):
         return NO_PROGETTO_AUTORIZ
@@ -361,8 +358,8 @@ def check_rdo_modificabile(the_user, basedir, d_prat) -> str:
         return NO_PRATICA_CHIUSA
     if not _test_rup(the_user, d_prat):
         return NO_NON_RUP
-    if d_prat.get(cs.STATO_PRATICA, 0) < 50 or \
-       d_prat.get(cs.STATO_PRATICA, 0) >= 70:
+    if d_prat.get(cs.PASSO, 0) < CdP.AUD or \
+       d_prat.get(cs.PASSO, 0) >= CdP.DCI:
         return NO_PASSO_ERRATO
     if not _test_all_cig(basedir):
         return NO_PDF_CIG
@@ -376,8 +373,6 @@ def check_decisione_modificabile(the_user, basedir, d_prat) -> str:
         return NO_NON_RUP
     if not _test_all_cig(basedir):
         return NO_PDF_CIG
-    if not _test_all_rdo_mepa(basedir):
-        return NO_PDF_RDO_MEPA
     if d_prat.get(cs.DECIS_INVIATA):
         return NO_DECIS_INVIATA
     return YES
@@ -438,7 +433,6 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['all_cv_rup'] = YES if _test_all_cv_rup(basedir) else NOT
     info['all_dich_rup'] = YES if _test_all_dich_rup(basedir) else NOT
     info['all_cig'] = YES if _test_all_cig(basedir) else NOT
-    info['all_rdo_mepa'] = YES if _test_all_rdo_mepa(basedir) else NOT
     info['allegati_cancellabili'] = check_allegati_cancellabili(the_user, d_prat)
     info['autorizz_richiedibile'] = check_autorizz_richiedibile(the_user, basedir, d_prat)
     info['decis_modificabile'] = check_decisione_modificabile(the_user, basedir, d_prat)
@@ -476,12 +470,8 @@ def nome_da_email(embody, prima_nome=True):
         return f'{row[0][1]}, {row[0][2]}'
     return '??, ??'
 
-def storia(d_prat, user, rec):
+def storia(d_prat, user, text):
     'aggiunge record alla storia della pratica'
-    if isinstance(rec, str):
-        text = rec
-    else:
-        text = cs.PASSI[rec]
     line = f'{text} - {ft.today()} ({user["fullname"]})'
     d_prat[cs.STORIA_PRATICA].append(line)
     logging.info(text)
@@ -539,7 +529,7 @@ def salvapratica(basedir, d_prat):
 
 def da_allegare(basedir, d_prat, s_range, tipo):
     'verifica se la voce di menù allegati deve essere aggiunta'
-    if s_range[0] <= d_prat[cs.STATO_PRATICA] < s_range[1] and \
+    if s_range[0] <= d_prat[cs.PASSO] < s_range[1] and \
         not ft.findfiles(basedir, cs.TAB_ALLEGATI[tipo][0]):
         return sel_menu(tipo)
     return None
@@ -551,17 +541,15 @@ def menu_allegati(basedir, d_prat):
 #   if mod_acquisto in (MEPA, CONSIP):
 #       menu.append(sel_menu(ORDINE_MEPA))
     if mod_acquisto == cs.TRATT_MEPA_40:
-        if voce_menu := da_allegare(basedir, d_prat, (0,10), cs.ALL_PREV_MEPA):
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.GPA,CdP.PAR), cs.ALL_PREV_MEPA):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (30,40), cs.ALL_CV_RUP):
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_CV_RUP):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (30,40), cs.ALL_DICH_RUP):
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_DICH_RUP):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_CIG):
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.AUD,CdP.DCI), cs.ALL_CIG):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (50,60), cs.ALL_RDO_MEPA):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (70,80), cs.ALL_DECIS_FIRMATA):
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.FIN), cs.ALL_DECIS_FIRMATA):
             menu.append(voce_menu)
     menu.append(sel_menu(cs.ALL_GENERICO))
     return menu
@@ -615,37 +603,21 @@ def _select(menu, key):
     return ret
 
 ALL_MATCH = re.compile(r"A\d\d_")
-#ALL_B_MATCH = re.compile(r"B\d\d_")
 
 def pratica_common(user, basedir, d_prat):
     "parte comune alle pagine relative alla pratica"
     info = check_all(user, basedir, d_prat)
-    upla = fms.MyUpload(menu_allegati(basedir, d_prat))
-    # Workaround per aggiornare il formato dati pratica vers. 2
-    if not d_prat.get(cs.STR_MOD_ACQ) or cs.STR_CRIT_ASS not in d_prat:
-        err = f'file pratica non aggiornato. Pratica: {d_prat[cs.NUMERO_PRATICA]}'
-        raise RuntimeError(err)
-    if info.get(cs.PDF_PROGETTO):
-        firma = d_prat.get(cs.FIRMA_APPROV_RESP)
-        if firma:
-            firma_file = ft.signature((basedir, cs.PROG_PDF_FILE))
-            if firma_file != firma:
-                info['alarm'] = 1
+    upl = fms.MyUpload(menu_allegati(basedir, d_prat))
     atch_files = ft.flist(basedir, filetypes=cs.UPLOAD_TYPES,
                           exclude=(cs.PROG_PDF_FILE, cs.DECIS_PDF_FILE, cs.RDO_PDF_FILE))
     info['attach'] = [(a, _clean_name(a)) for a in atch_files if ALL_MATCH.match(a)]
-#   info['attachB'] = [(a, _clean_name(a)) for a in atch_files if ALL_B_MATCH.match(a)]
-#   info['faseB'] = show_faseb(basedir, d_prat)
-#   info['ordine'] = show_ordine(d_prat)
-    info['rdo'] = 0
-    info['allegati_mancanti'] = verifica_allegati(basedir, d_prat)
-    info['stato_pratica'] = cs.PASSI[d_prat.get(cs.STATO_PRATICA, 0)]
-#   info['rdo'] = 1 if d_prat.get(MOD_ACQUISTO) == RDO_MEPA else 0
+    info['allegati_mancanti'] = allegati_mancanti(basedir, d_prat)
+    info['stato_pratica'] = cs.PASSI[d_prat.get(cs.PASSO, 0)]
     return fk.render_template('pratica.html', info=info,
-                              pratica=d_prat, uploadA=upla,
+                              pratica=d_prat, upload=upl,
                               sede=CONFIG.config[cs.SEDE])
 
-def _modifica_pratica(what):               # pylint: disable=R0912,R0915
+def modifica_pratica(what):               # pylint: disable=R0912,R0915
     "parte comune alle pagine di modifica pratica"
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
@@ -697,34 +669,19 @@ def _aggiornaformato():
              "l'aggiornamento del formato", category="info")
     return fk.redirect(fk.url_for('aggiornaformato'))
 
-def verifica_allegati(basedir, d_prat):
-    "Genera elenco avvisi relativi agli allegati"
+def allegati_mancanti(basedir, d_prat):
+    "Genera lista allegati mancanti"
     ret = []
     if not _test_all_prev_mepa(basedir, d_prat):
         ret.append("prev. MePA")
-    if d_prat.get(cs.NOME_RUP):
-        if not _test_all_cv_rup(basedir):
-            ret.append("CV RUP")
-        if not _test_all_dich_rup(basedir):
-            ret.append("Dich. RUP")
-        if not _test_all_cig(basedir):
-            ret.append("CIG")
-        if not _test_all_rdo_mepa(basedir):
-            ret.append("RdO da MePA")
-        if d_prat.get(cs.STATO_PRATICA, 0) >= 70 and not _test_all_decis_firmata(basedir):\
-            ret.append("Decis. firmata")
-#   if not _test_pdf_lista_ditte_invitate(basedir, d_prat, fase):
-#       ret.append("Manca Lista ditte invitate")
-#   if not _test_pdf_capitolato_rdo(basedir, d_prat, fase):
-#       ret.append("Manca capitolato per RDO")
-#   if not _test_pdf_offerta_ditta(basedir, d_prat, fase):
-#       ret.append("Mancano offerte")
-#   if not _test_pdf_lettera_invito(basedir, d_prat, fase):
-#       ret.append("Mancano lettere invito")
-#   if not _test_pdf_ordine_mepa(basedir, d_prat, fase):
-#       ret.append("Manca Bozza d'ordine MEPA")
-#   if not _test_pdf_trattativa_mepa(basedir, d_prat, fase):
-#       ret.append("Manca offerta da trattativa diretta su MEPA")
+    if d_prat.get(cs.PASSO, 0) >= CdP.RUI and not _test_all_cv_rup(basedir):
+        ret.append("CV RUP")
+    if d_prat.get(cs.PASSO, 0) >= CdP.RUI and not _test_all_dich_rup(basedir):
+        ret.append("Dich. RUP")
+    if d_prat.get(cs.PASSO, 0) >= CdP.AUD and not _test_all_cig(basedir):
+        ret.append("CIG")
+    if d_prat.get(cs.PASSO, CdP.INI) >= CdP.DCI and not _test_all_decis_firmata(basedir):
+        ret.append("Decis. firmata")
     return ', '.join(ret)
 
 def _avvisi(_user, _basedir, d_prat, _fase, _level=0):
@@ -765,7 +722,7 @@ def genera_pratica(user):
               cs.EMAIL_RICHIEDENTE: user['email'],
               cs.NOME_RICHIEDENTE: user['name']+' '+user['surname'],
               cs.DATA_RICHIESTA: ft.today(False),
-              cs.STATO_PRATICA: 0,
+              cs.PASSO: CdP.INI,
               cs.PRATICA_APERTA: 1}
     logging.info("Creata nuova pratica (temporanea)")
     return d_prat
@@ -946,6 +903,12 @@ def user_info():
         return ft.get_user(userid)
     return {}
 
+def set_passo(d_prat, user, nuovo_stato):
+    'aggiorna passo pratica'
+    d_prat[cs.PASSO] = nuovo_stato
+    text = cs.PASSI[nuovo_stato]
+    storia(d_prat, user, text)
+
 @ACQ.route("/")
 def start():
     "pagina: iniziale"
@@ -1087,6 +1050,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
             d_prat[cs.PROGETTO_INVIATO] = 0
             d_prat[cs.FIRMA_APPROV_RESP] = ""
+            set_passo(d_prat, user, CdP.GPA)
             update_costo(d_prat, cs.COSTO)
             d_prat[cs.SAVED] = 1
             salvapratica(basedir, d_prat)
@@ -1127,10 +1091,8 @@ def inviaprogetto():
             fk.flash("Richiesta di approvazione per  la pratica "
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                      f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
-            step = 10
-            d_prat[cs.STATO_PRATICA] = step
+            set_passo(d_prat, user, CdP.PIR)
             d_prat[cs.PROGETTO_INVIATO] = 1
-            storia(d_prat, user, step)
             salvapratica(basedir, d_prat)
         else:
             msg = "Invio per approvazione fallito"
@@ -1168,9 +1130,7 @@ def inviadecisione():                    #pylint: disable=R0914
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                      f"{recipient}", category="info")
             d_prat[cs.DECIS_INVIATA] = 1
-            step = 70
-            d_prat[cs.STATO_PRATICA] = step
-            storia(d_prat, user, step)
+            set_passo(d_prat, user, CdP.DCI)
             salvapratica(basedir, d_prat)
         else:
             msg = "Invio per firma fallito"
@@ -1195,9 +1155,7 @@ def approvaprogetto():
                    sede=CONFIG.config[cs.SEDE], il_responsabile=True,
                    warning='in attesa autorizz. direttore')
         d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.PROG_PDF_FILE))
-        step = 20
-        d_prat[cs.STATO_PRATICA] = step
-        storia(d_prat, user, step)
+        set_passo(d_prat, user, CdP.PAR)
         salvapratica(basedir, d_prat)
         fk.flash(f"L'approvazione del progetto {d_prat[cs.NUMERO_PRATICA]} è stata"
                  " correttamente registrata", category="info")
@@ -1234,10 +1192,7 @@ def indicarup():
             nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
             ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
                        sede=CONFIG.config[cs.SEDE], warning='in attesa firma direttore')
-            step = 30
-            d_prat[cs.STATO_PRATICA] = step
-            hist = cs.PASSI[step]+f' ({d_prat[cs.NOME_RUP]})'
-            storia(d_prat, user, hist)
+            set_passo(d_prat, user, CdP.RUI)
             salvapratica(basedir, d_prat)
             msg = f"{d_prat[cs.NOME_RUP]} indicato come RUP per pratica {d_prat[cs.NUMERO_PRATICA]}"
             logging.info(msg)
@@ -1275,13 +1230,11 @@ def autorizza():
     nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
     ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
                il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
-    step = 50
-    d_prat[cs.STATO_PRATICA] = step
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
     d_prat[cs.FIRMA_AUTORIZZ_DIR] = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
     text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)
     send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
-    storia(d_prat, user, step)
+    set_passo(d_prat, user, CdP.AUD)
     salvapratica(basedir, d_prat)
     return pratica1()
 
@@ -1298,9 +1251,6 @@ def rich_autorizzazione():
         logging.error('Invio richiesta di autorizzazione non consentito: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
-    step = 40
-    d_prat[cs.STATO_PRATICA] = step
-    storia(d_prat, user, step)
     subj = 'Richiesta autorizzazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
     body = cs.TESTO_RICHIESTA_AUTORIZZAZIONE.format(url=fk.request.root_url, **d_prat)
     ret = send_email(CONFIG.config[cs.EMAIL_DIRETTORE], body, subj)
@@ -1308,35 +1258,37 @@ def rich_autorizzazione():
         msg = 'Richiesta di autorizzazione inviata al direttore'
         fk.flash(msg, category="info")
         logging.info(msg)
+        set_passo(d_prat, user, CdP.IRD)
         salvapratica(basedir, d_prat)
-    else:
-        err = 'Invio richiesta di autorizzazione al direttore fallito'
-        fk.flash(err, category="error")
-        logging.error(err)
+        return pratica1()
+    err = 'Invio richiesta di autorizzazione al direttore fallito'
+    fk.flash(err, category="error")
+    logging.error(err)
     return pratica1()
 
 @ACQ.route('/rimuovirup', methods=('GET', ))
 def rimuovirup():
     "pagina: rimuovi RUP"
     logging.info('URL: /rimuovirup (%s)', fk.request.method)
-    if not (ret := _check_access()):
-        return fk.redirect(fk.url_for('start'))
-    user, basedir, d_prat = ret
-    err = check_rup_cancellabile(user, basedir, d_prat)
-    if err.startswith(NOT):
-        fk.flash(err, category="error")
-        logging.error('Cancellazione RUP non autorizzata: %s. Utente %s pratica %s',
-                      err, user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
-    msg = f"RUP: {d_prat[cs.NOME_RUP]} cancellato"
-    logging.info(msg)
-    _mydel(cs.EMAIL_RUP, d_prat)
-    _mydel(cs.NOME_RUP, d_prat)
-    d_prat[cs.STATO_PRATICA] = 20
-    ft.remove((basedir, cs.NOMINARUP_PDF_FILE), show_error=False)
-    salvapratica(basedir, d_prat)
-    fk.flash(msg, category="info")
-    return pratica1()
+    raise RuntimeError("ritorno indietro da definire")
+#   if not (ret := _check_access()):
+#       return fk.redirect(fk.url_for('start'))
+#   user, basedir, d_prat = ret
+#   err = check_rup_cancellabile(user, basedir, d_prat)
+#   if err.startswith(NOT):
+#       fk.flash(err, category="error")
+#       logging.error('Cancellazione RUP non autorizzata: %s. Utente %s pratica %s',
+#                     err, user['userid'], d_prat[cs.NUMERO_PRATICA])
+#       return pratica1()
+#   msg = f"RUP: {d_prat[cs.NOME_RUP]} cancellato"
+#   logging.info(msg)
+#   _mydel(cs.EMAIL_RUP, d_prat)
+#   _mydel(cs.NOME_RUP, d_prat)
+#   d_prat[cs.PASSO] = 20
+#   ft.remove((basedir, cs.NOMINARUP_PDF_FILE), show_error=False)
+#   salvapratica(basedir, d_prat)
+#   fk.flash(msg, category="info")
+#   return pratica1()
 
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
 def cancella(name):
@@ -1577,7 +1529,7 @@ def pratica0(num, year):
     return pratica_common(user, basedir, d_prat)
 
 @ACQ.route('/pratica1', methods=('GET', 'POST'))
-def pratica1():               # pylint: disable=R0914,R0911
+def pratica1():               # pylint: disable=R0914,R0911,R0912
     "pagina: pratica, modo 1 (iterazione modifica)"
     logging.info('URL: /pratica1 (%s)', fk.request.method)
     if not (ret := _check_access()):
@@ -1598,9 +1550,6 @@ def pratica1():               # pylint: disable=R0914,R0911
             if ext not in cs.UPLOAD_TYPES:
                 fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
                 return pratica_common(user, basedir, d_prat)
-#           elif tipo_allegato in (cs.LISTA_DETTAGLIATA_A, cs.LISTA_DETTAGLIATA_B) and \
-#                ext not in cs.PDF_TYPES:
-#               fk.flash(f"L'allegato non è in formato PDF: {fle.filename}", category="error")
             prefix, mod_allegato = (cs.TAB_ALLEGATI[tipo_allegato][0],
                                     cs.TAB_ALLEGATI[tipo_allegato][2])
             spec = fk.request.form.get(cs.SIGLA_DITTA, "")
@@ -1616,17 +1565,20 @@ def pratica1():               # pylint: disable=R0914,R0911
                 return pratica_common(user, basedir, d_prat)
 
             fle.save(fpath)        # Archivia file da upload
-            if d_prat[cs.STATO_PRATICA] > 50 and tipo_allegato == cs.ALL_RDO_MEPA:
-                d_prat[cs.STATO_PRATICA] = 60
-                storia(d_prat, user, 60)
-            elif d_prat[cs.STATO_PRATICA] > 60 and tipo_allegato == cs.ALL_DECIS_FIRMATA:
-                d_prat[cs.STATO_PRATICA] = 80
-                storia(d_prat, user, 80)
-            else:
-                msg = 'Allegato file '+name
-                storia(d_prat, user, msg)
-            salvapratica(basedir, d_prat)
             ft.protect(fpath)
+            text = 'Allegato ' + cs.TAB_ALLEGATI[tipo_allegato][1]
+            storia(d_prat, user, text)
+                                             # Aggiorna stato pratica
+            if d_prat[cs.PASSO] == CdP.RUI:
+                if _test_all_cv_rup(basedir) and _test_all_dich_rup(basedir):
+                    set_passo(d_prat, user, CdP.RAL)
+            elif d_prat[cs.PASSO] == CdP.AUD:
+                if _test_all_cig(basedir):
+                    set_passo(d_prat, user, CdP.ROG)
+            elif d_prat[cs.PASSO] == CdP.DCI:
+                if _test_all_decis_firmata(basedir):
+                    set_passo(d_prat, user, CdP.DCF)
+            salvapratica(basedir, d_prat)
     return pratica_common(user, basedir, d_prat)
 
 @ACQ.route('/togglestoria', methods=('GET', 'POST', ))
@@ -1643,7 +1595,7 @@ def togglestoria():
         d_prat[cs.VEDI_STORIA] = 1
     salvapratica(basedir, d_prat)
     return pratica_common(user, basedir, d_prat)
-\
+
 @ACQ.route('/modificardo', methods=('GET', 'POST'))
 def modificardo():
     "Gestione form per produzione di RdO"
@@ -1671,6 +1623,8 @@ def modificardo():
                     rdo_name = os.path.splitext(cs.RDO_PDF_FILE)[0]
                     ft.makepdf(basedir, rdo_template, rdo_name, sede=CONFIG.config[cs.SEDE],
                                debug=DEBUG.local, pratica=d_prat, user=user)
+                    if _test_all_cig(basedir):
+                        set_passo(d_prat,user, CdP.ROG)
                     salvapratica(basedir, d_prat)
                     return fk.redirect(fk.url_for('pratica1'))
                 errors = rdo.get_errors()
@@ -1723,7 +1677,7 @@ def modificadecisione():                     #pylint: disable=R0914
                        debug=DEBUG.local, pratica=d_prat, user=user,
                        warning='P R O V V I S O R I O')
             d_prat[cs.PDF_DECISIONE] = cs.DECIS_PDF_FILE
-            storia(d_prat, user, 'Determina aggiudicazione generata')
+            set_passo(d_prat, user, CdP.DCG)
             salvapratica(basedir, d_prat)
             url = fk.url_for('pratica1')
             return fk.redirect(url)
@@ -1765,19 +1719,19 @@ def cancelladecisione():
 def chiudipratica():
     "pagina: chiudi pratica"
     logging.info('URL: /chiudipratica (%s)', fk.request.method)
-    return _modifica_pratica('chiudi')
+    return modifica_pratica('chiudi')
 
 @ACQ.route('/apripratica')
 def apripratica():
     "pagina: apri pratica"
     logging.info('URL: /apripratica (%s)', fk.request.method)
-    return _modifica_pratica('apri')
+    return modifica_pratica('apri')
 
 @ACQ.route('/annullapratica')
 def annullapratica():
     "pagina: annulla pratica"
     logging.info('URL: /annullapratica (%s)', fk.request.method)
-    return _modifica_pratica('null')
+    return modifica_pratica('null')
 
 @ACQ.route('/files/<name>')
 def files(name):

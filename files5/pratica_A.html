@@ -88,10 +88,10 @@
 <form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
 <b> Allega documenti</b>
 <p>
-{{ uploadA.upload_file }} <a href="/files5/help_upload.html"  onclick="window.open('/files5/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files5/qm-16.png></sup></a><br> 
+{{ upload.upload_file }} <a href="/files5/help_upload.html"  onclick="window.open('/files5/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files5/qm-16.png></sup></a><br> 
 
 <blockquote>
-{{ uploadA.tipo_allegato }}
+{{ upload.tipo_allegato }}
 </blockquote>
 </form>
 {% else %}
