@@ -249,7 +249,7 @@ class _Costo(FormWErrors):
         ret += Markup('<tr><td>voce&nbsp;5:</td>')+self.voce_5.form(show_ck)+Markup('</tr>\n')
         ret += Markup('</table>\n')
         if show_ck:
-            ret += Markup('Togliere la spunta alle voci che non contribuiscono' \
+            ret += Markup('Togliere la spunta alle voci che non contribuiscono ' \
                           'al prezzo base di asta\n')
         return ret
 
@@ -347,7 +347,7 @@ class ProgettoAcquisto(FormWErrors):
     fornitore_sede = MyTextField('Indirizzo fornitore', True)
     fornitore_codfisc = MyTextField('Codice Fiscale', True)
     fornitore_partiva = MyTextField('Partita Iva', True)
-    costo = MyFormField(Costo1, 'Quadro economico', True)
+    costo_progetto = MyFormField(Costo1, 'Quadro economico', True)
     note_progetto = MyTextAreaField('Note', False, [wt.validators.Optional()])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
@@ -358,28 +358,17 @@ class ProgettoAcquisto(FormWErrors):
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None and self.modalita_acquisto.data != 'None':
             html += B_TRTD+render_field(self.descrizione_acquisto, size=50)+E_TRTD
-#           if self.modalita_acquisto.data in (INFER_5000, SUPER_5000,
-#                                              INFER_1000, SUPER_1000, PROC_NEG):
-#               html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
-#           if self.modalita_acquisto.data in (SUPER_5000, SUPER_1000, PROC_NEG):
-#               html += B_TRTD+render_field(self.giustificazione, rows=3, cols=80)+E_TRTD
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
             pop =popup(fk.url_for('vedicodf'),
                        'Vedi lista Codici fondi e responsabili', size=(1100, 900))
             html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
             html += render_field(self.email_responsabile, sameline=True)
             html += BRK+render_field(self.lista_codf)+E_TRTD
-
-#           if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
-            if True:               # provvisoriamente al posto delle linea sopra
-                html += B_TRTD+render_field(self.fornitore_nome, size=50)+BRK
-                html += render_field(self.fornitore_sede, sep='', size=50)+BRK
-                html += render_field(self.fornitore_codfisc)+BRK
-                html += render_field(self.fornitore_partiva)+E_TRTD
-            html += B_TRTD+render_field(self.costo, sameline=True)+E_TRTD
-#           if self.modalita_acquisto.data in (RDO_MEPA, PROC_NEG):
-#               html += B_TRTD+render_field(self.criterio_assegnazione)+E_TRTD
-#               html += B_TRTD+render_field(self.oneri_sicurezza)+E_TRTD
+            html += B_TRTD+render_field(self.fornitore_nome, size=50)+BRK
+            html += render_field(self.fornitore_sede, sep='', size=50)+BRK
+            html += render_field(self.fornitore_codfisc)+BRK
+            html += render_field(self.fornitore_partiva)+E_TRTD
+            html += B_TRTD+render_field(self.costo_progetto, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.note_progetto, rows=10, cols=80)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
@@ -397,22 +386,8 @@ class ProgettoAcquisto(FormWErrors):
             self.errlist.append("Manca responsabile acquisto")
         if not self.modalita_acquisto.data:
             self.errlist.append("Specificare modalit&agrave; di acquisto")
-#       if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_5000:
-#           self.errlist.append('Manca giustificazione per '\
-#                               'affidamento diretto ed importo sup. a 5000 €')
-#       if not self.giustificazione.data and self.modalita_acquisto.data == SUPER_1000:
-#           self.errlist.append('Manca giustificazione per '\
-#                               'affidamento diretto ed importo sup. a 1000 €')
-#       if self.modalita_acquisto.data not in (RDO_MEPA, PROC_NEG, MANIF_INT):
-#           if not (self.fornitore_nome.data and self.fornitore_sede.data):
-#               self.errlist.append("Dati fornitore incompleti")
-        if not self.costo.validate():
+        if not self.costo_progetto.validate():
             self.errlist.append("Costo: "+", ".join(self.costo.errlist))
-#       if self.modalita_acquisto.data == RDO_MEPA:
-#           if self.criterio_assegnazione.data not in (PREZ_PIU_BASSO, OFF_PIU_VANT):
-#               self.errlist.append("Specificare criterio di assegnazione")
-#           if not self.oneri_sicurezza.validate():
-#               self.errlist.append("Oneri sicurezza: "+", ".join(self.oneri_sicurezza.errlist))
         return len(self.errlist) == 0
 
 class Decisione(FormWErrors):
@@ -421,7 +396,7 @@ class Decisione(FormWErrors):
                                    [wt.validators.InputRequired("Manca numero decisione")])
     data_decisione = MyTextField('Data (g/m/aaaa)', True,
                                  [wt.validators.Optional("Manca data decisione")])
-    costo_decisione = MyFormField(Costo2, 'Quadro economico', True)
+    costo_rdo = MyFormField(Costo1, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
@@ -435,7 +410,7 @@ class Decisione(FormWErrors):
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione)+BRK
         html += render_field(self.data_decisione)+BRK
-        html += B_TRTD+render_field(self.costo_decisione, sameline=True)+E_TRTD
+        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo)+BRK
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
@@ -562,6 +537,7 @@ class RdO(FormWErrors):
     "form per specifiche per la generazione di RdO"
     numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
     numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
+    costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
     termine = MyTextField('Data scadenza (g/m/aaaa)', True)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
@@ -571,6 +547,7 @@ class RdO(FormWErrors):
         html = B_TRTD+render_field(self.numero_cup)+BRK
         html += render_field(self.numero_cig)+BRK
         html += B_TRTD+render_field(self.termine)+E_TRTD
+        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 

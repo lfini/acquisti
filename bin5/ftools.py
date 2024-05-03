@@ -430,59 +430,6 @@ def byinitial(inlist, key=lambda x: x, remove_empty=True):
         byin[idx].sort(key=key)
     return byin
 
-def stringa_valore(costo, lang):                         # pylint: disable=R0912
-    "generazione specifica della stringa valore per il costo del bene"
-    importo = costo[IMPORTO] if costo[IMPORTO] is not None else ""
-    valuta = costo[VALUTA] if costo[VALUTA] is not None else ""
-    iva = costo[IVA] if costo[IVA] is not None else ""
-    iva_free = costo[IVAFREE] if costo[IVAFREE] is not None else ""
-
-    if not importo:
-        return ""
-    if valuta == EURO:
-        vstr = "€"
-    elif valuta == POUND:
-        vstr = "£"
-    elif valuta == DOLLAR:
-        vstr = "$"
-    elif valuta == SFR:
-        vstr = "SFr"
-    else:
-        vstr = valuta
-    if iva_free:
-        istr = iva_free
-    elif iva == IVAESENTE:
-        istr = "(esente I.V.A.)" if lang == "it" else "(no V.A.T.)"
-    elif iva == IVAINCL4:
-        istr = "(I.V.A. 4% inclusa)" if lang == "it" else "(4% V.A.T. included)"
-    elif iva == IVAINCL10:
-        istr = "(I.V.A. 10% inclusa)" if lang == "it" else "(10% V.A.T. included)"
-    elif iva == IVAINCL22:
-        istr = "(I.V.A. 22% inclusa)" if lang == "it" else "(22% V.A.T. included)"
-    elif iva == IVAINCL:
-        istr = "(I.V.A. inclusa)" if lang == "it" else "(V.A.T. included)"
-    elif iva == IVA_:
-        istr = "+ I.V.A." if lang == "it" else "+ V.A.T."
-    elif iva == IVA4:
-        istr = "+ I.V.A. 4%" if lang == "it" else "+ 4% V.A.T."
-    elif iva == IVA10:
-        istr = "+ I.V.A. 10%" if lang == "it" else "+ 10% V.A.T."
-    elif iva == IVA22:
-        istr = "+ I.V.A. 22%" if lang == "it" else "+ 22% V.A.T."
-    else:
-        istr = ''
-    return importo+" "+vstr+" "+istr
-
-def stringa_costo(costo, lang):
-    "Generazione della stringa per il costo del bene"
-    ret = stringa_valore(costo[COSTO], lang)
-    if costo[MODO_TRASP] == SPECIFICARE:
-        trasp = " (più trasporto: " if lang == "it" else "(plus shipping: "
-        ret += trasp+stringa_valore(costo["costo_trasporto"], lang)+")"
-    elif costo[MODO_TRASP] == TRASP_INC:   # trasporto incluso
-        ret += ", incluso trasporto" if lang == "it" else ', shipping included'
-    return ret
-
 def find_max_prat(year=None):
     "Cerca il massimo valore del numero pratica"
     if not year:

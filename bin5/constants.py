@@ -154,8 +154,8 @@ RDO_PDF_FILE = "rdo.pdf"
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
-COSTO = 'costo'                                 # dati_pratica
-COSTO_DECISIONE = 'costo_decisione'             # dati_pratica
+COSTO_PROGETTO = 'costo_progetto'               # dati_pratica
+COSTO_RDO = 'costo_rdo'                         # dati_pratica
 COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
 COSTO_BASE = 'costo_base'                       # dati pratica
 COSTO_IVA = 'costo_iva'                         # dati pratica

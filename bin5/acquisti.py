@@ -985,7 +985,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             d_prat[cs.PROGETTO_INVIATO] = 0
             d_prat[cs.FIRMA_APPROV_RESP] = ""
             set_passo(d_prat, user, CdP.GPA)
-            update_costo(d_prat, cs.COSTO)
+            update_costo(d_prat, cs.COSTO_PROGETTO)
             d_prat[cs.SAVED] = 1
             salvapratica(basedir, d_prat)
             prog_name = os.path.splitext(cs.PROG_PDF_FILE)[0]
@@ -1552,6 +1552,7 @@ def modificardo():
                 if rdo.validate():
                     rdo_data = rdo.data.copy()
                     d_prat.update(clean_data(rdo_data))
+                    update_costo(d_prat, cs.COSTO_RDO)
                     logging.info('Genera rdo: %s/%s', basedir, cs.RDO_PDF_FILE)
                     rdo_template = os.path.splitext(cs.RDO_PDF_FILE)[0]
                     rdo_name = os.path.splitext(cs.RDO_PDF_FILE)[0]
@@ -1566,6 +1567,7 @@ def modificardo():
                     fk.flash(err, category="error")
                 logging.debug("Errori form RdO: %s", "; ".join(errors))
         else:
+            d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
             rdo = fms.RdO(**d_prat)
         ddp = {'title': 'Immissione dati per RDO su MePA',
                'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
@@ -1597,13 +1599,12 @@ def modificadecisione():                     #pylint: disable=R0914
         ndet = ft.find_max_decis(year)[0]+1
         d_prat[cs.NUMERO_DECISIONE] = f"{ndet}/{year:4d}"
         d_prat[cs.DATA_DECISIONE] = ft.today(False)
-        d_prat[cs.COSTO_DECISIONE] = d_prat[cs.COSTO].copy()
         logging.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     det = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
         if det.validate():
             d_prat.update(clean_data(det.data))
-            update_costo(d_prat, cs.COSTO_DECISIONE)
+            update_costo(d_prat, cs.COSTO_RDO)
             logging.info('Genera decisione provvisoria: %s/%s', basedir, cs.DECIS_PDF_FILE)
             decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])
             decis_name = os.path.splitext(cs.DECIS_PDF_FILE)[0]
