@@ -78,7 +78,7 @@ import table as tb
 
 __author__ = 'Luca Fini'
 __version__ = '5.0.14'
-__date__ = '30/04/2024'
+__date__ = '03/05/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -117,12 +117,15 @@ NO_PROGETTO_NON_AUTORIZ = 'NO: progetto non ancora autorizzato'
 NO_RESP = "NO: Operazione consentita solo al resp. dei fondi"
 NO_RESP_AMM = "NO: Operazione consentita solo al resp. dei fondi o all'Amministrazione"
 NO_RICH_AMM = "NO: Operazione consentita solo al richiedente o all'Amministrazione"
+NO_RICH_RESP_AMM = "NO: Operazione consentita solo al richiedente, " \
+                   "al responsabile dei fondi o all'Amministrazione"
 NO_RICH_INVIATA = "NO: Richiesta già inviata"
 NO_RICH_RESP_AMM = "NO: Operazione consentita solo al richiedente, " \
                    "al responsabile dei fondi o all'Amministrazione"
 NO_RUP_NON_NOMINATO = 'NO: RUP non nominato'
 NO_RUP_GIA_NOMINATO = 'NO: RUP già nominato'
 NO_RUP_DICH = 'NO: mancano dichiarazioni del RUP'
+NO_TBD = 'NO: operazione da implementare'
 
 INVIO_NON_AUTORIZZ = 'Invio non autorizzato: %s. Utente: %s pratica %s'
 
@@ -255,7 +258,7 @@ def check_allegati_cancellabili(the_user, d_prat) -> str:
     return 'NO: '+', '.join(ret)
 
 def check_progetto_inviabile(the_user, basedir, d_prat) -> str:      # pylint: disable=R0911
-    "test: progetto inviabile"
+    "test: progetto inviabile per approv. al resp. fondi"
     if not d_prat.get(cs.PRATICA_APERTA, 1):
         return NO_PRATICA_CHIUSA
     if not _test_pdf_progetto(basedir):
@@ -270,154 +273,97 @@ def check_progetto_inviabile(the_user, basedir, d_prat) -> str:      # pylint: d
         return NO_PROGETTO_APPROV
     return YES
 
-def check_progetto_modificabile(the_user, _basedir, d_prat) -> str:            # pylint: disable=W0703,R0911
+def check_progetto_modificabile(user, _basedir, d_prat) -> str:            # pylint: disable=W0703,R0911
     "test: progetto modificabile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:  # NO: La pratica e' chiusa
-        return NO_PRATICA_CHIUSA
-    if d_prat.get(cs.PROGETTO_INVIATO):
-        return NO_PROGETTO_INV
-    if d_prat.get(cs.FIRMA_APPROV_RESP):
-        return NO_PROGETTO_APPROV
-    if _test_admin(the_user):
-        return  YES
-    if _test_responsabile(the_user, d_prat):
-        return YES
-    if _test_richiedente(the_user, d_prat):
-        if d_prat.get(cs.PROGETTO_INVIATO, 0):
-            return NO_RESP_AMM
-        return YES
-    return NO_RICH_RESP_AMM
+    if CdP.GPA <= d_prat[cs.PASSO] < CdP.PIR:
+        if _test_admin(user) or \
+           _test_richiedente(user, d_prat) or \
+           _test_responsabile(user, d_prat):
+            return YES
+        return NO_RICH_RESP_AMM
+    return NO_PASSO_ERRATO
 
-def check_progetto_approvabile(the_user, basedir, d_prat) -> str:
+def check_progetto_approvabile(user, _basedir, d_prat) -> str:
     "test: progetto approvabile"
-    if not d_prat[cs.PRATICA_APERTA]:
-        return NO_PRATICA_CHIUSA
-    if not _test_responsabile(the_user, d_prat):
+    if CdP.PIR <= d_prat[cs.PASSO] < CdP.PAR:
+        if _test_responsabile(user, d_prat):
+            return YES
         return NO_RESP
-    if d_prat.get(cs.FIRMA_APPROV_RESP):
-        return NO_PROGETTO_APPROV
-    if not _test_all_prev_mepa(basedir, d_prat):
-        return NO_PREV_MEPA
-    return YES
+    return NO_PASSO_ERRATO
 
 def check_rup_cancellabile(the_user, _unused, d_prat) -> str:
     "test: è possibile nominare il RUP"
-    if not d_prat[cs.PRATICA_APERTA]:
-        return NO_PRATICA_CHIUSA
     if not _test_admin(the_user):
         return NO_NON_ADMIN
     if not d_prat.get(cs.NOME_RUP):
         return NO_RUP_NON_NOMINATO
-    return YES
+    return NO_TBD
 
-def check_rup_nominabile(the_user, d_prat) -> str:
+def check_rup_indicabile(user, d_prat) -> str:
     "test: è possibile nominare il RUP"
-    if not d_prat[cs.PRATICA_APERTA]:
-        return NO_PRATICA_CHIUSA
-    if not _test_admin(the_user):
+    if CdP.PAR <= d_prat[cs.PASSO] < CdP.RAL:
+        if _test_admin(user):
+            return YES
         return NO_NON_ADMIN
-    if not d_prat.get(cs.FIRMA_APPROV_RESP):
-        return NO_PROGETTO_NON_APPROV
-    if d_prat.get(cs.NOME_RUP):
-        return NO_RUP_GIA_NOMINATO
-    return YES
+    return NO_PASSO_ERRATO
 
-def check_autorizz_richiedibile(the_user, basedir, d_prat) -> str:     #pylint: disable=R0911
+def check_autorizz_richiedibile(user, _basedir, d_prat) -> str:     #pylint: disable=R0911
     "test: il RUP può chiedere l'autorizzazione del direttore?"
-    if not d_prat[cs.PRATICA_APERTA]:
-        return NO_PRATICA_CHIUSA
-    if not _test_rup(the_user, d_prat):
-        return NO_NON_RUP
-    if not d_prat.get(cs.NOME_RUP):
-        return NO_RUP_NON_NOMINATO
-    if not (_test_all_cv_rup(basedir) and _test_all_dich_rup(basedir)):
-        return NO_RUP_DICH
-    if d_prat[cs.PASSO] >= CdP.IRD:
-        return NO_RICH_INVIATA
-    if d_prat.get(cs.FIRMA_AUTORIZZ_DIR):
-        return NO_PROGETTO_AUTORIZ
-    return YES
+    if CdP.RAL <= d_prat[cs.PASSO] < CdP.IRD:
+        if _test_admin(user):
+            return YES
+        return NO_NON_ADMIN
+    return NO_PASSO_ERRATO
 
-def check_rich_rup_autorizzabile(the_user, basedir, d_prat) -> str:
+def check_rich_rup_autorizzabile(user, _basedir, d_prat) -> str:
     "test: il direttore può autorizzare la richiesta del RUP?"
-    if not d_prat[cs.PRATICA_APERTA]:
-        return NO_PRATICA_CHIUSA
-    if not _test_direttore(the_user):
+    if CdP.IRD <= d_prat[cs.PASSO] < CdP.AUD:
+        if _test_direttore(user):
+            return YES
         return NO_NON_DIR
-    if d_prat.get(cs.FIRMA_AUTORIZZ_DIR):
-        return NO_PROGETTO_AUTORIZ
-    if not d_prat.get(cs.NOME_RUP):
-        return NO_RUP_NON_NOMINATO
-    if not (_test_all_cv_rup(basedir) and _test_all_dich_rup(basedir)):
-        return NO_RUP_DICH
-    return YES
+    return NO_PASSO_ERRATO
 
-def check_rdo_modificabile(the_user, basedir, d_prat) -> str:
+def check_rdo_modificabile(user, _basedir, d_prat) -> str:
     "test: rdo modificabile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:
-        return NO_PRATICA_CHIUSA
-    if not _test_rup(the_user, d_prat):
+    if CdP.AUD <= d_prat[cs.PASSO] < CdP.DCI:
+        if _test_rup(user, d_prat):
+            return YES
         return NO_NON_RUP
-    if d_prat.get(cs.PASSO, 0) < CdP.AUD or \
-       d_prat.get(cs.PASSO, 0) >= CdP.DCI:
-        return NO_PASSO_ERRATO
-    if not _test_all_cig(basedir):
-        return NO_PDF_CIG
-    return YES
+    return NO_PASSO_ERRATO
 
-def check_decisione_modificabile(the_user, basedir, d_prat) -> str:
+def check_decisione_modificabile(user, _basedir, d_prat) -> str:
     "test: decisione di contrarre modificabile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:
-        return NO_PRATICA_CHIUSA
-    if not _test_rup(the_user, d_prat):
+    if CdP.ROG <= d_prat[cs.PASSO] < CdP.DCI:
+        if _test_rup(user, d_prat):
+            return YES
         return NO_NON_RUP
-    if not _test_all_cig(basedir):
-        return NO_PDF_CIG
-    if d_prat.get(cs.DECIS_INVIATA):
-        return NO_DECIS_INVIATA
-    return YES
+    return NO_PASSO_ERRATO
 
-def check_decisione_inviabile(the_user, basedir, d_prat) -> str:
+def check_decisione_inviabile(user, _basedir, d_prat) -> str:
     "test: decisione di contrarre inviabile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:
-        return NO_PRATICA_CHIUSA
-    if not _test_rup(the_user, d_prat):
+    if CdP.DCG <= d_prat[cs.PASSO] < CdP.DCI:
+        if _test_rup(user, d_prat):
+            return YES
         return NO_NON_RUP
-    if not _test_pdf_decisione(basedir):
-        return NO_DECIS_GENERATA
-    if d_prat.get(cs.DECIS_INVIATA):
-        return NO_DECIS_INVIATA
-    return YES
+    return NO_PASSO_ERRATO
 
-def check_decisione_cancellabile(the_user, basedir, d_prat) -> str:
+def check_decisione_cancellabile(_user, basedir, _d_prat) -> str:
     "test: decisione di contrarre cancellabile"
     if not _test_pdf_decisione(basedir):
         return NO_DECIS_GENERATA
-    return check_decisione_modificabile(the_user, basedir, d_prat)
+    return NO_TBD
 
-def check_pratica_chiudibile(the_user, _unused, d_prat) -> str:
+def check_pratica_chiudibile(user, _unused, d_prat) -> str:
     "test: pratica chiudibile"
-    if d_prat.get(cs.PRATICA_APERTA) != 1:
-        return NO_PRATICA_CHIUSA
-    if not _test_admin(the_user):
-        return NO_NON_ADMIN
-    return YES
+    if CdP.DCF <= d_prat[cs.PASSO] < CdP.FIN:
+        if _test_admin(user):
+            return YES
+        return NO_NON_RUP
+    return NO_PASSO_ERRATO
 
-def check_pratica_apribile(the_user, d_prat) -> str:
-    "test: pratica apribile"
-    if d_prat.get(cs.PRATICA_APERTA):
-        return NO_PRATICA_APERTA
-    if d_prat.get(cs.PRATICA_ANNULLATA):
-        return NO_PRATICA_ANNULLATA
-    if _test_admin(the_user):
-        return YES
-    return NO_NON_ADMIN
-
-def check_pratica_annullabile(the_user, d_prat) -> str:
+def check_pratica_annullabile(user) -> str:
     "test: pratica annullabile"
-    if not d_prat.get(cs.PRATICA_ANNULLATA):
-        return NO_PRATICA_GIA_ANNULLATA
-    if _test_admin(the_user):
+    if _test_admin(user):
         return YES
     return NO_NON_ADMIN
 
@@ -438,14 +384,13 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['decis_modificabile'] = check_decisione_modificabile(the_user, basedir, d_prat)
     info['decis_cancellabile'] = check_decisione_cancellabile(the_user, basedir, d_prat)
     info['decis_inviabile'] = check_decisione_inviabile(the_user, basedir, d_prat)
-    info['pratica_annullabile'] = check_pratica_annullabile(the_user, d_prat)
-    info['pratica_apribile'] = check_pratica_apribile(the_user, d_prat)
+    info['pratica_annullabile'] = check_pratica_annullabile(the_user)
     info['pratica_chiudibile'] = check_pratica_chiudibile(the_user, basedir, d_prat)
     info['progetto_approvabile'] = check_progetto_approvabile(the_user, basedir, d_prat)
     info['progetto_modificabile'] = check_progetto_modificabile(the_user, basedir, d_prat)
     info['progetto_inviabile'] = check_progetto_inviabile(the_user, basedir, d_prat)
     info['rich_rup_autorizzabile'] = check_rich_rup_autorizzabile(the_user, basedir, d_prat)
-    info['rup_nominabile'] = check_rup_nominabile(the_user, d_prat)
+    info['rup_indicabile'] = check_rup_indicabile(the_user, d_prat)
     info['rup_cancellabile'] = check_rup_cancellabile(the_user, basedir, d_prat)
     info['rdo_modificabile'] = check_rdo_modificabile(the_user, basedir, d_prat)
     info[cs.PDF_PROGETTO] = YES if _test_pdf_progetto(basedir) else NOT
@@ -632,18 +577,8 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
             d_prat[cs.PRATICA_APERTA] = 0
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} chiusa'
             storia(d_prat, user, text)
-    elif what[0].lower() == 'a':     # Apri pratica
-        err = check_pratica_apribile(user, d_prat)
-        if err.startswith(NOT):
-            fk.flash(err, category="error")
-            logging.error('Apertura pratica non autorizzata: %s. Utente %s, pratica %s',
-                          err, user['userid'], d_prat[cs.NUMERO_PRATICA])
-        else:
-            text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} riaperta'
-            storia(d_prat, user, text)
-            d_prat[cs.PRATICA_APERTA] = 1
     elif what[0].lower() == 'n':    # Annulla pratica
-        err = check_pratica_annullabile(user, d_prat)
+        err = check_pratica_annullabile(user)
         if err.startswith(NOT):
             fk.flash(err, category="error")
             logging.error('Annullamento pratica non autorizzato: %s. Utente %s, pratica %s',
@@ -998,7 +933,6 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     print_debug('_check_access:', ret)
     user, basedir, d_prat = ret
     if not d_prat:
-        print_debug('Genera nuova pratica per:', user['userid'])
         d_prat = genera_pratica(user)
     else:
         err = check_progetto_modificabile(user, basedir, d_prat)
@@ -1174,7 +1108,7 @@ def indicarup():
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
     user, basedir, d_prat = ret
-    err = check_rup_nominabile(user, d_prat)
+    err = check_rup_indicabile(user, d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Nomina RUP non autorizzata: %s. Utente %s pratica %s',
