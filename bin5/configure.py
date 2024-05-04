@@ -18,7 +18,7 @@ from table import jload, jsave
 
 __version__ = "1.3"
 
-MY_VERSION = 1
+MY_VERSION = 2
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -42,7 +42,7 @@ LATEX_PATH_DESC = """Path del programma pdflatex
 [es: /usr/local/bin/pdflatex]
 """
 
-EMAIL_UFFICIO_DESC = """Indirizzo EMail dell'ufficio ordini.
+EMAIL_UFFICIO_DESC = """Indirizzo e-mail dell'ufficio ordini.
 A questo indirizzo sono inviati i messaggi automatici
 generati dalla procedura [es: ordini.oaa@inaf.it]
 """
@@ -55,13 +55,21 @@ TITOLO_DIRETTORE_UK_DESC = """Titolo del direttore per ordini in inglese
 [es: Dr.]
 """
 
-EMAIL_DIRETTORE_DESC = """Indirizzo e-mail del direttore
+EMAIL_DIRETTORE_DESC = """Indirizzo e-mail personale del direttore
 
 ****************************************************************
-NOTA: è *necessario* usare lo stesso indirizzo email specificato
+NOTA: è NECESSARIO usare lo stesso indirizzo e-mail specificato
 nella lista degli utenti della procedura.
 ****************************************************************
 [es: luca.fini@inaf.it]
+"""
+
+EMAIL_DIREZIONE_DESC = """Indirizzo e-mail generico del direttore
+
+Se tale indirizzo non esiste, specificare l'indirizzo personale
+del direttore.
+
+[es: direttore.oaa@inaf.it]
 """
 
 NOME_DIRETTORE_DESC = """Nome del direttore
@@ -120,6 +128,7 @@ PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (cs.EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
                       (cs.TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
                       (cs.TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
+                      (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
                       (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
                       (cs.LATEX_PATH, LATEX_PATH_DESC),
                      ])

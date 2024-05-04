@@ -69,17 +69,17 @@
 <p>
 
 <b>Allegati:</b>
-   {% if info.allegati_mancanti %} 
+{% if info.allegati_mancanti %} 
    &nbsp;&nbsp;(<font color="red">Mancanti: {{ info.allegati_mancanti }}</font>)
-   {% endif %}
+{% endif %}
 {% if info.attach %}
 <ul>
-{% for a in info.attach %}
+   {% for a in info.attach %}
 <li> <a href=/vedifile/{{ a[0] }}>{{ a [1]}}</a> 
-{% if info.allegati_cancellabili %}
+      {% if info.allegati_cancellabili %}
 &nbsp;&nbsp;[<a href=/cancella/{{ a[0] }}>Cancella</a>]
-{% endif %}
-{% endfor %}
+      {% endif %}
+   {% endfor %}
 {% endif %}
 
 <p>
@@ -99,4 +99,9 @@
 &nbsp;
 {% endif %}
 </td></tr>
+{% if info.rollback %}
+<tr><td> 
+[<a href=/rollback>Annulla ultimo passo</a>]
+</td></tr>
+{% endif %}
 </table>

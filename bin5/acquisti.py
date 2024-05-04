@@ -335,6 +335,12 @@ def check_rich_rup_autorizzabile(user, _basedir, d_prat) -> str:
         return NO_NON_DIR
     return NO_PASSO_ERRATO
 
+def check_rollback(user, _basedir) -> str:
+    "test: rollback attivabile"
+    if _test_admin(user):
+        return YES
+    return NO_NON_ADMIN
+
 def check_rdo_modificabile(user, _basedir, d_prat) -> str:
     "test: rdo modificabile"
     if CdP.AUD <= d_prat[cs.PASSO] < CdP.DCI:
@@ -402,6 +408,7 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['progetto_modificabile'] = check_progetto_modificabile(the_user, basedir, d_prat)
     info['progetto_inviabile'] = check_progetto_inviabile(the_user, basedir, d_prat)
     info['rich_rup_autorizzabile'] = check_rich_rup_autorizzabile(the_user, basedir, d_prat)
+    info['rollback'] = check_rollback(the_user, basedir)
     info['rup_indicabile'] = check_rup_indicabile(the_user, d_prat)
     info['rup_cancellabile'] = check_rup_cancellabile(the_user, basedir, d_prat)
     info['rdo_modificabile'] = check_rdo_modificabile(the_user, basedir, d_prat)
@@ -843,7 +850,7 @@ def user_info():
 def set_passo(d_prat, user, nuovo_stato):
     'aggiorna passo pratica'
     d_prat[cs.PASSO] = nuovo_stato
-    text = cs.PASSI[nuovo_stato]
+    text = cs.PASSI[nuovo_stato][0]
     storia(d_prat, user, text)
 
 @ACQ.route("/")
@@ -1058,7 +1065,7 @@ def inviadecisione():                    #pylint: disable=R0914
         subj = 'Decisione di contrarre da firmare'
         numdet = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
         pdfname = f"decisione_{numdet}.pdf"
-        recipient = CONFIG.config[cs.EMAIL_DIRETTORE]
+        recipient = CONFIG.config[cs.EMAIL_DIREZIONE]
         attach = (os.path.join(basedir, cs.DECIS_PDF_FILE), pdfname)
         ret = send_email(recipient, testo, subj, attach=attach)
         if ret:
@@ -1075,7 +1082,7 @@ def inviadecisione():                    #pylint: disable=R0914
 
 @ACQ.route('/approvaprogetto')
 def approvaprogetto():
-    "pagina: approva progetto"
+    "pagina: resp.fondi approva progetto"
     logging.info('URL: /approvaprogetto (%s)', fk.request.method)
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
@@ -1137,7 +1144,8 @@ def indicarup():
             logging.info(msg)
             fk.flash(msg, category='info')
             return pratica1()
-        fk.flash('Scelta RUP non valida', category="error")
+        for err in rupf.errlist:
+            fk.flash(err, category="error")
     body = rupf()
     ddp = {'title': 'Indica RUP',
            'before': '<form method=POST action=/indicarup '
@@ -1171,7 +1179,8 @@ def autorizza():
                il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
     d_prat[cs.FIRMA_AUTORIZZ_DIR] = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
-    send_email(d_prat[cs.EMAIL_RUP], cs.TESTO_NOMINA_RUP, "Nomina RUP")
+    text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA])
+    send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     set_passo(d_prat, user, CdP.AUD)
     salvapratica(basedir, d_prat)
     return pratica1()
@@ -1191,7 +1200,7 @@ def rich_autorizzazione():
         return pratica1()
     subj = 'Richiesta autorizzazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
     body = cs.TESTO_RICHIESTA_AUTORIZZAZIONE.format(url=fk.request.root_url, **d_prat)
-    ret = send_email(CONFIG.config[cs.EMAIL_DIRETTORE], body, subj)
+    ret = send_email(CONFIG.config[cs.EMAIL_DIREZIONE], body, subj)
     if ret:
         msg = 'Richiesta di autorizzazione inviata al direttore'
         fk.flash(msg, category="info")
@@ -1377,7 +1386,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
     logging.info('URL: /trovapratica (%s)', fk.request.method)
     fk.session[BASEDIR_STR] = ''
     user = user_info()
-    if not _test_admin(user):
+    if not (_test_admin(user) or _test_direttore(user)):
         logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
         fk.session.clear()
         return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
@@ -1400,24 +1409,25 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
         vaperta = int(prf.data.get('trova_prat_aperta', '-1'))
         if vaperta == 1:
             ricerca += 'aperte)'
-            aperta_func = lambda x: x.get(cs.PRATICA_APERTA, 0) == 1
+            aperta_func = lambda x: x.get(cs.PRATICA_APERTA, False)
         elif vaperta == 0:
             ricerca += 'chiuse)'
-            aperta_func = lambda x: x.get(cs.PRATICA_APERTA, 1) == 0
+            aperta_func = lambda x: not x.get(cs.PRATICA_APERTA, False)
         else:
             ricerca += 'aperte e chiuse)'
             aperta_func = lambda x: True
-        nome_resp = prf.data['trova_responsabile']
-        if nome_resp:
-            resp_func = lambda x: word_match(nome_resp,
-                                             x.get(cs.NOME_RESPONSABILE, ''))
+        if nome_resp := prf.data['trova_responsabile']:
+            resp_func = lambda x: word_match(nome_resp, x.get(cs.NOME_RESPONSABILE, ''))
             ricerca += f' + (resp.={nome_resp})'
         else:
             resp_func = lambda x: True
-        nome_rich = prf.data['trova_richiedente']
-        if nome_rich:
-            rich_func = lambda x: word_match(nome_rich,
-                                             x.get(cs.NOME_RICHIEDENTE, ''))
+        if nome_rup := prf.data['trova_rup']:
+            rup_func = lambda x: word_match(nome_rup, x.get(cs.NOME_RUP, ''))
+            ricerca += f' + (rup={nome_rup})'
+        else:
+            rup_func = lambda x: True
+        if nome_rich := prf.data['trova_richiedente']:
+            rich_func = lambda x: word_match(nome_rich, x.get(cs.NOME_RICHIEDENTE, ''))
             ricerca += f' + (richied.={nome_rich})'
         else:
             rich_func = lambda x: True
@@ -1427,12 +1437,12 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
             ricerca += f" + (contiene parola={prf.data['trova_parola']})"
         else:
             parola_func = lambda x: True
-        selector = lambda x: aperta_func(x) and rich_func(x) and resp_func(x) and parola_func(x)
+        selector = lambda x: aperta_func(x) and rich_func(x) and \
+                             resp_func(x) and rup_func(x) and parola_func(x)
         if prf.data['elenco_ascendente']:
             sort_f = _pratica_ascendente
         else:
             sort_f = lambda x: -1*_pratica_ascendente(x)
-
         try:
             lista = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, theyear,
                                content_filter=selector, sort=sort_f)
@@ -1649,13 +1659,54 @@ def cancelladecisione():
         fk.flash(err, category="error")
         logging.error('cancellazione decisione non autorizzata: %s. Utente %s, pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
-    else:
-        ft.remove((basedir, cs.DECIS_PDF_FILE), show_error=False)
-        hist = "Cancellata decisione di contrarre. " \
-               f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
-        storia(d_prat, user, hist)
-        salvapratica(basedir, d_prat)
+        return pratica1()
+    ft.remove((basedir, cs.DECIS_PDF_FILE), show_error=False)
+    hist = "Cancellata decisione di contrarre. " \
+           f"Pratica N. {d_prat.get(cs.NUMERO_PRATICA, '')}"
+    storia(d_prat, user, hist)
+    salvapratica(basedir, d_prat)
     return pratica1()
+
+@ACQ.route('/rollback', methods=('GET', 'POST'))
+def rollback():
+    "Pagina: annulla ultimo passo"
+    logging.info('URL: /rollback (%s)', fk.request.method)
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
+    user, basedir, d_prat = ret
+    err = check_rollback(user, basedir)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        logging.error('annullamento ultimo passo non autorizzato: %s. Utente %s, pratica %s',
+                      err, user['userid'], d_prat[cs.NUMERO_PRATICA])
+        return pratica1()
+    passo = d_prat[cs.PASSO]
+    passi = list(cs.PASSI.keys())
+    precid = passi.index(passo)-1
+    if precid < 0:
+        err = 'Annullamento passo impossibile'
+        fk.flash(err, category="error")
+        return pratica1()
+    prec = passi[precid]
+    files_to_remove = [cs.PASSI[prec][1]] if cs.PASSI[prec][1] else []
+    files_to_remove.extend(cs.PASSI[prec][2])
+    if 'annulla' in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return pratica1()
+    if 'conferma' in fk.request.form:
+        set_passo(d_prat, user, prec)
+        for name in files_to_remove:
+            ft.remove((basedir, name))
+            logging.info('Rimosso file {name}')
+        salvapratica(basedir, d_prat)
+        msg = "Annullato ultimo passo pratica"
+        fk.flash(msg, category="info")
+        return pratica1()
+    ddp = {'passo': cs.PASSI[passo][0],
+           'prec': cs.PASSI[prec][0],
+           'remove': files_to_remove}
+    return fk.render_template('rollback.html', sede=CONFIG.config[cs.SEDE],
+                              pratica=d_prat, data=ddp)
 
 @ACQ.route('/chiudipratica')
 def chiudipratica():

@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.2"
-__date__ = "01/04/2024"
+__version__ = "2.3"
+__date__ = "03/05/2024"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -159,7 +159,7 @@ class MyFormField(wt.FormField):
         _debug('MyFormField.validate')
         if not self.form.validate():
             self.errlist.extend(self.form.errlist)
-        return len(self.errlist) == 0
+        return not self.errlist
 
 class MyFieldList(wt.FieldList):
     "FieldList, versione mia"
@@ -270,7 +270,7 @@ class _Costo(FormWErrors):
             self.errlist.append('Errore alla voce 4')
         if not self.voce_5.validate(self):
             self.errlist.append('Errore alla voce 5')
-        return len(self.errlist) == 0
+        return not self.errlist
 
 class Costo1(_Costo):
     'Versione di costo senza checkbox'
@@ -306,17 +306,21 @@ class MyLoginForm(FormWErrors):
             self.errlist.append("Devi specificare il nome utente")
         if not self.password.data:
             self.errlist.append("Devi specificare la password")
-        return len(self.errlist) == 0
+        return not self.errlist
 
     def password_ok(self):
         "Verifica password"
         return ft.authenticate(self._us, self._pw, self._ldap_host, self._ldap_port)
 
+class Rollback(FormWErrors):
+    'Form per nomina RUP'
+    annulla = wt.SubmitField('Annulla', [])
+    conferma = wt.SubmitField('Conferma', [])
+
 class IndicaRUP(FormWErrors):
     'Form per nomina RUP'
     email_rup = MySelectField('', True, [])
-    interno_rup = MyTextField('Tel. Interno', True,
-                              [wt.validators.InputRequired("Manca num. telef. interno")])
+    interno_rup = MyTextField('Tel. Interno', True, [])
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -326,6 +330,14 @@ class IndicaRUP(FormWErrors):
         html += render_field(self.interno_rup, sameline=True, size=3)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
+
+    def validate(self, *_unused):
+        'validazione campi'
+        if not self.email_rup.data:
+            self.errlist.append("selezionare l'indirizzo e-mail del RUP")
+        if not self.interno_rup.data:
+            self.errlist.append("specificare il num.telefonico interno del RUP")
+        return not self.errlist
 
 class ProgettoAcquisto(FormWErrors):
     "Form per progetto di acquisto"
@@ -388,7 +400,7 @@ class ProgettoAcquisto(FormWErrors):
             self.errlist.append("Specificare modalit&agrave; di acquisto")
         if not self.costo_progetto.validate():
             self.errlist.append("Costo: "+", ".join(self.costo.errlist))
-        return len(self.errlist) == 0
+        return not self.errlist
 
 class Decisione(FormWErrors):
     "form per definizione decisione di contrarre"
@@ -424,7 +436,7 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca data decisione")
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
-        return len(self.errlist) == 0
+        return not self.errlist
 
 class AnnullaPratica(FormWErrors):
     'Form per conferma annullamento pratica'
@@ -445,6 +457,7 @@ class TrovaPratica(FormWErrors):
                                       choices=((-1, 'Tutte'), (1, 'Aperta'), (0, 'Chiusa')))
     trova_richiedente = MyTextField('Richiedente: ', False)
     trova_responsabile = MyTextField('Responsabile: ', False)
+    trova_rup = MyTextField('RUP: ', False)
     trova_anno = MySelectField('Anno: ', False)
     trova_parola = MyTextField('Parola nella descrizione: ', False)
     elenco_ascendente = MyBooleanField('Ordine ascendente', False)
@@ -456,6 +469,7 @@ class TrovaPratica(FormWErrors):
         html = B_TRTD+render_field(self.trova_prat_aperta, sameline=True)+BRK+BRK
         html += render_field(self.trova_richiedente, sameline=True)+BRK+BRK
         html += render_field(self.trova_responsabile, sameline=True)+BRK+BRK
+        html += render_field(self.trova_rup, sameline=True)+BRK+BRK
         html += render_field(self.trova_anno, sameline=True)+BRK+BRK
         html += render_field(self.trova_parola, sameline=True)+BRK+BRK
         html += render_field(self.elenco_ascendente, sameline=True)+E_TRTD
@@ -537,17 +551,13 @@ class CodfForm(FormWErrors):
 
     def validate(self, extra_validators=None):
         "Validazione"
-        ret = True
         if not self.Codice.data:
             self.errlist.append("Il codice è obbligatorio")
-            ret = False
         if not self.Titolo.data:
             self.errlist.append("Devi specificare un titolo")
-            ret = False
         if not self.email_Responsabile.data:
             self.errlist.append("Devi specificare un responsabile")
-            ret = False
-        return ret
+        return not self.errlist
 
 class UserForm(FormWErrors):
     "Form per modifica dati utente"
