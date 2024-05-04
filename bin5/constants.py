@@ -50,10 +50,12 @@ class CdP(IntEnum):
     IRD = 40
     AUD = 50
     ROG = 60
+    RFI = 65
     DCG = 70
     DCI = 80
     DCF = 90
     FIN = 100
+    ANN = 200
 
 
 
@@ -71,13 +73,15 @@ PASSI = {CdP.INI: "Iniziale",                               # Richiedente genera
          CdP.IRD: "Inviata richiesta di autorizzazione e nomina RUP al Direttore",
                                                             # Direttore autorizza.
          CdP.AUD: "Autorizzazione concessa e RUP nominato", # RUP genera RdO e allega CIG
-         CdP.ROG: "RdO generata e CIG allegato",            # RUP Genera decisione di contrarre
+         CdP.ROG: "RdO generata e CIG allegato",            # RUP allega RdO firmata digitalmente
+         CdP.RFI: "RdO con firma digitale allegata",        # RUP Genera decisione di contrarre
          CdP.DCG: "Decisione di contrarre generata",        # RUP invia decisione al direttore
                                                             #    per firma
          CdP.DCI: "Decisione di contrarre inviata al Direttore per firma",
                                                             # RUP riceve e allega decisione firmata
          CdP.DCF: "Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
          CdP.FIN: "Pratica conclusa",
+         CdP.ANN: "Pratica annullata",
         }
 
 # Costanti per menu modalità acquisto
@@ -188,6 +192,7 @@ FORNITORE_PARTIVA = 'fornitore_pativa'          # dati_pratica
 GIUSTIFICAZIONE = 'giustificazione'             # dati_pratica
 IMPORTO = 'importo'
 INIZIO_GARA = "inizio_gara"                     # dati pratica
+INTERNO_RUP = 'interno_rup'                     # dati pratica
 IVA = "iva"
 IVAFREE = "iva_free"                            # dati_pratica[costo]
 LINGUA_ORDINE = 'lingua_ordine'                 # dati_pratica
@@ -197,6 +202,7 @@ MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
 MOD_ACQUISTO_B = 'modalita_acquisto_b'          # dati_pratica
 MODO_TRASP = 'modo_trasp'
 MOTIVAZIONE_ACQUISTO = 'motivazione_acquisto'   # dati_pratica
+MOTIVAZIONE_ANNULLAMENTO = 'motivazione_annullamento'   # dati_pratica
 NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
 NOME_RUP = 'nome_rup'                           # dati_pratica
@@ -281,12 +287,13 @@ SEQUENZE = { TRATT_MEPA_40: [0, 10, 20, 30, 40, 50, 60, 70, 80],
            }
 
 # Tipi allegato
-ALL_GENERICO = "all_generico"
 ALL_CIG = "all_cig"
 ALL_CV_RUP = 'cv_rup'
-ALL_DICH_RUP = 'dich_rup'
-ALL_PREV_MEPA = "prev_mepa"
 ALL_DECIS_FIRMATA = 'decis_firmata'
+ALL_DICH_RUP = 'dich_rup'
+ALL_GENERICO = "all_generico"
+ALL_PREV_MEPA = "prev_mepa"
+ALL_RDO = "all_rdo"
 
 ALL_OFF_DITTA = 'off_ditta'
 LETT_INVITO_A = 'lett_invito_a'
@@ -315,6 +322,7 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "documento generico", ALL_NAME),
                 ALL_PREV_MEPA: ('A08_Preventivo_trattativa_MePA',
                                   "Preventivo trattativa diretta MePA", ALL_SING),
                 ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
+                ALL_RDO: ("A16_RdO_Firmata", "RdO con firma digitale RUP", ALL_SING),
                 ALL_DECIS_FIRMATA: ("A24_Decisione_Firmata",
                                   "Decisione di contrarre con firma digitale", ALL_SING),
 #               DOCUM_STIPULA: ("A29_Documento_di_stipula",
@@ -394,14 +402,19 @@ Il progetto di acquisto N. {numero_pratica}:
 è stato approvato dal responsabile dei fondi.
 """
 
-TESTO_NOMINA_RUP = '''
-Sei stato nominato RUP per la pratica N. {} (vedi dettagli sotto).
+TESTO_INDICA_RUP = '''
+Sei stato indicato come RUP per la pratica N. {}
 
 Sei pregato di accedere alla procedura Acquisti
 
       {}
 
 per gli adempimenti del caso
+'''
+
+
+TESTO_NOMINA_RUP = '''
+Il direttore ha firmato la nomina a RUP per la pratica N. {}.
 '''
 
 TESTO_RICHIESTA_AUTORIZZAZIONE = '''

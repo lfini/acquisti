@@ -77,8 +77,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.14'
-__date__ = '03/05/2024'
+__version__ = '5.0.15'
+__date__ = '04/05/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -128,6 +128,14 @@ NO_RUP_DICH = 'NO: mancano dichiarazioni del RUP'
 NO_TBD = 'NO: operazione da implementare'
 
 INVIO_NON_AUTORIZZ = 'Invio non autorizzato: %s. Utente: %s pratica %s'
+
+NOTA_ANNULLAMENTO = '''
+<tr><td><b>Attenzione:</b> La pratica annullata in un qualunque
+stato di avanzamento  non potrà più essere riaperta o riutilizzata.
+<p>
+Per procedere devi specificare una motivazione per l'annullamento
+e premere "Conferma" </td></tr>
+'''
 
 class ToBeImplemented(RuntimeError):
     'Parte codice non implementata'
@@ -213,6 +221,10 @@ def _test_all_cv_rup(basedir) -> bool:
 def _test_all_cig(basedir) -> bool:
     "test esistenza CIG in allegato"
     return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_CIG][0])
+
+def _test_all_rdo(basedir) -> bool:
+    "test esistenza CIG in allegato"
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_RDO][0])
 
 def _test_all_dich_rup(basedir) -> bool:
     "test esistenza dichiarazione RUP"
@@ -483,8 +495,6 @@ def menu_allegati(basedir, d_prat):
     "Genera lista allegati in funzione del tipo di acquisto e del passo"
     mod_acquisto = d_prat[cs.MOD_ACQUISTO]
     menu = []
-#   if mod_acquisto in (MEPA, CONSIP):
-#       menu.append(sel_menu(ORDINE_MEPA))
     if mod_acquisto == cs.TRATT_MEPA_40:
         if voce_menu := da_allegare(basedir, d_prat, (CdP.GPA,CdP.PAR), cs.ALL_PREV_MEPA):
             menu.append(voce_menu)
@@ -493,6 +503,8 @@ def menu_allegati(basedir, d_prat):
         if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_DICH_RUP):
             menu.append(voce_menu)
         if voce_menu := da_allegare(basedir, d_prat, (CdP.AUD,CdP.DCI), cs.ALL_CIG):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.ROG,CdP.RFI), cs.ALL_RDO):
             menu.append(voce_menu)
         if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.FIN), cs.ALL_DECIS_FIRMATA):
             menu.append(voce_menu)
@@ -577,18 +589,6 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
             d_prat[cs.PRATICA_APERTA] = 0
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} chiusa'
             storia(d_prat, user, text)
-    elif what[0].lower() == 'n':    # Annulla pratica
-        err = check_pratica_annullabile(user)
-        if err.startswith(NOT):
-            fk.flash(err, category="error")
-            logging.error('Annullamento pratica non autorizzato: %s. Utente %s, pratica %s',
-                          err, user['userid'], d_prat[cs.NUMERO_PRATICA])
-        else:
-            d_prat[cs.PRATICA_ANNULLATA] = 1
-            text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} annullata e chiusa'
-            storia(d_prat, user, text)
-            d_prat[cs.PRATICA_APERTA] = 0
-    salvapratica(basedir, d_prat)
     return fk.redirect(fk.url_for('pratica1'))
 
 def _mydel(key, d_prat):
@@ -615,6 +615,8 @@ def allegati_mancanti(basedir, d_prat):
         ret.append("Dich. RUP")
     if d_prat.get(cs.PASSO, 0) >= CdP.AUD and not _test_all_cig(basedir):
         ret.append("CIG")
+    if d_prat.get(cs.PASSO, 0) >= CdP.ROG and not _test_all_rdo(basedir):
+        ret.append("RdO Firmata")
     if d_prat.get(cs.PASSO, CdP.INI) >= CdP.DCI and not _test_all_decis_firmata(basedir):
         ret.append("Decis. firmata")
     return ', '.join(ret)
@@ -1103,7 +1105,7 @@ def approvaprogetto():
 
 @ACQ.route('/indicarup', methods=('GET', 'POST'))
 def indicarup():
-    "pagina: nomina RUP"
+    "pagina: indica RUP"
     logging.info('URL: /indicarup (%s)', fk.request.method)
     if not (ret := _check_access()):
         return fk.redirect(fk.url_for('start'))
@@ -1111,22 +1113,25 @@ def indicarup():
     err = check_rup_indicabile(user, d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Nomina RUP non autorizzata: %s. Utente %s pratica %s',
+        logging.error('Indicazione RUP non autorizzata: %s. Utente %s pratica %s',
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica1()
-    rupf = fms.NominaRUP(fk.request.form)
+    rupf = fms.IndicaRUP(fk.request.form)
     rupf.email_rup.choices = _menu_scelta_utente("Seleziona RUP")
     if fk.request.method == 'POST':
         if rupf.validate():
             d_prat[cs.EMAIL_RUP] = rupf.email_rup.data
+            d_prat[cs.INTERNO_RUP] = rupf.interno_rup.data
             d_prat[cs.NOME_RUP] = nome_da_email(d_prat[cs.EMAIL_RUP], True)
             nominarup_name = os.path.splitext(cs.NOMINARUP_PDF_FILE)[0]
             ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
                        sede=CONFIG.config[cs.SEDE], warning='in attesa firma direttore')
             set_passo(d_prat, user, CdP.RUI)
+            text = cs.TESTO_INDICA_RUP.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)
+            send_email(d_prat[cs.EMAIL_RUP], text, "Indicazione come RUP")
             salvapratica(basedir, d_prat)
             msg = f"{d_prat[cs.NOME_RUP]} indicato come RUP per pratica {d_prat[cs.NUMERO_PRATICA]}"
             logging.info(msg)
@@ -1134,7 +1139,7 @@ def indicarup():
             return pratica1()
         fk.flash('Scelta RUP non valida', category="error")
     body = rupf()
-    ddp = {'title': 'Nomina RUP',
+    ddp = {'title': 'Indica RUP',
            'before': '<form method=POST action=/indicarup '
                      'accept-charset="utf-8" novalidate>',
            'after': '</form>',
@@ -1166,8 +1171,7 @@ def autorizza():
                il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
     d_prat[cs.PDF_NOMINARUP] = cs.NOMINARUP_PDF_FILE
     d_prat[cs.FIRMA_AUTORIZZ_DIR] = ft.signature((basedir, cs.NOMINARUP_PDF_FILE))
-    text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)
-    send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
+    send_email(d_prat[cs.EMAIL_RUP], cs.TESTO_NOMINA_RUP, "Nomina RUP")
     set_passo(d_prat, user, CdP.AUD)
     salvapratica(basedir, d_prat)
     return pratica1()
@@ -1509,6 +1513,9 @@ def pratica1():               # pylint: disable=R0914,R0911,R0912
             elif d_prat[cs.PASSO] == CdP.AUD:
                 if _test_all_cig(basedir):
                     set_passo(d_prat, user, CdP.ROG)
+            elif d_prat[cs.PASSO] == CdP.ROG:
+                if _test_all_rdo(basedir):
+                    set_passo(d_prat, user, CdP.RFI)
             elif d_prat[cs.PASSO] == CdP.DCI:
                 if _test_all_decis_firmata(basedir):
                     set_passo(d_prat, user, CdP.DCF)
@@ -1654,7 +1661,7 @@ def cancelladecisione():
 def chiudipratica():
     "pagina: chiudi pratica"
     logging.info('URL: /chiudipratica (%s)', fk.request.method)
-    return modifica_pratica('chiudi')
+    raise ToBeImplemented()
 
 @ACQ.route('/apripratica')
 def apripratica():
@@ -1662,11 +1669,41 @@ def apripratica():
     logging.info('URL: /apripratica (%s)', fk.request.method)
     return modifica_pratica('apri')
 
-@ACQ.route('/annullapratica')
+@ACQ.route('/annullapratica', methods=('GET', 'POST'))
 def annullapratica():
     "pagina: annulla pratica"
     logging.info('URL: /annullapratica (%s)', fk.request.method)
-    return modifica_pratica('null')
+    if not (ret := _check_access()):
+        return fk.redirect(fk.url_for('start'))
+    user, basedir, d_prat = ret
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return pratica1()
+    annul = fms.AnnullaPratica(fk.request.form)
+    if fk.request.method == 'POST':
+        if annul.validate():
+            d_prat[cs.MOTIVAZIONE_ANNULLAMENTO] = annul.motivazione_annullamento.data
+            set_passo(d_prat, user, CdP.ANN)
+            salvapratica(basedir, d_prat)
+            msg = f"Pratica {d_prat[cs.NUMERO_PRATICA]} annullata"
+            storia(d_prat, user, msg)
+            logging.info(msg)
+            fk.flash(msg, category='info')
+            return pratica1()
+        msg = "Motivazione annullamento non specificata"
+        fk.flash(msg, category="error")
+        logging.error(msg)
+    body = annul()
+    before_text = NOTA_ANNULLAMENTO + '''
+<form method=POST action=/annullapratica 
+accept-charset="utf-8" novalidate>
+'''
+    ddp = {'title': 'Annullamento pratica',
+           'before': before_text,
+           'after': '</form>',
+           'note': 'Questa è una nota',
+           'body': body}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
 @ACQ.route('/files/<name>')
 def files(name):

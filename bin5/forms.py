@@ -312,7 +312,7 @@ class MyLoginForm(FormWErrors):
         "Verifica password"
         return ft.authenticate(self._us, self._pw, self._ldap_host, self._ldap_port)
 
-class NominaRUP(FormWErrors):
+class IndicaRUP(FormWErrors):
     'Form per nomina RUP'
     email_rup = MySelectField('', True, [])
     interno_rup = MyTextField('Tel. Interno', True,
@@ -426,57 +426,18 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca indicazione capitolo")
         return len(self.errlist) == 0
 
-class DeterminaB(FormWErrors):
-    "form per definizione determina fase B"
-    numero_determina_b = MyTextField('Numero determina', True,
-                                     [wt.validators.InputRequired("Manca numero determina")])
-    data_determina_b = MyTextField('Data (g/m/aaaa)', True,
-                                   [wt.validators.Optional("Manca data determina")])
-    nome_direttore_b = MyTextField('Direttore', True,
-                                   [wt.validators.Optional("Manca nome direttore")])
-    art_2 = MyTextAreaField('Testo per articolo 2', False)
-    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+class AnnullaPratica(FormWErrors):
+    'Form per conferma annullamento pratica'
+    motivazione_annullamento = MyTextField('Motivazione annullamento', True,
+                              [wt.validators.InputRequired("Devi specificare la motivazione")])
+    T_conferma = wt.SubmitField('Conferma', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
-    def __init__(self, *pw, vincitore=False, **kw):
-        super().__init__(*pw, **kw)
-        self._vinc = vincitore
-
-    def __call__(self, d_prat):
+    def __call__(self):
         "rendering del form"
-        html = B_TRTD+Markup(f'Richiesta del {d_prat[cs.DATA_RICHIESTA]}. '\
-                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_determina_b)+BRK
-        html += render_field(self.data_determina_b)+BRK
-        html += render_field(self.nome_direttore_b)+E_TRTD
-        html += B_TRTD+Markup(f"<b>Modalità acquisto:</b> {d_prat[cs.STR_MOD_ACQ]}<br>")
-        html += Markup(f"<b>Criterio di assegnazione:</b> {d_prat[cs.STR_CRIT_ASS]}<br>")
-        html += Markup(f"<b>Codici Fondi:</b> {d_prat[cs.STR_CODF]}<br>")
-        html += Markup(f"<b>Capitolo:</b> {d_prat[cs.CAPITOLO]}<br>")
-        cup = d_prat.get(cs.CUP).strip()
-        if cup:
-            html += Markup(f"<b>CUP:</b> {cup}<br>")
-        html += Markup(f"<b>RUP:</b> {d_prat[cs.RUP]}<br>")
-        if self._vinc:
-            html += Markup(f"<b>Vincitore:</b> {d_prat[cs.VINCITORE][cs.NOME_DITTA]} "\
-                              f"- {d_prat[cs.VINCITORE][cs.SEDE_DITTA]}")+E_TRTD
-        else:
-            html += Markup('<b>Vincitore:</b> nessun vincitore')+E_TRTD
-            html += B_TRTD+render_field(self.art_2, cols=100)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        html = B_TRTD+render_field(self.motivazione_annullamento, size=30, sameline=True)+BRK+BRK
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_conferma()+E_TRTD
         return html
-
-    def validate(self, extra_validators=None):
-        "Validazione specifica per il form"
-        if not self.numero_determina_b.data:
-            self.errlist.append("Manca numero determina")
-        if not self.data_determina_b.data:
-            self.errlist.append("Manca data determina")
-        if not self.nome_direttore_b.data:
-            self.errlist.append("Manca nome direttore")
-        return len(self.errlist) == 0
 
 class TrovaPratica(FormWErrors):
     "form per ricerca pratiche"
