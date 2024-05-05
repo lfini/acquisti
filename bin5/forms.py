@@ -513,7 +513,7 @@ class RdO(FormWErrors):
     numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
     numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
-    termine = MyTextField('Data scadenza (g/m/aaaa)', True)
+    termine = MyTextField('Data scadenza presentazione offerta (g/m/aaaa)', True)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 

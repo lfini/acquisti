@@ -77,8 +77,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.15'
-__date__ = '04/05/2024'
+__version__ = '5.0.16'
+__date__ = '05/05/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -233,6 +233,9 @@ def _test_all_dich_rup(basedir) -> bool:
 def _test_all_decis_firmata(basedir) -> bool:
     return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_DECIS_FIRMATA][0])
 
+def _test_all_obblig_perf(basedir) -> bool:
+    return ft.findfiles(basedir, cs.TAB_ALLEGATI[cs.ALL_OBBLIG][0])
+
 def _test_pdf_progetto(basedir) -> bool:
     "test: esistenza documento progetto"
     if not basedir:
@@ -287,7 +290,7 @@ def check_progetto_inviabile(the_user, basedir, d_prat) -> str:      # pylint: d
 
 def check_progetto_modificabile(user, _basedir, d_prat) -> str:            # pylint: disable=W0703,R0911
     "test: progetto modificabile"
-    if CdP.GPA <= d_prat[cs.PASSO] < CdP.PIR:
+    if CdP.INI <= d_prat[cs.PASSO] < CdP.PIR:
         if _test_admin(user) or \
            _test_richiedente(user, d_prat) or \
            _test_responsabile(user, d_prat):
@@ -343,7 +346,7 @@ def check_rollback(user, _basedir) -> str:
 
 def check_rdo_modificabile(user, _basedir, d_prat) -> str:
     "test: rdo modificabile"
-    if CdP.AUD <= d_prat[cs.PASSO] < CdP.DCI:
+    if CdP.AUD <= d_prat[cs.PASSO] < CdP.RFI:
         if _test_rup(user, d_prat):
             return YES
         return NO_NON_RUP
@@ -351,7 +354,7 @@ def check_rdo_modificabile(user, _basedir, d_prat) -> str:
 
 def check_decisione_modificabile(user, _basedir, d_prat) -> str:
     "test: decisione di contrarre modificabile"
-    if CdP.ROG <= d_prat[cs.PASSO] < CdP.DCI:
+    if CdP.RFI <= d_prat[cs.PASSO] < CdP.DCI:
         if _test_rup(user, d_prat):
             return YES
         return NO_NON_RUP
@@ -373,7 +376,7 @@ def check_decisione_cancellabile(_user, basedir, _d_prat) -> str:
 
 def check_pratica_chiudibile(user, _unused, d_prat) -> str:
     "test: pratica chiudibile"
-    if CdP.DCF <= d_prat[cs.PASSO] < CdP.FIN:
+    if CdP.OGP <= d_prat[cs.PASSO] < CdP.FIN:
         if _test_admin(user):
             return YES
         return NO_NON_RUP
@@ -513,7 +516,9 @@ def menu_allegati(basedir, d_prat):
             menu.append(voce_menu)
         if voce_menu := da_allegare(basedir, d_prat, (CdP.ROG,CdP.RFI), cs.ALL_RDO):
             menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.FIN), cs.ALL_DECIS_FIRMATA):
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.DCF), cs.ALL_DECIS_FIRMATA):
+            menu.append(voce_menu)
+        if voce_menu := da_allegare(basedir, d_prat, (CdP.DCF,CdP.OGP), cs.ALL_OBBLIG):
             menu.append(voce_menu)
     menu.append(sel_menu(cs.ALL_GENERICO))
     return menu
@@ -572,11 +577,11 @@ def pratica_common(user, basedir, d_prat):
     "parte comune alle pagine relative alla pratica"
     info = check_all(user, basedir, d_prat)
     upl = fms.MyUpload(menu_allegati(basedir, d_prat))
-    atch_files = ft.flist(basedir, filetypes=cs.UPLOAD_TYPES,
-                          exclude=(cs.PROG_PDF_FILE, cs.DECIS_PDF_FILE, cs.RDO_PDF_FILE))
-    info['attach'] = [(a, _clean_name(a)) for a in atch_files if ALL_MATCH.match(a)]
+    pdf_files = ft.flist(basedir, filetypes=cs.UPLOAD_TYPES)
+    info['attach'] = [(a, _clean_name(a), a.startswith('A99')) \
+                           for a in pdf_files if ALL_MATCH.match(a)]
     info['allegati_mancanti'] = allegati_mancanti(basedir, d_prat)
-    info['stato_pratica'] = cs.PASSI[d_prat.get(cs.PASSO, 0)]
+    info['stato_pratica'] = cs.PASSI[d_prat.get(cs.PASSO, 0)][0]
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, upload=upl,
                               sede=CONFIG.config[cs.SEDE])
@@ -625,6 +630,8 @@ def allegati_mancanti(basedir, d_prat):
     if d_prat.get(cs.PASSO, 0) >= CdP.ROG and not _test_all_rdo(basedir):
         ret.append("RdO Firmata")
     if d_prat.get(cs.PASSO, CdP.INI) >= CdP.DCI and not _test_all_decis_firmata(basedir):
+        ret.append("Decis. firmata")
+    if d_prat.get(cs.PASSO, CdP.INI) >= CdP.DCF and not _test_all_obblig_perf(basedir):
         ret.append("Decis. firmata")
     return ', '.join(ret)
 
@@ -678,8 +685,9 @@ def get_tipo_allegato():
         return allx[0][:-2]
     return ""
 
-def filename_allegato(model, prefix, origname, ext, spec, d_prat):    # pylint: disable=R0913
+def filename_allegato(tipo, origname, ext, spec, d_prat):    # pylint: disable=R0913
     "Genera nomi file per allegati"
+    prefix, model = (cs.TAB_ALLEGATI[tipo][0], cs.TAB_ALLEGATI[tipo][2])
     if model == cs.ALL_SING:
         return prefix+ext
     if model == cs.ALL_SPEC:
@@ -849,6 +857,7 @@ def user_info():
 
 def set_passo(d_prat, user, nuovo_stato):
     'aggiorna passo pratica'
+    print('set_passo(d_prat,user,',nuovo_stato,')')
     d_prat[cs.PASSO] = nuovo_stato
     text = cs.PASSI[nuovo_stato][0]
     storia(d_prat, user, text)
@@ -1498,10 +1507,8 @@ def pratica1():               # pylint: disable=R0914,R0911,R0912
             if ext not in cs.UPLOAD_TYPES:
                 fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
                 return pratica_common(user, basedir, d_prat)
-            prefix, mod_allegato = (cs.TAB_ALLEGATI[tipo_allegato][0],
-                                    cs.TAB_ALLEGATI[tipo_allegato][2])
             spec = fk.request.form.get(cs.SIGLA_DITTA, "")
-            name = filename_allegato(mod_allegato, prefix, origname, ext, spec, d_prat)
+            name = filename_allegato(tipo_allegato, origname, ext, spec, d_prat)
             if not name:
                 fk.flash("Devi specificare una sigla per la ditta!", category="error")
                 return pratica_common(user, basedir, d_prat)
@@ -1529,6 +1536,9 @@ def pratica1():               # pylint: disable=R0914,R0911,R0912
             elif d_prat[cs.PASSO] == CdP.DCI:
                 if _test_all_decis_firmata(basedir):
                     set_passo(d_prat, user, CdP.DCF)
+            elif d_prat[cs.PASSO] == CdP.DCF:
+                if _test_all_obblig_perf(basedir):
+                    set_passo(d_prat, user, CdP.OGP)
             salvapratica(basedir, d_prat)
     return pratica_common(user, basedir, d_prat)
 
@@ -1668,7 +1678,7 @@ def cancelladecisione():
     return pratica1()
 
 @ACQ.route('/rollback', methods=('GET', 'POST'))
-def rollback():
+def rollback():                       #pylint: disable=R0914
     "Pagina: annulla ultimo passo"
     logging.info('URL: /rollback (%s)', fk.request.method)
     if not (ret := _check_access()):
@@ -1688,23 +1698,36 @@ def rollback():
         fk.flash(err, category="error")
         return pratica1()
     prec = passi[precid]
-    files_to_remove = [cs.PASSI[prec][1]] if cs.PASSI[prec][1] else []
-    files_to_remove.extend(cs.PASSI[prec][2])
+    logging.debug('Al passo %s rolling back to %s', passo, prec)
+    doc_to_remove = cs.PASSI[passo][1] if cs.PASSI[passo][1] else ''
+    cod_all = cs.PASSI[passo][2]
+    all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
+    logging.debug('Documento da cancellare: %s', doc_to_remove)
+    logging.debug('Allegati da cancellare: %s', str(all_to_remove))
     if 'annulla' in fk.request.form:
+        logging.info('Operazione annullata')
         fk.flash('Operazione annullata', category="info")
         return pratica1()
     if 'conferma' in fk.request.form:
-        set_passo(d_prat, user, prec)
-        for name in files_to_remove:
+        logging.info('Annullamento confermato')
+        if doc_to_remove:
+            ft.remove((basedir, doc_to_remove))
+            logging.info('Rimosso file {name}')
+        for tipo in cod_all:
+            name = filename_allegato(tipo, '', '.pdf', '', d_prat)
             ft.remove((basedir, name))
             logging.info('Rimosso file {name}')
-        salvapratica(basedir, d_prat)
         msg = "Annullato ultimo passo pratica"
+        storia(d_prat, user, msg)
+        set_passo(d_prat, user, prec)
+        salvapratica(basedir, d_prat)
         fk.flash(msg, category="info")
+        logging.info(msg)
         return pratica1()
     ddp = {'passo': cs.PASSI[passo][0],
            'prec': cs.PASSI[prec][0],
-           'remove': files_to_remove}
+           'remove_doc': doc_to_remove,
+           'remove_all': ', '.join(all_to_remove)}
     return fk.render_template('rollback.html', sede=CONFIG.config[cs.SEDE],
                               pratica=d_prat, data=ddp)
 

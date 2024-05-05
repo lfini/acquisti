@@ -12,7 +12,7 @@ __author__ = "Luca Fini"
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
-CONFIG_REQUIRED = 1              # versione file configurazione richiesta
+CONFIG_REQUIRED = 2              # versione file configurazione richiesta
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
@@ -282,6 +282,8 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "documento generico", ALL_NAME),
                 ALL_RDO: ("A16_RdO_Firmata", "RdO con firma digitale RUP", ALL_SING),
                 ALL_DECIS_FIRMATA: ("A24_Decisione_Firmata",
                                   "Decisione di contrarre con firma digitale", ALL_SING),
+                ALL_OBBLIG: ("A30_Obbligaz_Giurid_Perfezionata",
+                                  "Obbligazione giuridicamente perfezionata", ALL_SING),
 #               DOCUM_STIPULA: ("A29_Documento_di_stipula",
 #                               "Documento di stipula su MEPA", ALL_SING),
 #               CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
@@ -324,11 +326,10 @@ class CdP(IntEnum):
 #       Stato      Stato       Prodotto
 #                                         (Allegati)
 #                                                      # AZIONE
-PASSI = {CdP.INI: ("Iniziale", "", []),                # Richiedente genera progetto acquisto
-                                                       # e allega preventivo MePA
+PASSI = {CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
+                               PROG_PDF_FILE, []),     # e allega preventivo MePA
          CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
-                               PROG_PDF_FILE,
-                                          [ALL_PREV_MEPA]),
+                               "", [ALL_PREV_MEPA]),
          CdP.PIR: ("Progetto inviato al resp. dei fondi",
                                "", []),                # Resp. Fondi approva
          CdP.PAR: ("Progetto approvato dal resp. dei fondi",

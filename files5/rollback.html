@@ -19,19 +19,18 @@ Hai chiesto di annullare l'ultimo passo effettuato:
 {{ data.passo }}
 </blockquote>
 
-per tornare al precedente
+per tornare al precedente:
 
 <blockquote>
 {{ data.prec }}
 </blockquote>
 
-{% if data.files_to_remove %}
-Saranno eliminati i seguenti documenti:
-<ul>
-{% for file in data.files_to_remove %}
-<li> {{ file }}
-{% endfor %}
-</ul>
+{% if data.remove_doc %}
+Sarà eliminato il documento: {{ data.remove_doc }}
+{% endif %}
+{% if data.remove_all %}
+<br>
+Saranno eliminati gli allegati: {{ data.remove_all }}
 {% endif %}
 </tr></td><tr><td>
 <form action=/rollback method=POST>

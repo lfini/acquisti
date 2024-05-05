@@ -76,7 +76,7 @@
 <ul>
    {% for a in info.attach %}
 <li> <a href=/vedifile/{{ a[0] }}>{{ a [1]}}</a> 
-      {% if info.allegati_cancellabili %}
+      {% if a[2] %}
 &nbsp;&nbsp;[<a href=/cancella/{{ a[0] }}>Cancella</a>]
       {% endif %}
    {% endfor %}
