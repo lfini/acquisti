@@ -106,11 +106,10 @@ TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'
 WEBSITE = 'website'
 
 # nomi file generati
-DECIS_PDF_FILE = "decisione.pdf"
-DETB_PDF_FILE = "determina_b.pdf"
-NOMINARUP_PDF_FILE = "nominarup.pdf"
-PROG_PDF_FILE = "progetto.pdf"
-RDO_PDF_FILE = "rdo.pdf"
+DOC_DECISIONE = "decisione.pdf"
+DOC_NOMINARUP = "nominarup.pdf"
+DOC_PROGETTO = "progetto.pdf"
+DOC_RDO = "rdo.pdf"
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
@@ -131,6 +130,7 @@ DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
 DECIS_INVIATA = 'decis_inviata'                 # dati_pratica
+DECIS_DA_FIRMARE = 'decis_da_firmare'           # dati_pratica
 DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
@@ -284,21 +284,6 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "documento generico", ALL_NAME),
                                   "Decisione di contrarre con firma digitale", ALL_SING),
                 ALL_OBBLIG: ("A30_Obbligaz_Giurid_Perfezionata",
                                   "Obbligazione giuridicamente perfezionata", ALL_SING),
-#               DOCUM_STIPULA: ("A29_Documento_di_stipula",
-#                               "Documento di stipula su MEPA", ALL_SING),
-#               CAPITOLATO_RDO: ('A27_Capitolato_RDO', "Capitolato per RDO", ALL_SING),
-#               LETT_INVITO_A: ('A26_Lettera_Invito', "Lettera di invito", ALL_SPEC),
-#               LETT_INVITO_B: ('B06_Lettera_Invito', "Lettera di invito", ALL_SPEC),
-#               LETT_INVITO_MEPA: ('A36_Lettera_Invito_MEPA', "Lettera di invito MEPA", ALL_SING),
-#               LISTA_DETTAGLIATA_A: ('A40_Lista_dettagliata_per_ordine',
-#                                     "Lista dettagliata allegata all'ordine", ALL_SING),
-#               LISTA_DETTAGLIATA_B: ('B40_Lista_dettagliata_per_ordine',
-#                                     "Lista dettagliata allegata all'ordine", ALL_SING),
-#               LISTA_DITTE_INV: ('A08_Lista_ditte_invitate', "Lista ditte invitate", ALL_SING),
-#               OFFERTA_DITTA_A: ('A50_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
-#               OFFERTA_DITTA_B: ('B10_Offerta_ditta', "Offerta di una ditta", ALL_SPEC),
-#               ORDINE_MEPA: ('A60_Bozza_Ordine_MEPA', "Bozza ordine MEPA", ALL_SING),
-#               VERBALE_GARA: ('B50_Verbale_Gara', "Verbale di gara", ALL_SING),
                }
 
 class CdP(IntEnum):
@@ -327,7 +312,7 @@ class CdP(IntEnum):
 #                                         (Allegati)
 #                                                      # AZIONE
 PASSI = {CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
-                               PROG_PDF_FILE, []),     # e allega preventivo MePA
+                               DOC_PROGETTO, []),     # e allega preventivo MePA
          CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
                                "", [ALL_PREV_MEPA]),
          CdP.PIR: ("Progetto inviato al resp. dei fondi",
@@ -336,7 +321,7 @@ PASSI = {CdP.INI: ("Iniziale",                         # Richiedente genera prog
                               "", []),                 # Indicazione RUP e generazione
                                                        # nomina provvisoria
          CdP.RUI: ("RUP indicato",                     # RUP allega CV e Dichiarazione
-                              NOMINARUP_PDF_FILE, []),
+                              DOC_NOMINARUP, []),
          CdP.RAL: ("CV e dichiarazione RUP allegati",
                                    "", [ALL_CV_RUP, ALL_DICH_RUP]),
                                                        # RUP invia richiesta di autorizzazione
@@ -346,12 +331,12 @@ PASSI = {CdP.INI: ("Iniziale",                         # Richiedente genera prog
          CdP.AUD: ("Autorizzazione concessa e RUP nominato",
                                    "", []),            # RUP genera RdO e allega CIG
          CdP.ROG: ("RdO generata e CIG allegato",
-                                   RDO_PDF_FILE,
+                                   DOC_RDO,
                                        [ALL_CIG]),     # RUP allega RdO firmata digitalmente
          CdP.RFI: ("RdO con firma digitale allegata",
                                    "", [ALL_RDO]),     # RUP Genera decisione di contrarre
          CdP.DCG: ("Decisione di contrarre generata",
-                                   DECIS_PDF_FILE,     # RUP invia decisione al direttore per firma
+                                   DOC_DECISIONE,     # RUP invia decisione al direttore per firma
                                        []),
          CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
                                    "", []),            # RUP riceve e allega decisione firmata
@@ -431,7 +416,8 @@ Sei pregato di accedere alla procedura Acquisti
 
       {}
 
-per gli adempimenti del caso
+per allegare alla pratica CV e dichiarazione di assenza conflitto d'interesse
+e poi richiedere l'autorizzazione al direttore.
 '''
 
 
@@ -454,9 +440,7 @@ TESTO_INVIA_DECISIONE = '''
 Ti è stata inviata la decisione di contrarre relativa al progetto di acquisto
 N. {numero_pratica} sotto dettagliato.
 
-Il documento in allegato deve essere firmato elettronicamente e inviato al RUP:
-
-    {nome_rup} ({email_rup})
+Il documento: {decis_da_firmare} deve essere firmato elettronicamente.
 
 '''
 
@@ -465,7 +449,7 @@ PKG_ROOT = os.path.abspath(os.path.join(BINDIR, ".."))  # Path della root del pa
 
 AUXFILEDIR = "files5"          # nome directory per file ausiliari
 
-DATADIR = os.path.join(PKG_ROOT, "data_tmp")      # path della directory per i dati"
+DATADIR = os.path.join(PKG_ROOT, "data5")     # path della directory per i dati"
 FILEDIR = os.path.join(PKG_ROOT, AUXFILEDIR)  # path della directory dei files ausiliari"
 WORKDIR = os.path.join(PKG_ROOT, "work")      # path della directory di lavoro"
 
@@ -474,6 +458,3 @@ CONFIG_FILE = os.path.join(DATADIR, CONFIG_NAME)
 # VARIABILI MANTENUTE PER COMPATIBILITA' DURANTE MODIFICHE
 
 RDO_MEPA = 'rdo_mepa'          # modalità acquisto
-ALLEGATO_GENERICO_A = "allegato_gen_a"
-ALLEGATO_GENERICO_B = "allegato_gen_b"
-CAPITOLATO_RDO = 'capit_rdo'

@@ -399,7 +399,7 @@ class ProgettoAcquisto(FormWErrors):
         if not self.modalita_acquisto.data:
             self.errlist.append("Specificare modalit&agrave; di acquisto")
         if not self.costo_progetto.validate():
-            self.errlist.append("Costo: "+", ".join(self.costo.errlist))
+            self.errlist.append("Costo: "+", ".join(self.costo_progetto.errlist))
         return not self.errlist
 
 class Decisione(FormWErrors):
@@ -454,7 +454,8 @@ class AnnullaPratica(FormWErrors):
 class TrovaPratica(FormWErrors):
     "form per ricerca pratiche"
     trova_prat_aperta = MySelectField('Stato pratica: ', False,
-                                      choices=((-1, 'Tutte'), (1, 'Aperta'), (0, 'Chiusa')))
+                                      choices=((-1, 'Tutte'), (0, 'Aperta'),
+                                               (1, 'Chiusa'), (2, 'Annullata')))
     trova_richiedente = MyTextField('Richiedente: ', False)
     trova_responsabile = MyTextField('Responsabile: ', False)
     trova_rup = MyTextField('RUP: ', False)

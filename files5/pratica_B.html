@@ -34,7 +34,7 @@
   {% endif %}
 <p>
 {% endif %}     <!-- Fine sezione per modalità acquisto RDO su MEPA -->
-<b>Allegati:</b> {% if pratica.pratica_aperta == 1 %} 
+<b>Allegati:</b> {% if pratica.pratica_aperta %} 
       &nbsp;&nbsp;[<a href=/verificaallegati/B>Verifica allegati</a>]
    {% endif %}
 {% if info.attachB %}
@@ -79,7 +79,7 @@
    {% endif %}
 {% endif %}
 
-{% if pratica.pratica_aperta==1 %}
+{% if pratica.pratica_aperta %}
 </td><td valign=top width=40% bgcolor=#ffddaa>
 <form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
 <b>Allega documenti</b>

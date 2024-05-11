@@ -28,6 +28,10 @@ Pratica N. {{ value }}
 </form>
 {% endif %}</h4> 
 
+{% if pratica.passo == 200 %}
+<b><u>Pratica annullata</u>:</b> {{ pratica.motivazione_annullamento }}
+<p>
+{% endif %}
 <table cellspacing=3>
 <tr><td><b>Progetto del:</b></td><td> {{ pratica.data_richiesta }} </td></tr>
 <tr><td><b>Richiedente:</b></td><td> {{ pratica.nome_richiedente }} </td></tr>
@@ -57,6 +61,9 @@ Pratica N. {{ value }}
 [<a href=/>Torna</a>] &nbsp;&nbsp;&nbsp;
 {% if info.pratica_chiudibile %}
 [<a href=/chiudipratica>Chiudi pratica</a>] &nbsp;&nbsp;&nbsp;
+{% endif %}
+{% if info.pratica_riapribile %}
+[<a href=/apripratica>Riapri pratica</a>] &nbsp;&nbsp;&nbsp;
 {% endif %}
 {% if info.pratica_annullabile %}
 [<a href=/annullapratica>Annulla pratica</a>] &nbsp;&nbsp;&nbsp;
