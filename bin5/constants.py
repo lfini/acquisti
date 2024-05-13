@@ -312,7 +312,7 @@ class CdP(IntEnum):
 #                                         (Allegati)
 #                                                      # AZIONE
 PASSI = {CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
-                               DOC_PROGETTO, []),     # e allega preventivo MePA
+                               DOC_PROGETTO, []),      # e allega preventivo MePA
          CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
                                "", [ALL_PREV_MEPA]),
          CdP.PIR: ("Progetto inviato al resp. dei fondi",
@@ -440,7 +440,7 @@ TESTO_INVIA_DECISIONE = '''
 Ti è stata inviata la decisione di contrarre relativa al progetto di acquisto
 N. {numero_pratica} sotto dettagliato.
 
-Il documento: {decis_da_firmare} deve essere firmato elettronicamente.
+Il documento: {decis_da_firmare} deve essere inviato al direttore per la firma digitale.
 
 '''
 

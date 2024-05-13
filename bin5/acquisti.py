@@ -77,8 +77,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.17'
-__date__ = '10/05/2024'
+__version__ = '5.0.18'
+__date__ = '13/05/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -310,14 +310,6 @@ def check_progetto_approvabile(user, _basedir, d_prat) -> str:
         return NO_RESP
     return NO_PASSO_ERRATO
 
-def check_rup_cancellabile(the_user, _unused, d_prat) -> str:
-    "test: è possibile nominare il RUP"
-    if not test_admin(the_user):
-        return NO_NON_ADMIN
-    if not d_prat.get(cs.NOME_RUP):
-        return NO_RUP_NON_NOMINATO
-    return NO_TBD
-
 def check_rup_indicabile(user, d_prat) -> str:
     "test: è possibile nominare il RUP"
     if CdP.PAR <= d_prat[cs.PASSO] < CdP.RAL:
@@ -425,7 +417,6 @@ def make_info(the_user, basedir, d_prat) -> dict:
     info['rich_rup_autorizzabile'] = check_rich_rup_autorizzabile(the_user, basedir, d_prat)
     info['rollback'] = check_rollback(the_user, basedir)
     info['rup_indicabile'] = check_rup_indicabile(the_user, d_prat)
-    info['rup_cancellabile'] = check_rup_cancellabile(the_user, basedir, d_prat)
     info['rdo_modificabile'] = check_rdo_modificabile(the_user, basedir, d_prat)
     info[cs.PDF_PROGETTO] = YES if test_doc_progetto(basedir) else NOT
     info[cs.PDF_NOMINARUP] = YES if test_doc_nominarup(basedir) else NOT
@@ -611,8 +602,10 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
                             err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
             d_prat[cs.PRATICA_APERTA] = False
+            set_passo(d_prat, basedir, user, CdP.FIN)
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} chiusa'
             storia(d_prat, user, text)
+            salvapratica(basedir, d_prat)
         return pratica1()
     if what[0].lower() == 'a':      # Riapri pratica
         err = check_pratica_riapribile(user, basedir, d_prat)
@@ -625,8 +618,9 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
             set_passo(d_prat, basedir, user, CdP.OGP)
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} riaperta'
             storia(d_prat, user, text)
+            salvapratica(basedir, d_prat)
         return pratica1()
-    msg = f'Errore interno - modifica_pratica codice illegale: {what}'
+    msg = f'Errore interno - modifica_pratica: codice illegale ({what})'
     fk.flash(msg, category="error")
     logging.error(msg)
     return fk.redirect(fk.url_for('start'))
@@ -641,7 +635,6 @@ def _mydel(key, d_prat):
 def allegati_mancanti(basedir, d_prat):
     "Genera lista allegati mancanti"
     ret = []
-    print('>>> allegati_mancanti')
     if not test_all_prev_mepa(basedir, d_prat):
         ret.append("prev. MePA")
     if d_prat.get(cs.PASSO, CdP.INI) >= CdP.RUI and not test_all_cv_rup(basedir):
@@ -878,15 +871,21 @@ def user_info():
         return ft.get_user(userid)
     return {}
 
-def set_passo(d_prat, basedir, user, nuovo_stato):
+def set_passo(d_prat, basedir, user, nuovo_stato):     #pylint: disable=R0912,R0915
     'aggiorna passo pratica'
     d_prat[cs.PASSO] = nuovo_stato
     text = cs.PASSI[nuovo_stato][0]
-    if nuovo_stato == CdP.GPA:
+    if nuovo_stato == CdP.INI:
+        ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_PREV_MEPA][0]), show_error=False)
+    elif nuovo_stato == CdP.GPA:
         prog_name = os.path.splitext(cs.DOC_PROGETTO)[0]
         ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
                    sede=CONFIG.config[cs.SEDE], warning='da approvare da resp.fondi')
         logging.info('Generato progetto: %s/%s', basedir, cs.DOC_PROGETTO)
+    elif nuovo_stato == CdP.PIR:
+        prog_name = os.path.splitext(cs.DOC_PROGETTO)[0]
+        ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
+                   sede=CONFIG.config[cs.SEDE], warning='da approvare da resp.fondi')
     elif nuovo_stato == CdP.PAR:
         prog_name = os.path.splitext(cs.DOC_PROGETTO)[0]
         ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
@@ -894,10 +893,26 @@ def set_passo(d_prat, basedir, user, nuovo_stato):
                    warning='in attesa autorizz. direttore')
         d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.DOC_PROGETTO))
     elif nuovo_stato == CdP.RUI:
+        ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_CV_RUP][0]), show_error=False)
+        ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_DICH_RUP][0]), show_error=False)
         nominarup_name = os.path.splitext(cs.DOC_NOMINARUP)[0]
         ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
                    sede=CONFIG.config[cs.SEDE], warning='in attesa firma direttore')
+    elif nuovo_stato == CdP.RAL:
+        nominarup_name = os.path.splitext(cs.DOC_NOMINARUP)[0]
+        ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
+                   sede=CONFIG.config[cs.SEDE], warning='in attesa firma direttore')
+    elif nuovo_stato == CdP.IRD:
+        nominarup_name = os.path.splitext(cs.DOC_NOMINARUP)[0]
+        ft.makepdf(basedir, nominarup_name, nominarup_name, debug=DEBUG.local, pratica=d_prat,
+                   sede=CONFIG.config[cs.SEDE], warning='in attesa firma direttore')
+        prog_name = os.path.splitext(cs.DOC_PROGETTO)[0]
+        ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
+                   sede=CONFIG.config[cs.SEDE], il_responsabile=True,
+                   warning='in attesa autorizz. direttore')
+        d_prat[cs.FIRMA_APPROV_RESP] = ft.signature((basedir, cs.DOC_PROGETTO))
     elif nuovo_stato == CdP.AUD:
+        ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_CIG][0]), show_error=False)
         prog_name = os.path.splitext(cs.DOC_PROGETTO)[0]
         firma_dir = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+CONFIG.config[cs.NOME_DIRETTORE]
         ft.makepdf(basedir, prog_name, prog_name, debug=DEBUG.local, pratica=d_prat,
@@ -909,7 +924,16 @@ def set_passo(d_prat, basedir, user, nuovo_stato):
                    il_direttore=firma_dir, sede=CONFIG.config[cs.SEDE])
         d_prat[cs.PDF_NOMINARUP] = cs.DOC_NOMINARUP
         d_prat[cs.FIRMA_AUTORIZZ_DIR] = ft.signature((basedir, cs.DOC_NOMINARUP))
+    elif nuovo_stato == CdP.ROG:
+        ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_RDO][0]), show_error=False)
+        rdo_template = os.path.splitext(cs.DOC_RDO)[0]
+        rdo_name = os.path.splitext(cs.DOC_RDO)[0]
+        ft.makepdf(basedir, rdo_template, rdo_name, sede=CONFIG.config[cs.SEDE],
+                   debug=DEBUG.local, pratica=d_prat, user=user)
+    elif nuovo_stato == CdP.RFI:
+        pass
     elif nuovo_stato == CdP.DCG:
+        ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_DECIS_FIRMATA][0]), show_error=False)
         decis_template = ft.modello_decisione(d_prat[cs.MOD_ACQUISTO])
         decis_name = os.path.splitext(cs.DOC_DECISIONE)[0]
         logging.info('Genera decisione provvisoria: %s/%s', basedir, cs.DOC_DECISIONE)
@@ -917,6 +941,10 @@ def set_passo(d_prat, basedir, user, nuovo_stato):
                    debug=DEBUG.local, pratica=d_prat, user=user,
                    warning='P R O V V I S O R I O')
         d_prat[cs.PDF_DECISIONE] = cs.DOC_DECISIONE
+    elif nuovo_stato == CdP.OGP:
+        pass
+    elif nuovo_stato == CdP.FIN:
+        pass
     storia(d_prat, user, text)
 
 @ACQ.route("/")
@@ -1126,13 +1154,13 @@ def inviadecisione():                    #pylint: disable=R0914
         d_prat[cs.DECIS_DA_FIRMARE] = decis_name+'.pdf'
         testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
                 cs.DETTAGLIO_PRATICA.format(**d_prat)
-        subj = 'Decisione di contrarre da firmare'
-        recipient = CONFIG.config[cs.EMAIL_DIREZIONE]
-        ret = send_email(recipient, testo, subj)
+        subj = 'Decisione di contrarre da inviare al direttore per firma'
+        recipient = d_prat[cs.EMAIL_RUP]
+        decis_pdf = decis_name+'.pdf'
+        attach = (os.path.join(basedir, decis_pdf), decis_pdf)
+        ret = send_email(recipient, testo, subj, attach=attach)
         if ret:
-            fk.flash("Richiesta di approvazione per  la pratica "
-                     f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
-                     f"{recipient}", category="info")
+            fk.flash(f"Decisione da firmare digitalmente inviata a: {recipient}", category="info")
             d_prat[cs.DECIS_INVIATA] = 1
             set_passo(d_prat, basedir, user, CdP.DCI)
             salvapratica(basedir, d_prat)
@@ -1253,30 +1281,6 @@ def rich_autorizzazione():
     fk.flash(err, category="error")
     logging.error(err)
     return pratica1()
-
-@ACQ.route('/rimuovirup', methods=('GET', ))
-def rimuovirup():
-    "pagina: rimuovi RUP"
-    logging.info('URL: /rimuovirup (%s)', fk.request.method)
-    raise RuntimeError("ritorno indietro da definire")
-#   if not (ret := _check_access()):
-#       return fk.redirect(fk.url_for('start'))
-#   user, basedir, d_prat = ret
-#   err = check_rup_cancellabile(user, basedir, d_prat)
-#   if err.startswith(NOT):
-#       fk.flash(err, category="error")
-#       logging.error('Cancellazione RUP non autorizzata: %s. Utente %s pratica %s',
-#                     err, user['userid'], d_prat[cs.NUMERO_PRATICA])
-#       return pratica1()
-#   msg = f"RUP: {d_prat[cs.NOME_RUP]} cancellato"
-#   logging.info(msg)
-#   _mydel(cs.EMAIL_RUP, d_prat)
-#   _mydel(cs.NOME_RUP, d_prat)
-#   d_prat[cs.PASSO] = 20
-#   ft.remove((basedir, cs.DOC_NOMINARUP), show_error=False)
-#   salvapratica(basedir, d_prat)
-#   fk.flash(msg, category="info")
-#   return pratica1()
 
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
 def cancella(name):
