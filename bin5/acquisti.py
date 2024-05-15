@@ -294,7 +294,7 @@ def check_progetto_inviabile(the_user, basedir, d_prat) -> str:      # pylint: d
 
 def check_progetto_modificabile(user, _basedir, d_prat) -> str:            # pylint: disable=W0703,R0911
     "test: progetto modificabile"
-    if CdP.INI <= d_prat[cs.PASSO] < CdP.PIR:
+    if CdP.INI <= d_prat.get(cs.PASSO, 0) < CdP.PIR:
         if test_admin(user) or \
            test_richiedente(user, d_prat) or \
            test_responsabile(user, d_prat):
@@ -304,7 +304,7 @@ def check_progetto_modificabile(user, _basedir, d_prat) -> str:            # pyl
 
 def check_progetto_approvabile(user, _basedir, d_prat) -> str:
     "test: progetto approvabile"
-    if CdP.PIR <= d_prat[cs.PASSO] < CdP.PAR:
+    if CdP.PIR <= d_prat.get(cs.PASSO, 0) < CdP.PAR:
         if test_responsabile(user, d_prat):
             return YES
         return NO_RESP
@@ -312,7 +312,7 @@ def check_progetto_approvabile(user, _basedir, d_prat) -> str:
 
 def check_rup_indicabile(user, d_prat) -> str:
     "test: è possibile nominare il RUP"
-    if CdP.PAR <= d_prat[cs.PASSO] < CdP.RAL:
+    if CdP.PAR <= d_prat.get(cs.PASSO, 0) < CdP.RAL:
         if test_admin(user):
             return YES
         return NO_NON_ADMIN
@@ -320,7 +320,7 @@ def check_rup_indicabile(user, d_prat) -> str:
 
 def check_autorizz_richiedibile(user, _basedir, d_prat) -> str:     #pylint: disable=R0911
     "test: il RUP può chiedere l'autorizzazione del direttore?"
-    if CdP.RAL <= d_prat[cs.PASSO] < CdP.IRD:
+    if CdP.RAL <= d_prat.get(cs.PASSO, 0) < CdP.IRD:
         if test_admin(user):
             return YES
         return NO_NON_ADMIN
@@ -328,7 +328,7 @@ def check_autorizz_richiedibile(user, _basedir, d_prat) -> str:     #pylint: dis
 
 def check_rich_rup_autorizzabile(user, _basedir, d_prat) -> str:
     "test: il direttore può autorizzare la richiesta del RUP?"
-    if CdP.IRD <= d_prat[cs.PASSO] < CdP.AUD:
+    if CdP.IRD <= d_prat.get(cs.PASSO, 0) < CdP.AUD:
         if test_direttore(user):
             return YES
         return NO_NON_DIR
@@ -342,7 +342,7 @@ def check_rollback(user, _basedir) -> str:
 
 def check_rdo_modificabile(user, _basedir, d_prat) -> str:
     "test: rdo modificabile"
-    if CdP.AUD <= d_prat[cs.PASSO] < CdP.RFI:
+    if CdP.AUD <= d_prat.get(cs.PASSO, 0) < CdP.RFI:
         if test_rup(user, d_prat):
             return YES
         return NO_NON_RUP
@@ -350,7 +350,7 @@ def check_rdo_modificabile(user, _basedir, d_prat) -> str:
 
 def check_decisione_modificabile(user, _basedir, d_prat) -> str:
     "test: decisione di contrarre modificabile"
-    if CdP.RFI <= d_prat[cs.PASSO] < CdP.DCI:
+    if CdP.RFI <= d_prat.get(cs.PASSO, 0) < CdP.DCI:
         if test_rup(user, d_prat):
             return YES
         return NO_NON_RUP
@@ -358,7 +358,7 @@ def check_decisione_modificabile(user, _basedir, d_prat) -> str:
 
 def check_decisione_inviabile(user, _basedir, d_prat) -> str:
     "test: decisione di contrarre inviabile"
-    if CdP.DCG <= d_prat[cs.PASSO] < CdP.DCI:
+    if CdP.DCG <= d_prat.get(cs.PASSO, 0) < CdP.DCI:
         if test_rup(user, d_prat):
             return YES
         return NO_NON_RUP
@@ -372,7 +372,7 @@ def check_decisione_cancellabile(_user, basedir, _d_prat) -> str:
 
 def check_pratica_riapribile(user, _unused, d_prat) -> str:
     "test: pratica chiudibile"
-    if d_prat[cs.PASSO] == CdP.FIN:
+    if d_prat.get(cs.PASSO, 0) == CdP.FIN:
         if test_admin(user):
             return YES
         return NO_NON_ADMIN
@@ -380,7 +380,7 @@ def check_pratica_riapribile(user, _unused, d_prat) -> str:
 
 def check_pratica_chiudibile(user, _unused, d_prat) -> str:
     "test: pratica chiudibile"
-    if CdP.OGP <= d_prat[cs.PASSO] < CdP.FIN:
+    if CdP.OGP <= d_prat.get(cs.PASSO, 0) < CdP.FIN:
         if test_rup(user, d_prat):
             return YES
         return NO_NON_RUP
@@ -499,7 +499,7 @@ def salvapratica(basedir, d_prat):
 
 def da_allegare(basedir, d_prat, s_range, tipo):
     'verifica se la voce di menù allegati deve essere aggiunta'
-    if s_range[0] <= d_prat[cs.PASSO] < s_range[1] and \
+    if s_range[0] <= d_prat.get(cs.PASSO, 0) < s_range[1] and \
         not ft.findfiles(basedir, cs.TAB_ALLEGATI[tipo][0]):
         return sel_menu(tipo)
     return None
