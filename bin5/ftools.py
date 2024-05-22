@@ -403,7 +403,7 @@ def send_email(mailhost, sender, recipients, subj, body, attach=None, debug_addr
     try:
         sm.send(mailhost, None, sender, dest, subjd, message, attach)
     except Exception as excp:
-        errmsg = f"Mail to: {', '.join(recipients)} - "+str(excp)
+        errmsg = f"Mail to: {recipients} - "+str(excp)
         logging.error(errmsg)
         return ''
     return dest

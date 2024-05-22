@@ -77,12 +77,14 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.18'
-__date__ = '13/05/2024'
+__version__ = '5.0.19'
+__date__ = '22/05/2024'
 
 __start__ = time.asctime(time.localtime())
 
-MODALITA_IMPLEMENTATE = [cs.TRATT_MEPA_40]     # Lista modalità acquisto implementate
+MODALITA_IMPLEMENTATE = [cs.TRATT_MEPA_40,     # Lista modalità acquisto implementate
+                         cs.INFER_5000,
+                        ]
 
 # stringhe per check_xxxxx
 YES = 'SI'
@@ -475,6 +477,11 @@ def _check_access(user_only=False):
     else:
         err_msg = _errore_basedir(user)
     if not err_msg or user_only:
+        if d_prat:
+            if cs.MOD_ACQUISTO in d_prat:
+                d_prat[cs.T_P] = cs.TAB_PASSI[d_prat[cs.MOD_ACQUISTO]]
+            else:
+                d_prat[cs.T_P] = None
         return (user, basedir, d_prat)
     fk.flash(err_msg, category="error")
     logging.error(err_msg)
@@ -494,7 +501,12 @@ def sel_menu(tipo_allegato):
 
 def salvapratica(basedir, d_prat):
     'Salva pratica, rimuovendo campi provvisori'
-    tb.jsave((basedir, cs.PRAT_JFILE), d_prat)
+    to_save = d_prat.copy()
+    try:
+        del to_save[cs.T_P]
+    except KeyError:
+        pass
+    tb.jsave((basedir, cs.PRAT_JFILE), to_save)
     logging.info('Salvati dati pratica: %s/%s', basedir, cs.PRAT_JFILE)
 
 def da_allegare(basedir, d_prat, s_range, tipo):
@@ -504,25 +516,50 @@ def da_allegare(basedir, d_prat, s_range, tipo):
         return sel_menu(tipo)
     return None
 
+def allegati_tm40k(basedir, d_prat):
+    "Genera lista allegati specifici per modalità acquisto su mepa < 40k€"
+    menu = []
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.GPA,CdP.PAR), cs.ALL_PREV_MEPA):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_CV_RUP):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_DICH_RUP):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.AUD,CdP.DCI), cs.ALL_CIG):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.ROG,CdP.RFI), cs.ALL_RDO):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.DCF), cs.ALL_DECIS_FIRMATA):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.DCF,CdP.OGP), cs.ALL_OBBLIG):
+        menu.append(voce_menu)
+    return menu
+
+def allegati_inf5k(basedir, d_prat):
+    "Genera lista allegati specifici per modalità acquisto diretto inferiore 5000 €"
+    menu = []
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_CV_RUP):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_DICH_RUP):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.AUD,CdP.DCI), cs.ALL_CIG):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.ROG,CdP.RFI), cs.ALL_RDO):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.DCF), cs.ALL_DECIS_FIRMATA):
+        menu.append(voce_menu)
+    if voce_menu := da_allegare(basedir, d_prat, (CdP.DCF,CdP.OGP), cs.ALL_OBBLIG):
+        menu.append(voce_menu)
+    return menu
+
 def menu_allegati(basedir, d_prat):
     "Genera lista allegati in funzione del tipo di acquisto e del passo"
     mod_acquisto = d_prat[cs.MOD_ACQUISTO]
-    menu = []
     if mod_acquisto == cs.TRATT_MEPA_40:
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.GPA,CdP.PAR), cs.ALL_PREV_MEPA):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_CV_RUP):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.RUI,CdP.DCI), cs.ALL_DICH_RUP):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.AUD,CdP.DCI), cs.ALL_CIG):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.ROG,CdP.RFI), cs.ALL_RDO):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.DCI,CdP.DCF), cs.ALL_DECIS_FIRMATA):
-            menu.append(voce_menu)
-        if voce_menu := da_allegare(basedir, d_prat, (CdP.DCF,CdP.OGP), cs.ALL_OBBLIG):
-            menu.append(voce_menu)
+        menu = allegati_tm40k(basedir, d_prat)
+    elif mod_acquisto == cs.INFER_5000:
+        menu = allegati_inf5k(basedir, d_prat)
+
     menu.append(sel_menu(cs.ALL_GENERICO))
     return menu
 
@@ -584,7 +621,7 @@ def pratica_common(user, basedir, d_prat):
     info['attach'] = [(a, _clean_name(a), a.startswith('A99')) \
                            for a in pdf_files if ALL_MATCH.match(a)]
     info['allegati_mancanti'] = allegati_mancanti(basedir, d_prat)
-    info['stato_pratica'] = cs.PASSI[d_prat.get(cs.PASSO, 0)][0]
+    info['stato_pratica'] = d_prat[cs.T_P][d_prat.get(cs.PASSO, 0)][0]
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, upload=upl,
                               sede=CONFIG.config[cs.SEDE])
@@ -874,7 +911,7 @@ def user_info():
 def set_passo(d_prat, basedir, user, nuovo_stato):     #pylint: disable=R0912,R0915
     'aggiorna passo pratica'
     d_prat[cs.PASSO] = nuovo_stato
-    text = cs.PASSI[nuovo_stato][0]
+    text = d_prat[cs.T_P][nuovo_stato][0]
     if nuovo_stato == CdP.INI:
         ft.remove((basedir, cs.TAB_ALLEGATI[cs.ALL_PREV_MEPA][0]), show_error=False)
     elif nuovo_stato == CdP.GPA:
@@ -1065,6 +1102,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         if mod_acquisto not in MODALITA_IMPLEMENTATE:
             fk.flash('Modalità di acquisto non ancora implementata', category="error")
             return fk.redirect(fk.url_for('start'))
+        d_prat[cs.T_P] = cs.TAB_PASSI[mod_acquisto]
         if prog.validate():
             if cs.STORIA_PRATICA not in d_prat:
                 d_prat[cs.STORIA_PRATICA] = []
@@ -1117,9 +1155,6 @@ def inviaprogetto():
         subj = 'Richiesta di approvazione progetto di acquisto.'
         ret = send_email(d_prat[cs.EMAIL_RESPONSABILE], testo, subj)
         if ret:
-            if d_prat[cs.MOD_ACQUISTO] in (cs.MEPA, cs.CONSIP):
-                fk.flash("Ricorda di trasmettere la bozza d'ordine MEPA al "
-                         "\"Punto Ordinante\"", category="info")
             fk.flash("Richiesta di approvazione per  la pratica "
                      f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                      f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
@@ -1697,7 +1732,7 @@ def rollback():                       #pylint: disable=R0914
                       err, user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica1()
     passo = d_prat[cs.PASSO]
-    passi = list(cs.PASSI.keys())
+    passi = list(d_prat[cs.T_P].keys())
     precid = passi.index(passo)-1
     if precid < 0:
         err = 'Annullamento passo impossibile'
@@ -1705,8 +1740,8 @@ def rollback():                       #pylint: disable=R0914
         return pratica1()
     prec = passi[precid]
     logging.debug('Al passo %s rolling back to %s', passo, prec)
-    doc_to_remove = cs.PASSI[passo][1] if cs.PASSI[passo][1] else ''
-    cod_all = cs.PASSI[passo][2]
+    doc_to_remove = d_prat[cs.T_P][passo][1] if d_prat[cs.T_P][passo][1] else ''
+    cod_all = d_prat[cs.T_P][passo][2]
     all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
     logging.debug('Documento da cancellare: %s', doc_to_remove)
     logging.debug('Allegati da cancellare: %s', str(all_to_remove))
@@ -1730,8 +1765,8 @@ def rollback():                       #pylint: disable=R0914
         fk.flash(msg, category="info")
         logging.info(msg)
         return pratica1()
-    ddp = {'passo': cs.PASSI[passo][0],
-           'prec': cs.PASSI[prec][0],
+    ddp = {'passo': d_prat[cs.T_P][passo][0],
+           'prec': d_prat[cs.T_P][prec][0],
            'remove_doc': doc_to_remove,
            'remove_all': ', '.join(all_to_remove)}
     return fk.render_template('rollback.html', sede=CONFIG.config[cs.SEDE],

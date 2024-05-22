@@ -155,7 +155,6 @@ LINGUA_ORDINE = 'lingua_ordine'                 # dati_pratica
 LISTA_CODF = 'lista_codf'                       # dati_pratica
 LISTA_DITTE = 'lista_ditte'                     # dati_pratica
 MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
-MOD_ACQUISTO_B = 'modalita_acquisto_b'          # dati_pratica
 MODO_TRASP = 'modo_trasp'
 MOTIVAZIONE_ACQUISTO = 'motivazione_acquisto'   # dati_pratica
 MOTIVAZIONE_ANNULLAMENTO = 'motivazione_annullamento'   # dati_pratica
@@ -306,48 +305,93 @@ class CdP(IntEnum):
     ANN = 200
 
 
-################################# Tabella passi operativi #########################################
+############### Tabella passi operativi  per trattativa MePA inf.40 k€ ############################
 #       Codice     Descrizione
 #       Stato      Stato       Prodotto
 #                                         (Allegati)
 #                                                      # AZIONE
-PASSI = {CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
-                               DOC_PROGETTO, []),      # e allega preventivo MePA
-         CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
-                               "", [ALL_PREV_MEPA]),
-         CdP.PIR: ("Progetto inviato al resp. dei fondi",
-                               "", []),                # Resp. Fondi approva
-         CdP.PAR: ("Progetto approvato dal resp. dei fondi",
-                              "", []),                 # Indicazione RUP e generazione
-                                                       # nomina provvisoria
-         CdP.RUI: ("RUP indicato",                     # RUP allega CV e Dichiarazione
-                              DOC_NOMINARUP, []),
-         CdP.RAL: ("CV e dichiarazione RUP allegati",
-                                   "", [ALL_CV_RUP, ALL_DICH_RUP]),
-                                                       # RUP invia richiesta di autorizzazione
-                                                       #   e nomina al direttore
-         CdP.IRD: ("Inviata richiesta di autorizzazione e nomina RUP al Direttore",
-                                   "", []),            # Direttore autorizza.
-         CdP.AUD: ("Autorizzazione concessa e RUP nominato",
-                                   "", []),            # RUP genera RdO e allega CIG
-         CdP.ROG: ("RdO generata e CIG allegato",
-                                   DOC_RDO,
-                                       [ALL_CIG]),     # RUP allega RdO firmata digitalmente
-         CdP.RFI: ("RdO con firma digitale allegata",
-                                   "", [ALL_RDO]),     # RUP Genera decisione di contrarre
-         CdP.DCG: ("Decisione di contrarre generata",
-                                   DOC_DECISIONE,     # RUP invia decisione al direttore per firma
-                                       []),
-         CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
-                                   "", []),            # RUP riceve e allega decisione firmata
-         CdP.DCF: ("Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
-                                   "", [ALL_DECIS_FIRMATA]),
-                                                       # RUP allega Obbligaz. Giur. Perfez.
-         CdP.OGP: ("Obbligazione giuridicamente perfezionata, allegata",
-                                   "", [ALL_OBBLIG]),  # RUP chiude la pratica
-         CdP.FIN: ("Pratica conclusa", "", []),
-         CdP.ANN: ("Pratica annullata", "", []),
-        }
+PASSI_TM40K = {
+    CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
+                          DOC_PROGETTO, []),      # e allega preventivo MePA
+    CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
+                          "", [ALL_PREV_MEPA]),
+    CdP.PIR: ("Progetto inviato al resp. dei fondi",
+                          "", []),                # Resp. Fondi approva
+    CdP.PAR: ("Progetto approvato dal resp. dei fondi",
+                         "", []),                 # Indicazione RUP e generazione
+                                                  # nomina provvisoria
+    CdP.RUI: ("RUP indicato",                     # RUP allega CV e Dichiarazione
+                         DOC_NOMINARUP, []),
+    CdP.RAL: ("CV e dichiarazione RUP allegati",
+                              "", [ALL_CV_RUP, ALL_DICH_RUP]),
+                                                  # RUP invia richiesta di autorizzazione
+                                                  #   e nomina al direttore
+    CdP.IRD: ("Inviata richiesta di autorizzazione e nomina RUP al Direttore",
+                              "", []),            # Direttore autorizza.
+    CdP.AUD: ("Autorizzazione concessa e RUP nominato",
+                              "", []),            # RUP genera RdO e allega CIG
+    CdP.ROG: ("RdO generata e CIG allegato",
+                              DOC_RDO,
+                                  [ALL_CIG]),     # RUP allega RdO firmata digitalmente
+    CdP.RFI: ("RdO con firma digitale allegata",
+                              "", [ALL_RDO]),     # RUP Genera decisione di contrarre
+    CdP.DCG: ("Decisione di contrarre generata",
+                              DOC_DECISIONE,     # RUP invia decisione al direttore per firma
+                                  []),
+    CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
+                              "", []),            # RUP riceve e allega decisione firmata
+    CdP.DCF: ("Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
+                              "", [ALL_DECIS_FIRMATA]),
+                                                  # RUP allega Obbligaz. Giur. Perfez.
+    CdP.OGP: ("Obbligazione giuridicamente perfezionata, allegata",
+                              "", [ALL_OBBLIG]),  # RUP chiude la pratica
+    CdP.FIN: ("Pratica conclusa", "", []),
+    CdP.ANN: ("Pratica annullata", "", []),
+    }
+
+############### Tabella passi operativi  per trattativa MePA inf.40 k€ ############################
+#       Codice     Descrizione
+#       Stato      Stato       Prodotto
+#                                         (Allegati)
+#                                                      # AZIONE
+PASSI_INF5K = {
+    CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
+                          DOC_PROGETTO, []),      # e allega preventivo MePA
+    CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
+                          "", []),
+    CdP.PIR: ("Progetto inviato al resp. dei fondi",
+                          "", []),                # Resp. Fondi approva
+    CdP.PAR: ("Progetto approvato dal resp. dei fondi",
+                         "", []),                 # Indicazione RUP e generazione
+                                                  # nomina provvisoria
+    CdP.RUI: ("RUP indicato",                     # RUP allega CV e Dichiarazione
+                         DOC_NOMINARUP, []),
+    CdP.RAL: ("CV e dichiarazione RUP allegati",
+                              "", [ALL_CV_RUP, ALL_DICH_RUP]),
+                                                  # RUP invia richiesta di autorizzazione
+                                                  #   e nomina al direttore
+    CdP.IRD: ("Inviata richiesta di autorizzazione e nomina RUP al Direttore",
+                              "", []),            # Direttore autorizza.
+    CdP.AUD: ("Autorizzazione concessa e RUP nominato",
+                              "", []),            # RUP genera RdO e allega CIG
+    CdP.DCG: ("Decisione di contrarre generata",
+                              DOC_DECISIONE,     # RUP invia decisione al direttore per firma
+                                  []),
+    CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
+                              "", []),            # RUP riceve e allega decisione firmata
+    CdP.DCF: ("Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
+                              "", [ALL_DECIS_FIRMATA]),
+                                                  # RUP allega Obbligaz. Giur. Perfez.
+    CdP.OGP: ("Obbligazione giuridicamente perfezionata, allegata",
+                              "", [ALL_OBBLIG]),  # RUP chiude la pratica
+    CdP.FIN: ("Pratica conclusa", "", []),
+    CdP.ANN: ("Pratica annullata", "", []),
+   }
+
+TAB_PASSI = { TRATT_MEPA_40: PASSI_TM40K,
+              INFER_5000: PASSI_INF5K }
+
+T_P = 'tab_passi'
 
 ################################################### Varie stringhe
 ACCESSO_NON_PREVISTO = "Sequenza di accesso non prevista. URL: "

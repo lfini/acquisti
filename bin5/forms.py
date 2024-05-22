@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.3"
-__date__ = "03/05/2024"
+__version__ = "2.4"
+__date__ = "22/05/2024"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -29,7 +29,8 @@ def radio_widget(field, **kwargs):
     kwargs.setdefault('type', 'radio')
     field_id = kwargs.pop('id', field.id)
     html = []
-    for value, label, checked, _ in field.iter_choices():
+    for item in field.iter_choices():
+        value, label, checked = item[:3]
         choice_id = f'{field_id}-{value}'
         options = dict(kwargs, name=field.name, value=value, id=choice_id)
         if checked:
