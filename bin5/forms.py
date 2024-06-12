@@ -205,7 +205,7 @@ class ImportoPiuIva(wt.Form):
 
     def __call__(self, show_ck=True, **_unused):
         "Rendering del form"
-        _debug(f'Rendering di ImportoPiuIva(show_ck:{show_ck})')
+#       _debug(f'Rendering di ImportoPiuIva(show_ck:{show_ck})')
         ckstr = self.inbase() if show_ck else ''
         ret = Markup('<td>')+ckstr+self.descrizione()+Markup('</td><td align=right>')+ \
               self.importo()+Markup('&nbsp;</td><td align=right>')+self.iva()+Markup('&nbsp;</td>')
@@ -344,6 +344,8 @@ class ProgettoAcquisto(FormWErrors):
     "Form per progetto di acquisto"
     data_richiesta = MyTextField('Data richiesta (g/m/aaaa)', True)
     descrizione_acquisto = MyTextField('Descrizione', True)
+    descrizione_ordine = MyTextAreaField('Descrizione per ordine '\
+                                         '(Solo se diversa dalla precedente)', False)
     motivazione_acquisto = MyTextAreaField('Motivazione acquisto', True)
     lista_codf = MySelectMultipleField('Codice Fondo', True,
                                        [wt.validators.InputRequired("Manca codice Fu.Ob.")])
@@ -371,6 +373,8 @@ class ProgettoAcquisto(FormWErrors):
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None and self.modalita_acquisto.data != 'None':
             html += B_TRTD+render_field(self.descrizione_acquisto, size=50)+E_TRTD
+            if self.modalita_acquisto.data == cs.INFER_5000:
+                html += B_TRTD+render_field(self.descrizione_ordine, rows=5, cols=80)+E_TRTD
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
             pop =popup(fk.url_for('vedicodf'),
                        'Vedi lista Codici fondi e responsabili', size=(1100, 900))
@@ -398,7 +402,7 @@ class ProgettoAcquisto(FormWErrors):
         if not self.email_responsabile.data:
             self.errlist.append("Manca responsabile acquisto")
         if not self.modalita_acquisto.data:
-            self.errlist.append("Specificare modalit&agrave; di acquisto")
+            self.errlist.append("Specificare modalità di acquisto")
         if not self.costo_progetto.validate():
             self.errlist.append("Costo: "+", ".join(self.costo_progetto.errlist))
         return not self.errlist
@@ -438,6 +442,47 @@ class Decisione(FormWErrors):
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
         return not self.errlist
+
+
+class Ordine(FormWErrors):
+    "form per definizione ordine"
+    numero_ordine = MyTextField('Numero ordine', True,
+                                [wt.validators.InputRequired("Manca numero ordine")])
+    termine_giorni = MyTextField('Termine di esecuzione della prestazione (giorni)', True,
+                                [wt.validators.InputRequired("Indicazione termine di esecuzione")])
+    descrizione_ordine = MyTextAreaField('Descrizione', True,
+                                         [wt.validators.InputRequired("Manca descrizione ordine")])
+    note_ordine = MyTextAreaField('Note', False, [wt.validators.Optional()])
+
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+
+    def validate(self, extra_validators=None):
+        "Validazione specifica per il form"
+        if not self.numero_ordine.data:
+            self.errlist.append("Manca numero ordine")
+        if not self.termine_giorni.data:
+            self.errlist.append("Manca indicazione termine di esecuzione")
+        if not self.descrizione_ordine.data:
+            self.errlist.append("Manca descrizione ordine")
+        if not self.cig.data:
+            self.errlist.append("Manca specifica CIG")
+        return len(self.errlist) == 0
+
+    def renderme(self, d_prat):
+        "rendering del form"
+        html = B_TRTD+Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
+                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
+        html += Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')
+        html += Markup(f'<p>Presso la ditta:<blockquote>{d_prat[NOME_FORNITORE]}<br>'\
+                          f'{d_prat[IND_FORNITORE]}</blockquote>')+E_TRTD
+        html += B_TRTD+ render_field(self.numero_ordine)+E_TRTD
+        html += B_TRTD+ render_field(self.termine_giorni)+E_TRTD
+        html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
+        html += B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
 
 class AnnullaPratica(FormWErrors):
     'Form per conferma annullamento pratica'
@@ -515,7 +560,7 @@ class RdO(FormWErrors):
     numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
     numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
-    termine = MyTextField('Data scadenza presentazione offerta (g/m/aaaa)', True)
+    fine_gara = MyTextField('Data scadenza presentazione offerta (g/m/aaaa)', True)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -523,20 +568,20 @@ class RdO(FormWErrors):
         "Rendering del form"
         html = B_TRTD+render_field(self.numero_cup)+BRK
         html += render_field(self.numero_cig)+BRK
-        html += B_TRTD+render_field(self.termine)+E_TRTD
+        html += B_TRTD+render_field(self.fine_gara)+E_TRTD
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, extra_validators=None):
         "Validazione"
-        tt0 = ft.date_to_time(self.termine.data)
+        tt0 = ft.date_to_time(self.fine_gara.data)
         if not self.numero_cup.data:
             self.errlist.append("Manca indicazione numero CUP")
         if not self.numero_cig.data:
             self.errlist.append("Manca indicazione numero CIG")
         if tt0 is None:
-            self.errlist.append("Errore data termine (usa formato: g/m/a)")
+            self.errlist.append("Errore data fine_gara (usa formato: g/m/a)")
         return not self.errlist
 
 class CodfForm(FormWErrors):

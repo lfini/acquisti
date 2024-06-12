@@ -16,9 +16,9 @@ import ftools
 import constants as cs
 from table import jload, jsave
 
-__version__ = "1.3"
+__version__ = "1.4"
 
-MY_VERSION = 2
+MY_VERSION = 3
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -26,7 +26,8 @@ LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 
 LDAP_HOST_DESC = """Indirizzo del server LDAP per autenticazione utenti
 [es: ldap.ced.inaf.it]
-(Usa '-' per disabilitare autenticazione LDAP)
+
+(Specifica: '-' per disabilitare autenticazione LDAP)
 """
 
 SMTP_HOST_DESC = """Indirizzo IP del server SMTP
@@ -38,8 +39,11 @@ NOTA: specificare "-" se si utilizza GMail API per  l'invio di messaggi.
 ************************************************************************
 """
 
-LATEX_PATH_DESC = """Path del programma pdflatex
-[es: /usr/local/bin/pdflatex]
+LATEX_PATH_DESC = """Path del programma pdflatex [es: /usr/local/bin/pdflatex]
+"""
+
+CUU_DESC = """Codice Unico dell'ufficio (CUU)
+[es: 14CVDG]
 """
 
 EMAIL_UFFICIO_DESC = """Indirizzo e-mail dell'ufficio ordini.
@@ -47,12 +51,18 @@ A questo indirizzo sono inviati i messaggi automatici
 generati dalla procedura [es: ordini.oaa@inaf.it]
 """
 
-TITOLO_DIRETTORE_DESC = """Titolo del direttore
-[es: Dott.ssa]
+EMAIL_SERVIZIO_DESC = """Indirizzo e-mail di servizio.
+A questo indirizzo sono inviati  i documenti da trasmettere
+al direttore per la firma elettronica.
+
+Se non è necessaria una differenziazione, può essere specificato
+l'indirizzo e-mail dell'ufficio ordini. [es.: proc-acquisti.oaa@inaf.it]
 """
 
-TITOLO_DIRETTORE_UK_DESC = """Titolo del direttore per ordini in inglese
-[es: Dr.]
+TITOLO_DIRETTORE_DESC = """Titolo del direttore [es: Dott.ssa]
+"""
+
+TITOLO_DIRETTORE_UK_DESC = """Titolo del direttore per ordini in inglese [es: Dr.]
 """
 
 EMAIL_DIRETTORE_DESC = """Indirizzo e-mail personale del direttore
@@ -64,21 +74,17 @@ nella lista degli utenti della procedura.
 [es: luca.fini@inaf.it]
 """
 
-EMAIL_DIREZIONE_DESC = """Indirizzo e-mail generico del direttore
+EMAIL_DIREZIONE_DESC = """Indirizzo e-mail generico della direzione
 
 Se tale indirizzo non esiste, specificare l'indirizzo personale
-del direttore.
-
-[es: direttore.oaa@inaf.it]
+del direttore. [es: direttore.oaa@inaf.it]
 """
 
-NOME_DIRETTORE_DESC = """Nome del direttore
-[es: Simone Esposito]
+NOME_DIRETTORE_DESC = """Nome del direttore [es: Simone Esposito]
 """
 
 GENDER_DIRETTORE_DESC = """Genere direttore (per la personalizzazione dei testi)
-(indicare M o F)
-[es: M]
+(indicare M o F) [es: M]
 """
 
 EMAIL_WEBMASTER_DESC = """Indirizzo e-mail del web master
@@ -86,12 +92,10 @@ EMAIL_WEBMASTER_DESC = """Indirizzo e-mail del web master
 [es: luca.fini@inaf.it]
 """
 
-NOME_WEBMASTER_DESC = """Nome del web master
-[es: Luca Fini]
+NOME_WEBMASTER_DESC = """Nome del web master [es: Luca Fini]
 """
 
-WEBSITE_DESC = """URL completa del sito web della sede
-[es: http://www.arcetri.inaf.it]
+WEBSITE_DESC = """URL completa del sito web della sede [es: http://www.arcetri.inaf.it]
 """
 
 CITTA_DESC = """Città [es: Firenze]
@@ -109,9 +113,21 @@ SEDE_DESC = """Identificazione sede INAF
 [es: INAF - Osservatorio Astrofisico di Arcetri
 """
 
+COD_FISC_DESC = """Codice fiscale dell'ente
+[es: 97220210583]
+"""
+
+TEL_DESC = """Numero telefonico
+[es: 0552752265]
+"""
+
+PEC_DESC = """Indirizzo PEC
+[es: inafoaarcetri@pcert.postecert.it]
+"""
+
 EMAIL_PROCEDURA_DESC = """Indirizzo e-mail da cui provengono i messaggi tecnici.
 Dovrebbe corrispondere all'identità GMail utilizzata per l'invio di messaggi.
-(Es.: acquisti.oaa@gmail.com)
+[Es.: acquisti.oaa@gmail.com]
 """
 
 SEDE = OrderedDict([(cs.SEDE_IT, SEDE_DESC),
@@ -119,6 +135,9 @@ SEDE = OrderedDict([(cs.SEDE_IT, SEDE_DESC),
                     (cs.INDIRIZZO, INDIRIZZO_DESC),
                     (cs.CITTA, CITTA_DESC),
                     (cs.WEBSITE, WEBSITE_DESC),
+                    (cs.PEC_OSS, PEC_DESC),
+                    (cs.TEL_OSS, TEL_DESC),
+                    (cs.CUU, CUU_DESC),
                    ])
 
 PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
@@ -128,8 +147,9 @@ PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (cs.EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
                       (cs.TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
                       (cs.TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
-                      (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
                       (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
+                      (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
+                      (cs.EMAIL_SERVIZIO, EMAIL_SERVIZIO_DESC),
                       (cs.LATEX_PATH, LATEX_PATH_DESC),
                      ])
 
@@ -194,12 +214,20 @@ def ask_dict(questions, old_dict):
 
 def show(config, filename):
     "Mostra file di configurazione"
-    keys = list(config.keys())
-    keys.sort()
     print()
     print("File di configurazione:", filename)
-    for key in keys:
-        print(f"   {key}:", config[key])
+    def showdict(adict, title, indent=''):
+        print(indent, title)
+        indent += '  '
+        keys = list(adict.keys())
+        keys.sort()
+        for key in keys:
+            val = adict[key]
+            if isinstance(val, dict):
+                showdict(val, key, indent)
+            else:
+                print(indent, f'{key}: {val}')
+    showdict(config, filename)
 
 def main():
     "Procedura"

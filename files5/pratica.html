@@ -25,8 +25,10 @@ Pratica N. {{ value }}
 <input type=submit value="Config" name=vediconfig>
 <input type=submit value="Request" name=vedirequest>
 {% for k, v in info.items() %} <input type="hidden" name="info.{{k}}" value="{{v}}"> {% endfor %}
-</form>
-{% endif %}</h4> 
+</h4></form>
+<b>Passi:</b> {{ pratica.tab_passi }}
+<hr>
+{% endif %}
 
 {% if pratica.passo == 200 %}
 <b><u>Pratica annullata</u>:</b> {{ pratica.motivazione_annullamento }}
@@ -59,10 +61,7 @@ Pratica N. {{ value }}
 
 </td></tr><tr><td>
 [<a href=/>Torna</a>] &nbsp;&nbsp;&nbsp;
-{% if info.pratica_chiudibile %}
-[<a href=/chiudipratica>Chiudi pratica</a>] &nbsp;&nbsp;&nbsp;
-{% endif %}
-{% if info.pratica_riapribile %}
+{% if 'apripratica' in info.commands and info.pratica_riapribile %}
 [<a href=/apripratica>Riapri pratica</a>] &nbsp;&nbsp;&nbsp;
 {% endif %}
 {% if info.pratica_annullabile %}

@@ -35,10 +35,11 @@ import ftools as ft             # Necessario per test
 # VERSION 3.3    13/07/2021  - Corretto test offline
 # VERSION 3.4    28/2/2023   - Migliorato test offline
 # VERSION 3.5    24/4/2024   - Semplificato path programma pdflatex
+# VERSION 3.6    11/6/2024   - Ripristinato modo test locale
 
 __author__ = 'Luca Fini'
-__version__ = '3.5'
-__date__ = '24/4/2024'
+__version__ = '3.6'
+__date__ = '11/6/2024'
 
 class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
@@ -252,7 +253,8 @@ def cleantempdir(tempdir):
     except FileNotFoundError:
         pass
 
-def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):  #pylint: disable=R0915,R0914
+def makepdf(destdir, pdfname, template, remove=False,  #pylint: disable=R0912,R0913,R0914,R0915
+            debug=False, attach=None, **data):
     "Genera file PDF da template LaTeX"
     path, fname = os.path.split(template)
     env = Environment(loader=FileSystemLoader(path))
@@ -280,6 +282,14 @@ def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):  #pyl
             atcs.append(SplittedAttachment(tempdir, atch, debug))
 
     newdata = sanitize(data)
+    pdffile = os.path.join(destdir, pdfname)
+    if remove:
+        try:
+            os.unlink(pdffile)
+        except FileNotFoundError:
+            pass
+        else:
+            logging.debug('Rimosso file: %s', pdffile)
     with open(tmplatex, encoding='utf-8', mode='w') as fpt:
         tex = template.render(**newdata)
         fpt.write(tex)
@@ -294,9 +304,8 @@ def makepdf(destdir, pdfname, template, debug=False, attach=None, **data):  #pyl
         errors = subp.stderr.readlines()
     for err in errors:
         logging.error("LaTeX stderr: %s", err.strip())
-    pdffile = os.path.join(destdir, pdfname)
     if not os.path.exists(tmppdf):
-        logging.error("LaTeX did not generate temp file: %s", tmppdf)
+        raise RuntimeError(f"LaTeX did not generate temp file: {tmppdf}")
     logging.debug("Renaming %s to %s", tmppdf, pdffile)
     try:
         os.rename(tmppdf, pdffile)
@@ -342,53 +351,19 @@ def main():
         print(__doc__)
         sys.exit()
 
-    if len(sys.argv) == 1:
-        test1()
+    try:
+        anno = int(sys.argv[1])
+        nprat = int(sys.argv[2])
+    except:                          # pylint: disable=W0702
+        print(ARGERR)
         sys.exit()
 
-    if len(sys.argv) == 3:
-        try:
-            anno = int(sys.argv[1])
-            pratica = int(sys.argv[2])
-        except:                          # pylint: disable=W0702
-            print(ARGERR)
-            sys.exit()
-        test2(anno, pratica)
-        sys.exit()
-    print(ARGERR)
-
-def test1():
-    'test rapido'
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-
-    templfile = os.path.join(FILEDIR, 'ordine_italiano.tex')
-    pdffile = 'test_document.pdf'
-    headerpath=os.path.join(FILEDIR, "header.png")
-    footerpath=os.path.join(FILEDIR, "footer.png")
-    attach=[os.path.join(FILEDIR, "test_attach.pdf")]
-
-    BATCHMODE.on = False
-    ret = makepdf('.', pdffile, templfile, debug=True,
-                  pratica=TEST_ACQUISTO, user=TEST_USER, sede=TEST_SEDE,
-                  headerpath=headerpath,
-                  footerpath=footerpath,
-                  attach=attach,
-                  indirizzo=TEST_INDIRIZZO, website=TEST_WEBSITE)
-
-    if ret:
-        print("Created file:", pdffile)
-    else:
-        print("Some error")
-
-def test2(anno, nprat):
-    'generazione vera richiesta pratica'
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
     pratica = ft.get_pratica(anno, nprat)
 
-    templfile = os.path.join(FILEDIR, 'richiesta.tex')
+    templfile = os.path.join(FILEDIR, 'progetto.tex')
     pdffile = 'test_document.pdf'
     headerpath=os.path.join(FILEDIR, "header.png")
     footerpath=os.path.join(FILEDIR, "footer.png")

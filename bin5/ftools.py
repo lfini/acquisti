@@ -60,7 +60,6 @@ import pam
 
 from constants import *       # pylint: disable=W0614,W0401
 import table as tb
-import latex
 import send_email as sm
 
 # pylint: disable=C0302, W0703
@@ -467,7 +466,7 @@ def _find_max_field(what, year=None):
         try:
             dati_pratica = tb.jload((path, 'pratica.json'))
         except tb.TableException:
-            logging.error("Errore lettura pratica %s", path)
+            logging.warning("Errore lettura pratica %s", path)
             continue
         for item in what:
             value = dati_pratica.get(item)
@@ -565,9 +564,10 @@ def thisyear():
 
 def findfiles(basedir, prefix):
     "trova file con prefisso di nome dato"
-    files = os.listdir(basedir)
-    ret = [x for x in files if x.startswith(prefix)]
-    return ret
+    if basedir:
+        files = os.listdir(basedir)
+        return [x for x in files if x.startswith(prefix)]
+    return []
 
 def flist(basedir, filetypes=(), exclude=()):
     "Genera lista file di tipo assegnato"
@@ -640,27 +640,6 @@ def modello_decisione(mod_acquisto):                  # pylint: disable=R0911
 #   if mod_acquisto == MANIF_INT:
 #       return "determina_manif"
     raise RuntimeError(f'Errore scelta modello decisione (mod.acquisto: {mod_acquisto}')
-
-def makepdf(destdir, templ_name, pdf_name, debug=False, include="", **data):   # pylint: disable=R0913
-    "Crea documento PDF da template LaTeX e dict di termini"
-    tfile = os.path.join(FILEDIR, templ_name)+'.tex'
-    pdfname = pdf_name+'.pdf'
-    logging.info("Creazione documento da: %s come: %s/%s", tfile, destdir, pdfname)
-    logging.info("Dati documento: %s", ', '.join(list(data.keys())))
-    if  include:
-        attach = os.path.join(destdir, include)
-        logging.info("Includo file: %s", attach)
-        attach_list = [attach]
-    else:
-        attach_list = None
-    ndata = data.copy()
-    ndata["headerpath"] = os.path.join(FILEDIR, "header.png")
-    ndata["footerpath"] = os.path.join(FILEDIR, "footer.png")
-    ndata["titolo_direttore"] = CONFIG['titolo_direttore']
-    ndata["titolo_direttore_uk"] = CONFIG['titolo_direttore_uk']
-    ndata["nome_direttore"] = CONFIG['nome_direttore']
-    ndata["dir_is_m"] = CONFIG['gender_direttore'].lower() == 'm'
-    latex.makepdf(destdir, pdfname, tfile, attach=attach_list, debug=debug, **ndata)
 
 def get_user(userid):
     "Riporta record di utente"
@@ -904,9 +883,12 @@ def remove(path, show_error=True):
         os.unlink(fullname)
     except Exception as excp:
         if show_error:
-            logging.error("Error removing file: %s [%s]", fullname, str(excp))
+            logging.error("Errore cancellazione file: %s [%s]", fullname, str(excp))
+        ret = False
     else:
-        logging.info("Removed file: %s", fullname)
+        logging.info("cancellato file: %s", fullname)
+        ret = True
+    return ret
 
 
 def testlogin():

@@ -5,21 +5,19 @@ Definizione delle costanti per procedura acquisti
 import os.path
 from enum import IntEnum
 
-__version__ = "2.2"
-__date__ = "6/3/2024"
+__version__ = "2.3"
+__date__ = "5/5/2024"
 __author__ = "Luca Fini"
 
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
-CONFIG_REQUIRED = 2              # versione file configurazione richiesta
+CONFIG_REQUIRED = 3              # versione file configurazione richiesta
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
 
 EDIT_SYMB = '<font color=red><b>&ofcir;</b></font>'
-
-APPROVAL_EXPIRATION = 7*24*3600.     # Tempo espirazione per approvazione
 
 FILE_VERSION = 3    # Versione file pratica.json
 
@@ -28,6 +26,7 @@ FILE_VERSION = 3    # Versione file pratica.json
 ATTESA_APPROVAZIONE = 'In attesa di approvazione'
 CHIUSA = "Chiusa"
 NUOVA_PRATICA = 'Nuova pratica'
+BASEDIR = 'basedir'
 
 #  Campi temporanei (da non registrare in dati pratica)
 AVANTI = "T_avanti"
@@ -48,6 +47,8 @@ TRATT_MEPA_143 = 'tratt.mepa143'
 TRATT_MEPA_40 = 'tratt.mepa40'
 TRATT_UBUY_143 = 'tratt.ubuy143'
 TRATT_UBUY_40 = 'tratt.ubuy40'
+
+MOD_TUTTE = 'mod.tutte'   # Valido per tutte le modalità di acquisto
 
 # Costanti per menu valuta
 DOLLAR = "dollar"
@@ -80,12 +81,13 @@ OFF_PIU_VANT = 'off.piu.vant'
 PREZ_PIU_BASSO = 'prezzo.piu.basso'
 
 # chiavi per dict configurazione
-#APPROVAL_HOSTS = 'approval_hosts'
 CITTA = "citta"
 COD_FISC = "cod_fisc"
+CUU = 'cuu'
 EMAIL_DIRETTORE = 'email_direttore'
 EMAIL_DIREZIONE = 'email_direzione'
 EMAIL_PROCEDURA = 'email_procedura'
+EMAIL_SERVIZIO = 'email_servizio'
 EMAIL_UFFICIO = 'email_ufficio'
 EMAIL_WEBMASTER = 'email_webmaster'
 FLASK_KEY = 'flask_key'
@@ -97,19 +99,35 @@ LDAP_PORT = "ldap_port"
 NOME_WEBMASTER = 'nome_webmaster'
 NOME_DIRETTORE = 'nome_direttore'
 PART_IVA = "part_iva"
+PEC_OSS = "pec_oss"
 SEDE = 'sede'
 SEDE_IT = 'sede_it'
 SEDE_UK = 'sede_uk'
 SMTP_HOST = 'smtp_host'
+TEL_OSS = 'tel_oss'
 TITOLO_DIRETTORE = 'titolo_direttore'
 TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'
 WEBSITE = 'website'
+
+# opzioni per generazione documenti
+PROVV = 'provvisorio'
+RESP = 'responsabile'
+DIRETTORE = 'direttore'
 
 # nomi file generati
 DOC_DECISIONE = "decisione.pdf"
 DOC_NOMINARUP = "nominarup.pdf"
 DOC_PROGETTO = "progetto.pdf"
 DOC_RDO = "rdo.pdf"
+
+# nomi azioni
+INVIA_PROGETTO = 'invia_progetto'
+RESP_APPROVA = 'resp_approva'
+INDICA_RUP = 'indica_rup'
+INVIA_DOC_RUP = 'invia_doc_rup'
+DIR_AUTORIZZA = 'dir_autorizza'
+INVIA_DECISIONE = 'invia_decisione'
+CHIUDI_PRATICA = 'chiudi_pratica'
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
@@ -127,10 +145,9 @@ DATA_DECISIONE = 'data_decisione'               # dati_pratica
 DATA_DETERMINA_B = 'data_determina_b'           # dati_pratica
 DATA_ORDINE = 'data_ordine'                     # dati_pratica
 DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
+DECIS_DA_FIRMARE = 'decis_da_firmare'           # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
-DECIS_INVIATA = 'decis_inviata'                 # dati_pratica
-DECIS_DA_FIRMARE = 'decis_da_firmare'           # dati_pratica
 DETTAGLIO_ORDINE = 'dettaglio_ordine'           # dati_pratica
 DIFFORMITA = 'difformita'                       # dati_pratica
 EMAIL_RESPONSABILE = 'email_responsabile'       # dati_pratica
@@ -162,14 +179,14 @@ NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
 NOME_RUP = 'nome_rup'                           # dati_pratica
 NOTE_RICHIESTA = 'note_richiesta'               # dati_pratica
-NUMERO_DECISIONE = 'numero_decisione'       # dati_pratica
+NUMERO_DECISIONE = 'numero_decisione'           # dati_pratica
 NUMERO_DETERMINA_B = 'numero_determina_b'       # dati_pratica
 NUMERO_ORDINE = 'numero_ordine'                 # dati_pratica
 NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
 ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
 ORD_NAME_EN = 'ordine_inglese'
 ORD_NAME_IT = 'ordine_italiano'
-PASSO = 'passo'                                 # dati_pratica
+P_INDEX = 'p_index'                             # dati pratica
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
 PDF_DECISIONE = 'pdf_decisione'                 # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
@@ -195,6 +212,7 @@ STR_MOD_ACQ = 'str_mod_acq'                     # dati_pratica
 STR_ONERI_IT = 'str_oneri_it'                   # dati_pratica
 STR_ONERI_UK = 'str_oneri_uk'                   # dati_pratica
 STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
+TAB_PASSI = 'tab_passi'                         # dati pratica
 VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica
 VERSIONE = 'versione'                           # dati_pratica
@@ -242,14 +260,14 @@ SEQUENZE = { TRATT_MEPA_40: [0, 10, 20, 30, 40, 50, 60, 70, 80],
            }
 
 # Tipi allegato
-ALL_CIG = "all_cig"
-ALL_CV_RUP = 'cv_rup'
-ALL_DECIS_FIRMATA = 'decis_firmata'
-ALL_DICH_RUP = 'dich_rup'
-ALL_GENERICO = "all_generico"
-ALL_OBBLIG = "all_obblig"
-ALL_PREV_MEPA = "prev_mepa"
-ALL_RDO = "all_rdo"
+ALL_CIG = "CIG"
+ALL_CV_RUP = 'CV RUP'
+ALL_DECIS_FIRM = 'Decis. Firmata'
+ALL_DICH_RUP = 'Dich. RUP'
+ALL_GENERICO = "All. Generico"
+ALL_OBBLIG = "Obblig. Perf."
+ALL_PREV_MEPA = "prev. MePA"
+ALL_RDO = "RdO Firmata"
 
 ALL_OFF_DITTA = 'off_ditta'
 LETT_INVITO_A = 'lett_invito_a'
@@ -272,14 +290,14 @@ ALL_NAME = 2    # Allegato multiplo con nome file
 ALL_PRAT = 3    # Allegato singolo con numero pratica
 
 # Tabella allegati  key   pref.nome file     descrizione  singolo/multiplo
-TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "documento generico", ALL_NAME),
-                ALL_CV_RUP: ('A04_CV_RUP', "curric. vitae del RUP", ALL_SING),
-                ALL_DICH_RUP: ('A05_Dich_RUP', "dichiaraz. ass. conflitto int. del RUP", ALL_SING),
-                ALL_PREV_MEPA: ('A08_Preventivo_trattativa_MePA',
+TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Documento generico", ALL_NAME),
+                ALL_CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
+                ALL_DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
+                ALL_PREV_MEPA: ('A02_Preventivo_trattativa_MePA',
                                   "Preventivo trattativa diretta MePA", ALL_SING),
                 ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
                 ALL_RDO: ("A16_RdO_Firmata", "RdO con firma digitale RUP", ALL_SING),
-                ALL_DECIS_FIRMATA: ("A24_Decisione_Firmata",
+                ALL_DECIS_FIRM: ("A24_Decisione_Firmata",
                                   "Decisione di contrarre con firma digitale", ALL_SING),
                 ALL_OBBLIG: ("A30_Obbligaz_Giurid_Perfezionata",
                                   "Obbligazione giuridicamente perfezionata", ALL_SING),
@@ -288,110 +306,90 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "documento generico", ALL_NAME),
 class CdP(IntEnum):
     'Codici passi operativi'
     INI = 0
-    GPA = 1
     PIR = 10
     PAR = 20
     RUI = 30
-    RAL = 35
     IRD = 40
     AUD = 50
     ROG = 60
-    RFI = 65
-    DCG = 70
+    DEC = 70
     DCI = 80
-    DCF = 90
-    OGP = 95
-    FIN = 100
-    ANN = 200
+    OGP = 90
+    END = 100
+    FIN = 101
+    ANN = 500
 
 
-############### Tabella passi operativi  per trattativa MePA inf.40 k€ ############################
-#       Codice     Descrizione
-#       Stato      Stato       Prodotto
-#                                         (Allegati)
-#                                                      # AZIONE
-PASSI_TM40K = {
-    CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
-                          DOC_PROGETTO, []),      # e allega preventivo MePA
-    CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
-                          "", [ALL_PREV_MEPA]),
+############### Tabella generale passi operativi   ############################
+TABELLA_PASSI = {
+    CdP.INI: ("Iniziale",                            # Descrizione stato
+              [DOC_PROGETTO, [PROVV]],               # File da generare per procedere (con opzioni)
+              ['modificaprogetto', 'inviaprogetto'], # Comandi abilitati
+              [ALL_PREV_MEPA],                       # Allegati necessari per procedere
+              CdP.PIR),                              # passo successivo
     CdP.PIR: ("Progetto inviato al resp. dei fondi",
-                          "", []),                # Resp. Fondi approva
+              [],
+              ['approvaprogetto'],
+              [],
+              CdP.PAR),
     CdP.PAR: ("Progetto approvato dal resp. dei fondi",
-                         "", []),                 # Indicazione RUP e generazione
-                                                  # nomina provvisoria
-    CdP.RUI: ("RUP indicato",                     # RUP allega CV e Dichiarazione
-                         DOC_NOMINARUP, []),
-    CdP.RAL: ("CV e dichiarazione RUP allegati",
-                              "", [ALL_CV_RUP, ALL_DICH_RUP]),
-                                                  # RUP invia richiesta di autorizzazione
-                                                  #   e nomina al direttore
+              [DOC_NOMINARUP, [PROVV]],
+              ['indicarup'],
+              [],
+              CdP.RUI),
+    CdP.RUI: ("RUP indicato",
+              [],
+              ['rich_autorizzazione'],
+              [ALL_CV_RUP, ALL_DICH_RUP],
+              CdP.IRD),
     CdP.IRD: ("Inviata richiesta di autorizzazione e nomina RUP al Direttore",
-                              "", []),            # Direttore autorizza.
-    CdP.AUD: ("Autorizzazione concessa e RUP nominato",
-                              "", []),            # RUP genera RdO e allega CIG
-    CdP.ROG: ("RdO generata e CIG allegato",
-                              DOC_RDO,
-                                  [ALL_CIG]),     # RUP allega RdO firmata digitalmente
-    CdP.RFI: ("RdO con firma digitale allegata",
-                              "", [ALL_RDO]),     # RUP Genera decisione di contrarre
-    CdP.DCG: ("Decisione di contrarre generata",
-                              DOC_DECISIONE,     # RUP invia decisione al direttore per firma
-                                  []),
+              [],
+              ['autorizza'],
+              [],
+              {TRATT_MEPA_40: CdP.AUD, INFER_5000: CdP.DEC}),   # prossimo passo dipende da
+                                                                # modalità acquisto
+    CdP.AUD: ("Generazione Richiesta di Offerta",
+              [DOC_RDO, []],
+              ['modificardo', 'procedi_dec'],
+              [ALL_CIG],
+              CdP.ROG),
+    CdP.ROG: ("Genera decisione, allega RdO firmata",
+              [DOC_DECISIONE, [PROVV]],
+              ['modificadecisione', 'inviadecisione'],
+              [ALL_RDO],
+              CdP.DCI),
+    CdP.DEC: ("Genera decisione",
+              [DOC_DECISIONE, [PROVV]],
+              ['modificadecisione', 'inviadecisione'],
+              [ALL_CIG],
+              CdP.DCI),
     CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
-                              "", []),            # RUP riceve e allega decisione firmata
-    CdP.DCF: ("Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
-                              "", [ALL_DECIS_FIRMATA]),
+              [],
+              ['procedi_ogp'],
+              [ALL_DECIS_FIRM],
+              CdP.OGP),
                                                   # RUP allega Obbligaz. Giur. Perfez.
-    CdP.OGP: ("Obbligazione giuridicamente perfezionata, allegata",
-                              "", [ALL_OBBLIG]),  # RUP chiude la pratica
-    CdP.FIN: ("Pratica conclusa", "", []),
-    CdP.ANN: ("Pratica annullata", "", []),
+    CdP.OGP: ("Allega Obbligazione giuridicamente perfezionata",
+              [],
+              ['procedi_ogp'],
+              [ALL_OBBLIG],
+              CdP.END),
+    CdP.END: ("Pratica conclusa. Attesa chiusura",
+              [],
+              ['chiudipratica'],
+              [],
+              CdP.FIN),
+    CdP.FIN: ("Pratica chiusa",
+              [],
+              ['apripratica'],
+              [],
+              CdP.END),
+    CdP.ANN: ("Pratica annullata",
+              [],
+              [],
+              [],
+              CdP.ANN),
     }
-
-############### Tabella passi operativi  per trattativa MePA inf.40 k€ ############################
-#       Codice     Descrizione
-#       Stato      Stato       Prodotto
-#                                         (Allegati)
-#                                                      # AZIONE
-PASSI_INF5K = {
-    CdP.INI: ("Iniziale",                         # Richiedente genera progetto acquisto
-                          DOC_PROGETTO, []),      # e allega preventivo MePA
-    CdP.GPA: ("Generato progetto di acquisto",    # Invio richiesta al resp. fondi
-                          "", []),
-    CdP.PIR: ("Progetto inviato al resp. dei fondi",
-                          "", []),                # Resp. Fondi approva
-    CdP.PAR: ("Progetto approvato dal resp. dei fondi",
-                         "", []),                 # Indicazione RUP e generazione
-                                                  # nomina provvisoria
-    CdP.RUI: ("RUP indicato",                     # RUP allega CV e Dichiarazione
-                         DOC_NOMINARUP, []),
-    CdP.RAL: ("CV e dichiarazione RUP allegati",
-                              "", [ALL_CV_RUP, ALL_DICH_RUP]),
-                                                  # RUP invia richiesta di autorizzazione
-                                                  #   e nomina al direttore
-    CdP.IRD: ("Inviata richiesta di autorizzazione e nomina RUP al Direttore",
-                              "", []),            # Direttore autorizza.
-    CdP.AUD: ("Autorizzazione concessa e RUP nominato",
-                              "", []),            # RUP genera RdO e allega CIG
-    CdP.DCG: ("Decisione di contrarre generata",
-                              DOC_DECISIONE,     # RUP invia decisione al direttore per firma
-                                  []),
-    CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
-                              "", []),            # RUP riceve e allega decisione firmata
-    CdP.DCF: ("Decisione di contrarre firmata allegata alla pratica", # RUP chiude pratica
-                              "", [ALL_DECIS_FIRMATA]),
-                                                  # RUP allega Obbligaz. Giur. Perfez.
-    CdP.OGP: ("Obbligazione giuridicamente perfezionata, allegata",
-                              "", [ALL_OBBLIG]),  # RUP chiude la pratica
-    CdP.FIN: ("Pratica conclusa", "", []),
-    CdP.ANN: ("Pratica annullata", "", []),
-   }
-
-TAB_PASSI = { TRATT_MEPA_40: PASSI_TM40K,
-              INFER_5000: PASSI_INF5K }
-
-T_P = 'tab_passi'
 
 ################################################### Varie stringhe
 ACCESSO_NON_PREVISTO = "Sequenza di accesso non prevista. URL: "

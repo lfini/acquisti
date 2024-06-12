@@ -9,8 +9,8 @@
 
 ((* include 'header.tex' *))
 
-((* if warning *))
-\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( warning ))) }}}
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
 ((* endif *))
 
 \begin{document}
@@ -114,7 +114,7 @@ Il Richiedente
 \end{flushright}
 \end{minipage}
 
-((* if il_responsabile *))
+((* if responsabile *))
 \begin{minipage}{\linewidth}
 \begin{center}
 	VISTO SI AUTORIZZA
@@ -132,7 +132,7 @@ Il Responsabile dei fondi
 \end{minipage}
 ((* endif *))
 
-((* if il_direttore *))
+((* if direttore *))
 \begin{minipage}{\linewidth}
 \begin{center}
 	VISTO SI AUTORIZZA
