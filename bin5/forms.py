@@ -342,7 +342,7 @@ class IndicaRUP(FormWErrors):
 
 class ProgettoAcquisto(FormWErrors):
     "Form per progetto di acquisto"
-    data_richiesta = MyTextField('Data richiesta (g/m/aaaa)', True)
+    data_pratica = MyTextField('Data pratica (g/m/aaaa)', True)
     descrizione_acquisto = MyTextField('Descrizione', True)
     descrizione_ordine = MyTextAreaField('Descrizione per ordine '\
                                          '(Solo se diversa dalla precedente)', False)
@@ -369,7 +369,7 @@ class ProgettoAcquisto(FormWErrors):
 
     def __call__(self):
         "rendering del form"
-        html = B_TRTD+render_field(self.data_richiesta, sameline=True, size=15)+E_TRTD
+        html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None and self.modalita_acquisto.data != 'None':
             html += B_TRTD+render_field(self.descrizione_acquisto, size=50)+E_TRTD
@@ -391,7 +391,7 @@ class ProgettoAcquisto(FormWErrors):
         return html
 
     def validate(self, extra_validators=None):                                   #pylint: disable=R0912
-        if not ft.date_to_time(self.data_richiesta.data):
+        if not ft.date_to_time(self.data_pratica.data):
             self.errlist.append("Errore specifica data")
         if not self.descrizione_acquisto.data:
             self.errlist.append("Manca descrizione acquisto")
@@ -421,7 +421,7 @@ class Decisione(FormWErrors):
 
     def __call__(self, d_prat):
         "rendering del form"
-        html = B_TRTD+Markup(f'Richiesta del {d_prat[cs.DATA_RICHIESTA]}. '\
+        html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
                                 f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
@@ -471,7 +471,7 @@ class Ordine(FormWErrors):
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = B_TRTD+Markup(f'Richiesta del {d_prat[DATA_RICHIESTA]}. '\
+        html = B_TRTD+Markup(f'Pratica del {d_prat[DATA_PRATICA]}. '\
                                 f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
                                 f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
         html += Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')

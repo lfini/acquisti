@@ -131,6 +131,7 @@ CHIUDI_PRATICA = 'chiudi_pratica'
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
+CONFERMA_MIGLIORA = 'conferma_migliora'         # dati_pratica
 COSTO_PROGETTO = 'costo_progetto'               # dati_pratica
 COSTO_RDO = 'costo_rdo'                         # dati_pratica
 COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
@@ -142,9 +143,10 @@ COSTO_TOTALE = 'costo_totale'                   # dati_pratica
 CRIT_ASS = 'criterio_assegnazione'              # dati_pratica
 CUP = 'cup'                                     # dati_pratica
 DATA_DECISIONE = 'data_decisione'               # dati_pratica
-DATA_DETERMINA_B = 'data_determina_b'           # dati_pratica
-DATA_ORDINE = 'data_ordine'                     # dati_pratica
-DATA_RICHIESTA = 'data_richiesta'               # dati_pratica
+DATA_NEGOZIAZIONE = 'data_negoziazione'         # dati_pratica
+DATA_OFFERTA = 'data_offerta'                   # dati_pratica
+DATA_PRATICA = 'data_pratica'                   # dati_pratica
+DATA_SCADENZA = 'data_scadenza'                 # dati_pratica
 DECIS_DA_FIRMARE = 'decis_da_firmare'           # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
@@ -178,15 +180,11 @@ MOTIVAZIONE_ANNULLAMENTO = 'motivazione_annullamento'   # dati_pratica
 NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
 NOME_RUP = 'nome_rup'                           # dati_pratica
-NOTE_RICHIESTA = 'note_richiesta'               # dati_pratica
 NUMERO_DECISIONE = 'numero_decisione'           # dati_pratica
-NUMERO_DETERMINA_B = 'numero_determina_b'       # dati_pratica
-NUMERO_ORDINE = 'numero_ordine'                 # dati_pratica
+NUMERO_NEGOZIAZIONE = 'numero_negoziazione'     # dati praticayy
+NUMERO_OFFERTA = 'numero_offerta'               # dati_pratica
 NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
 ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
-ORD_NAME_EN = 'ordine_inglese'
-ORD_NAME_IT = 'ordine_italiano'
-P_INDEX = 'p_index'                             # dati pratica
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
 PDF_DECISIONE = 'pdf_decisione'                 # dati_pratica
 PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
@@ -213,6 +211,9 @@ STR_ONERI_IT = 'str_oneri_it'                   # dati_pratica
 STR_ONERI_UK = 'str_oneri_uk'                   # dati_pratica
 STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
 TAB_PASSI = 'tab_passi'                         # dati pratica
+TEMPL_DECISIONE = 'templ_decisione'             # dati pratica
+TEMPL_PROGETTO = 'templ_progetto'               # dati pratica
+TEMPL_RDO = 'templ_rdo'                         # dati pratica
 VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica
 VERSIONE = 'versione'                           # dati_pratica
@@ -319,6 +320,38 @@ class CdP(IntEnum):
     FIN = 101
     ANN = 500
 
+TABELLA_PROGETTI = {          # nomi dei template del progetto per modalità di acquisto
+        ACCORDO_QUADRO: '',
+        CONSIP: '',
+        INFER_5000: 'progetto-inf5k',
+        MEPA: '',
+        TRATT_MEPA_143: '',
+        TRATT_MEPA_40: 'progetto-tm40k.tex',
+        TRATT_UBUY_143: '',
+        TRATT_UBUY_40: 'progetto-ub40k.tex',
+        }
+
+TABELLA_RDO = {          # nomi dei template del RdO per modalità di acquisto
+        ACCORDO_QUADRO: '',
+        CONSIP: '',
+        INFER_5000: '',
+        MEPA: '',
+        TRATT_MEPA_143: '',
+        TRATT_MEPA_40: 'rdo-tm40k.tex',
+        TRATT_UBUY_143: '',
+        TRATT_UBUY_40: 'rdo-ub40k.tex',
+        }
+
+TABELLA_DECISIONI= {          # nomi dei template del progetto per modalità di acquisto
+        ACCORDO_QUADRO: '',
+        CONSIP: '',
+        INFER_5000: 'decisione-inf5k',
+        MEPA: '',
+        TRATT_MEPA_143: '',
+        TRATT_MEPA_40: 'decisione-tm40k.tex',
+        TRATT_UBUY_143: '',
+        TRATT_UBUY_40: 'decisione-ub40k.tex',
+        }
 
 ############### Tabella generale passi operativi   ############################
 TABELLA_PASSI = {
@@ -346,8 +379,9 @@ TABELLA_PASSI = {
               [],
               ['autorizza'],
               [],
-              {TRATT_MEPA_40: CdP.AUD, INFER_5000: CdP.DEC}),   # prossimo passo dipende da
-                                                                # modalità acquisto
+              {TRATT_MEPA_40: CdP.AUD,   # prossimo passo dipende da
+               TRATT_UBUY_40: CdP.AUD,   # modalità acquisto
+               INFER_5000: CdP.DEC}),
     CdP.AUD: ("Generazione Richiesta di Offerta",
               [DOC_RDO, []],
               ['modificardo', 'procedi_dec'],

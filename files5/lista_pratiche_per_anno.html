@@ -52,7 +52,7 @@ Seleziona:
 
 <ul>
 {% for d in dlist %}
-<p>   <li> <em> {{ d.numero_pratica }}</em>. Progetto di acquisto del {{ d.data_richiesta }}. 
+<p>   <li> <em> {{ d.numero_pratica }}</em>. Progetto di acquisto del {{ d.data_pratica }}. 
        Resp.fondi: {{ d.nome_responsabile }}. Richiedente: {{ d.nome_richiedente }}.<br>
        <b> {{ d.descrizione_acquisto }}.</b>&nbsp;&nbsp;&nbsp;&rightarrow; <a href=/pratica0/{{ d.numero_pratica }}>Vedi</a> </li>
 {% endfor %}

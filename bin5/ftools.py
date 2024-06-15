@@ -58,7 +58,7 @@ import ldap3
 from Crypto.Cipher import AES
 import pam
 
-from constants import *       # pylint: disable=W0614,W0401
+import constants as cs
 import table as tb
 import send_email as sm
 
@@ -110,7 +110,7 @@ class FTable(tb.Table):
     def render_item_as_form(self, title, form, action,            # pylint: disable=R0913
                             nrow=0, ignore=(), errors=()):
         "HTML rendering di un campo per uso in un form"
-        html = [TABLE_HEADER]
+        html = [cs.TABLE_HEADER]
         if title:
             html.append(f'<h1> {title} </h1>')
         if errors:
@@ -136,7 +136,7 @@ class FTable(tb.Table):
 
     def render_item_as_text(self, title, nrow, index=False):
         "HTML rendering di un campo"
-        html = [TABLE_HEADER]
+        html = [cs.TABLE_HEADER]
         if title:
             html.append(f'<h1> {title} </h1>')
         if index:
@@ -153,7 +153,7 @@ class FTable(tb.Table):
         return '\n'.join(html)
 
     def render(self, title=None, menu=(), select_url=(), sort_url=(),      # pylint: disable=R0912,R0913,R0914
-               edit_symb=EDIT_SYMB, index=False, sort_on=1, footer='',
+               edit_symb=cs.EDIT_SYMB, index=False, sort_on=1, footer='',
                select=None, messages=()):
         "HTML rendering della tabella"
         def _formrow(row):
@@ -170,7 +170,7 @@ class FTable(tb.Table):
                 uname = uname+'&nbsp;&nbsp;<a href='+sort_url[0]+'/'+uname+'>'+sort_url[1]+'</a>'
             return '<th>'+uname+'</th>'
 
-        html = [TABLE_HEADER]
+        html = [cs.TABLE_HEADER]
         if title:
             html.append(f'<h1> {title} </h1>')
         if messages:
@@ -274,7 +274,7 @@ class PratIterator:
     def __init__(self, year=None):
         if not year:
             year = thisyear()
-        self.ydir = os.path.join(DATADIR, str(year))
+        self.ydir = os.path.join(cs.DATADIR, str(year))
         self.pratdir = iter(os.listdir(self.ydir))
 
     def __iter__(self):
@@ -303,7 +303,7 @@ Per ottenere l'abilitazione devi rivolgerti all'amministrazione
 
 def checkdir():
     "Verifica esistenza della directory per dati e riporta il path"
-    thedir = DATADIR
+    thedir = cs.DATADIR
     if not os.path.exists(thedir):
         print()
         print(f"Directory {thedir} inesistente")
@@ -326,7 +326,7 @@ def setformatter():
 
 def _last_resort_log(message):
     "funzione chamata quando c'è un errore nel logger"
-    fname = os.path.join(WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
+    fname = os.path.join(cs.WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
     with open(fname, "a", encoding='utf8') as f_out:
         print(message, file=f_out)
 
@@ -434,7 +434,7 @@ def find_max_prat(year=None):
     if not year:
         year = thisyear()
     yys = f'{year}'
-    dpath = os.path.join(DATADIR, yys)
+    dpath = os.path.join(cs.DATADIR, yys)
     if not os.path.exists(dpath):
         return 0
     try:
@@ -454,7 +454,7 @@ def _find_max_field(what, year=None):
     if not isinstance(what, (list, tuple)):
         what = (what,)
     yys = f'{year}'
-    dpath = os.path.join(DATADIR, yys)
+    dpath = os.path.join(cs.DATADIR, yys)
     try:
         plist = os.listdir(dpath)
     except Exception:
@@ -516,7 +516,7 @@ def html_params(params, escape=True):
     if escape:
         filt = html_escape
     else:
-        filt = lambda x: x
+        filt = lambda x: x     # pylint: disable=C3001
     parlist = []
     for key, value in params.items():
         parlist.append(f'{key}={filt(value)}')
@@ -619,28 +619,6 @@ def swapname(name):
         ret = name
     return ret
 
-def modello_decisione(mod_acquisto):                  # pylint: disable=R0911
-    "Stabilisce il template per la decisione di contrarre"
-    if mod_acquisto == TRATT_MEPA_40:
-        return "decisione"
-#   if mod_acquisto == INFER_5000:
-#       return "determina_inf5000"
-#   if mod_acquisto == INFER_1000:
-#       return "determina_inf1000"
-#   if mod_acquisto == TRATT_MEPA_40:
-#       return "determina_trattmepa_40"
-#   if mod_acquisto == SUPER_5000:
-#       return "determina_sup5000"
-#   if mod_acquisto == SUPER_1000:
-#       return "determina_sup1000"
-#   if mod_acquisto == RDO_MEPA:
-#       return "determina_rdo"
-#   if mod_acquisto == PROC_NEG:
-#       return "determina_procneg"
-#   if mod_acquisto == MANIF_INT:
-#       return "determina_manif"
-    raise RuntimeError(f'Errore scelta modello decisione (mod.acquisto: {mod_acquisto}')
-
 def get_user(userid):
     "Riporta record di utente"
     usr = GlobLists.USERLIST.where('userid', userid, as_dict=True)
@@ -659,7 +637,7 @@ def _fullname(email):
 
 def _read_userlist():
     "Legge la lista utenti"
-    GlobLists.USERLIST = FTable((DATADIR, 'userlist.json'))
+    GlobLists.USERLIST = FTable((cs.DATADIR, 'userlist.json'))
     if GlobLists.USERLIST.empty():
         logging.error("Errore lettura userlist: %s", GlobLists.USERLIST.filename)
     user_sn = GlobLists.USERLIST.columns((2, 3))
@@ -677,7 +655,7 @@ def update_userlist():
 
 def _read_codflist():
     "Legge la lista dei codici Fu.Ob."
-    GlobLists.CODFLIST = FTable((DATADIR, 'codf.json'))
+    GlobLists.CODFLIST = FTable((cs.DATADIR, 'codf.json'))
     if GlobLists.CODFLIST.empty():
         logging.warning("Errore lettura lista codici fondi: %s", GlobLists.CODFLIST.filename)
                           # Integrazione codflist (aggiunge nome esteso)
@@ -698,7 +676,7 @@ def init_helplist():
     "Genera una lista dei file di nome 'help_*.html' nella directory dei file ausiliari"
     _helpfilt = re.compile('help_.+[.]html')
     try:
-        flst = os.listdir(FILEDIR)
+        flst = os.listdir(cs.FILEDIR)
     except Exception:
         GlobLists.HELPLIST = []
     else:
@@ -857,7 +835,7 @@ def is_year(year):
 def get_pratica(anno, num):
     'riporta la pratica indicata come dict'
     basedir = namebasedir(anno, num)
-    return tb.jload((basedir, PRAT_JFILE))
+    return tb.jload((basedir, cs.PRAT_JFILE))
 
 def get_years(ddate):
     "trova elenco anni definiti"
@@ -871,7 +849,7 @@ def namebasedir(anno, num):
     "genera path directory per nuova pratica"
     stanno = f'{int(anno):04d}'
     stnum = f'{int(num):06d}'
-    basedir = os.path.join(DATADIR, stanno, stanno+'_'+stnum)
+    basedir = os.path.join(cs.DATADIR, stanno, stanno+'_'+stnum)
     return basedir
 
 IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
@@ -914,7 +892,7 @@ def testlogin():
 
 def show64file(filename):
     "Mostra file json codificato"
-    f64 = os.path.join(DATADIR, filename)
+    f64 = os.path.join(cs.DATADIR, filename)
     obj64 = tb.jload_b64(f64)
     print()
     print(obj64)
@@ -929,7 +907,7 @@ def randstr(lng):
 
 def makepwfile(ldappw=False):
     "Crea file per password"
-    pwpath = os.path.join(DATADIR, 'pwfile.json')
+    pwpath = os.path.join(cs.DATADIR, 'pwfile.json')
     pop3pw = input('password per accesso POP3: ')
     if not pop3pw:
         return
@@ -965,8 +943,8 @@ def showmaxprat():
     print()
     print(f"Ultima pratica anno {year}: {prat}")
 
-_EXTRACT = (NUMERO_PRATICA, DATA_RICHIESTA, NOME_RICHIEDENTE,
-            NOME_RESPONSABILE, DESCRIZIONE_ACQUISTO)
+_EXTRACT = (cs.NUMERO_PRATICA, cs.DATA_PRATICA, cs.NOME_RICHIEDENTE,
+            cs.NOME_RESPONSABILE, cs.DESCRIZIONE_ACQUISTO)
 
 def allfields(year=None):
     "Mostra tutti i campi nei file pratica.json con il numero di presenze"
@@ -1062,7 +1040,7 @@ def showdata(nprat):
         print()
         year = input_anno()
         basedir = namebasedir(year, nprat)
-        dati_pratica = tb.jload((basedir, PRAT_JFILE))
+        dati_pratica = tb.jload((basedir, cs.PRAT_JFILE))
         pprint(dati_pratica, indent=4)
     else:
         print()
@@ -1072,11 +1050,11 @@ def showpratiche():
     "Mostra elenco pratiche"
     year = input_anno()
     print("Elenco pratiche per l'anno", year)
-    elenco = DocList(DATADIR, 'pratica.json', year=year, extract=_EXTRACT)
+    elenco = DocList(cs.DATADIR, 'pratica.json', year=year, extract=_EXTRACT)
     for rec in elenco.records:
-        print(f" - {rec[NUMERO_PRATICA]} {rec[DATA_RICHIESTA]}",
-              f"{rec[NOME_RICHIEDENTE]}/{rec[NOME_RESPONSABILE]}")
-        print(f"   {rec[DESCRIZIONE_ACQUISTO]}")
+        print(f" - {rec[cs.NUMERO_PRATICA]} {rec[cs.DATA_PRATICA]}",
+              f"{rec[cs.NOME_RICHIEDENTE]}/{rec[cs.NOME_RESPONSABILE]}")
+        print(f"   {rec[cs.DESCRIZIONE_ACQUISTO]}")
     if elenco.errors:
         print("Errori di accesso alle pratiche:")
         for err in elenco.errors:

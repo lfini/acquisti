@@ -65,28 +65,6 @@ a brani letterari.
 Sembra che questo sia sufficiente a mandare a capo almeno un po' della nota.
 """
 
-TEST_ACQUISTO = {'data_richiesta': '19/7/1952',
-                 'nome_richiedente': 'Luca Fini',
-                 'dettaglio_ordine': 1,
-                 'str_costo_ord_it': '100 € + I.V.A. 22%, incluso trasporto',
-                 'cig': '01-234',
-                 'cup': "234-01",
-                 'capitolo': '12.345.67',
-                 'iva': '22% esclusa',
-                 'note_ordine': _NOTA1+_NOTA2,
-                 'numero_pratica': 132,
-                 'fornitore_nome': 'Esselunga',
-                 'fornitore_sede': 'Via Lupo, 6',
-                 'fornitore_codfisc': '0552343071',
-                 'fornitore_partiva': '0552343071',
-                 'numero_ordine': 1432,
-                 'data_ordine': '20/7/1952',
-                 'nome_direttore': 'Luca Fini',
-                 'nome_responsabile': 'Giuseppe Garibaldi',
-                 'titolo_direttore': 'Ing.',
-                 'descrizione_ordine': 'Un sacco di patate',
-                }
-
 TEST_SEDE = 'Osservatorio della Montagna Pistoiese'
 TEST_INDIRIZZO = 'Località Pian dei Termini'
 TEST_WEBSITE = 'www.oampt.org'
@@ -280,8 +258,8 @@ def makepdf(destdir, pdfname, template, remove=False,  #pylint: disable=R0912,R0
         for atch in attach:
             logging.debug('Processing attachment: %s', atch)
             atcs.append(SplittedAttachment(tempdir, atch, debug))
-
     newdata = sanitize(data)
+    newdata['debug'] = bool(debug)
     pdffile = os.path.join(destdir, pdfname)
     if remove:
         try:

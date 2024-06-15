@@ -79,14 +79,10 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.20'
-__date__ = '06/06/2024'
+__version__ = '5.0.21'
+__date__ = '17/06/2024'
 
 __start__ = time.asctime(time.localtime())
-
-MODALITA_IMPLEMENTATE = [cs.TRATT_MEPA_40,     # Lista modalità acquisto implementate
-                         cs.INFER_5000,
-                        ]
 
 # stringhe per check_xxxxx
 YES = 'SI'
@@ -355,7 +351,7 @@ def test_doc_decisione(d_prat: Pratica) -> bool:
 
 def test_all_prev_mepa(d_prat: Pratica) -> bool:
     "test esistenza preventivo mepa"
-    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.INFER_5000):
+    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40, cs.INFER_5000):
         return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_PREV_MEPA][0]))
     return True
 
@@ -402,7 +398,7 @@ def test_doc_rdo(d_prat: Pratica) -> bool:
 
 def test_rdo_richiesta(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede RdO"
-    return d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40)
+    return d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40)
 
 
 def check_allegati_cancellabili(d_prat: Pratica) -> str:
@@ -588,7 +584,7 @@ def check_access(new=False):
                   cs.NUMERO_PRATICA: '-------',
                   cs.EMAIL_RICHIEDENTE: user['email'],
                   cs.NOME_RICHIEDENTE: user['name']+' '+user['surname'],
-                  cs.DATA_RICHIESTA: ft.today(False),
+                  cs.DATA_PRATICA: ft.today(False),
                   cs.TAB_PASSI: [CdP.INI],
                   cs.PRATICA_APERTA: True}
     logging.debug('Session: %s', str(fk.session))
@@ -857,7 +853,6 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     ndata["titolo_direttore_uk"] = CONFIG.config['titolo_direttore_uk']
     ndata["nome_direttore"] = CONFIG.config['nome_direttore']
     ndata["dir_is_m"] = CONFIG.config['gender_direttore'].lower() == 'm'
-    ndata['dovra_indicare'] = d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_UBUY_40, )  # opzione rdo
     logging.info('Generazione documento: %s/%s', d_prat.basedir, nome_pdf)
     latex.makepdf(d_prat.basedir, nome_pdf, template,
                   debug=DEBUG.local, pratica=d_prat.data, **ndata)
@@ -1092,7 +1087,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     if not prog.lista_codf.data:    # Workaround per errore wtform (non aggiorna campo)
         prog.lista_codf.process_data(d_prat.get("lista_codf", []))
     if mod_acquisto:
-        if mod_acquisto not in MODALITA_IMPLEMENTATE:
+        if not cs.TABELLA_PROGETTI.get(mod_acquisto):
             err = 'Modalità di acquisto non ancora implementata'
             fk.flash(err, category="error")
             logging.error(err)
@@ -1108,7 +1103,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             fk.session[cs.BASEDIR] = basedir
             ft.newdir(basedir)
             d_prat.update({cs.NUMERO_PRATICA: f'{number}/{year:4d}',
-                           cs.DATA_RICHIESTA: ft.today(False)})
+                           cs.DATA_PRATICA: ft.today(False)})
             d_prat.set_basedir(basedir)
             storia(d_prat, f'Creato progetto di acquisto: {d_prat[cs.NUMERO_PRATICA]}')
         else:
@@ -1122,6 +1117,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
         d_prat[cs.PROGETTO_INVIATO] = 0
         d_prat[cs.FIRMA_APPROV_RESP] = ""
+        d_prat[cs.TEMPL_PROGETTO] = cs.TABELLA_PROGETTI[d_prat[cs.MOD_ACQUISTO]]
         update_costo(d_prat, cs.COSTO_PROGETTO)
         doc = d_prat.get_passo('f')
         genera_documento(d_prat, doc)
@@ -1628,6 +1624,7 @@ def modificardo():
                 rdo_data = rdo.data.copy()
                 d_prat.update(clean_data(rdo_data))
                 update_costo(d_prat, cs.COSTO_RDO)
+                d_prat[cs.TEMPL_RDO] = cs.TABELLA_RDO[d_prat[cs.MOD_ACQUISTO]]
                 genera_documento(d_prat, (cs.DOC_RDO, [cs.DIRETTORE]))
                 d_prat.next()
                 salvapratica(d_prat)
@@ -1676,8 +1673,8 @@ def modificadecisione():                     #pylint: disable=R0914
             d_prat.update(clean_data(det.data))
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
+            d_prat[cs.TEMPL_DECISIONE] = cs.TABELLA_DECISIONI[d_prat[cs.MOD_ACQUISTO]]
             genera_documento(d_prat, doc)
-#           d_prat.next()
             salvapratica(d_prat)
             return pratica1()
         errors = det.get_errors()
