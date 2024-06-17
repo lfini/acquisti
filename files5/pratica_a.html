@@ -35,8 +35,8 @@
 {% if 'autorizza' in info.commands and info.autorizzabile %}
 &nbsp;&nbsp;[<a href=/autorizza>Autorizzazione Direttore</a>]
 {% endif %}
+{% if info.rdo_richiesta %}
 <p>
-
 <b>Rich. di Offerta:</b>
 {% if info.pdf_rdo %}
    [<a href=/vedifile/rdo.pdf>Vedi</a>]
@@ -47,6 +47,7 @@
 {% if 'procedi_dec' in info.commands %}
 &nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
 {% endif %}
+{% endif %}
 <p>
 <b>Decisione: </b>
 {% if info.pdf_decisione %}
@@ -56,13 +57,26 @@
 &nbsp;&nbsp;[<a href=/modificadecisione>Crea/Modifica</a>]
 {% endif %}
 {% if 'inviadecisione' in info.commands and info.decis_inviabile %}
-&nbsp;&nbsp;[<a href=/inviadecisione>Invia per firma digitale</a>]
+&nbsp;&nbsp;[<a href=/inviadecisione>Invia decisione per firma digitale</a>]
 {% endif %}
 {% if 'procedi_ogp' in info.commands %}
 &nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
 {% endif %}
 <p>
-
+{% if info.ordine %}
+<p>
+<b>Ordine:</b>
+{% if info.pdf_ordine %}
+  [<a href=/vedifile/ordine.pdf>Vedi</a>]
+{% endif %}
+{% if 'modificaordine' in info.commands and info.ordine_modificabile %}
+&nbsp;&nbsp;[<a href=/modificaordine>Crea/Modifica</a>]
+{% endif %}
+{% if 'procedi_ord' in info.commands %}
+&nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
+{% endif %}
+{% endif %}
+<p>
 <b>Allegati:</b>
 {% if info.allegati_mancanti %} 
    &nbsp;&nbsp;(<font color="red">Mancanti: {{ info.allegati_mancanti }}</font>)

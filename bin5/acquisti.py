@@ -79,7 +79,7 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.21'
+__version__ = '5.0.22'
 __date__ = '17/06/2024'
 
 __start__ = time.asctime(time.localtime())
@@ -349,10 +349,16 @@ def test_doc_decisione(d_prat: Pratica) -> bool:
         return False
     return os.path.exists(os.path.join(d_prat.basedir, cs.DOC_DECISIONE))
 
+def test_doc_ordine(d_prat: Pratica) -> bool:
+    "test: esistenza ordine"
+    if not d_prat.basedir:
+        return False
+    return os.path.exists(os.path.join(d_prat.basedir, cs.DOC_ORDINE))
+
 def test_all_prev_mepa(d_prat: Pratica) -> bool:
     "test esistenza preventivo mepa"
     if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40, cs.INFER_5000):
-        return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_PREV_MEPA][0]))
+        return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_PREV][0]))
     return True
 
 def test_all_cv_rup(d_prat: Pratica) -> bool:
@@ -400,6 +406,9 @@ def test_rdo_richiesta(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede RdO"
     return d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40)
 
+def test_ordine_richiesto(d_prat: Pratica) -> str:
+    "True se la modalità di acquisto richiede generazione dell'ordine"
+    return d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000
 
 def check_allegati_cancellabili(d_prat: Pratica) -> str:
     "test: allegati cancellabili"
@@ -468,6 +477,12 @@ def check_decisione_modificabile(d_prat: Pratica) -> str:
         return YES
     return NO_NON_ADMIN_RUP
 
+def check_ordine_modificabile(d_prat: Pratica) -> str:
+    "test: decisione di contrarre modificabile"
+    if test_rup(d_prat) or test_admin(d_prat.user):
+        return YES
+    return NO_NON_ADMIN_RUP
+
 def check_decisione_inviabile(d_prat: Pratica) -> str:
     "test: decisione di contrarre inviabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
@@ -514,11 +529,14 @@ def make_info(d_prat: Pratica) -> dict:
     info['autorizz_richiedibile'] = check_autorizz_richiedibile(d_prat)
     info['decis_modificabile'] = check_decisione_modificabile(d_prat)
     info['decis_inviabile'] = check_decisione_inviabile(d_prat)
+    info['ordine_modificabile'] = check_ordine_modificabile(d_prat)
+    info['ordine'] = YES if test_ordine_richiesto(d_prat) else NOT
     info['pratica_annullabile'] = check_pratica_annullabile(d_prat)
     info['pratica_chiudibile'] = check_pratica_chiudibile(d_prat)
     info['progetto_approvabile'] = check_progetto_approvabile(d_prat)
     info['progetto_modificabile'] = check_progetto_modificabile(d_prat)
     info['progetto_inviabile'] = check_progetto_inviabile(d_prat)
+    info['rdo_richiesta'] = YES if test_rdo_richiesta(d_prat) else NOT
     info['autorizzabile'] = check_autorizzabile(d_prat)
     info['rollback'] = check_rollback(d_prat)
     info['rup_indicabile'] = check_rup_indicabile(d_prat)
@@ -526,6 +544,7 @@ def make_info(d_prat: Pratica) -> dict:
     info[cs.PDF_PROGETTO] = YES if test_doc_progetto(d_prat) else NOT
     info[cs.PDF_NOMINARUP] = YES if test_doc_nominarup(d_prat) else NOT
     info[cs.PDF_DECISIONE] = YES if test_doc_decisione(d_prat) else NOT
+    info[cs.PDF_ORDINE] = YES if test_doc_ordine(d_prat) else NOT
     info[cs.PDF_RDO] = YES if test_doc_rdo(d_prat) else NOT
     return info
 
@@ -642,7 +661,7 @@ def clean_lista(rdo_data):
     for ditta in rdo_data[cs.LISTA_DITTE]:
         if ditta.get("T_cancella"):
             continue
-        if bool(ditta[cs.NOME_DITTA]) or  bool(ditta[cs.SEDE_DITTA]):
+        if bool(ditta[cs.FORNITORE_NOME]) or  bool(ditta[cs.FORNITORE_SEDE]):
             newlist.append(ditta)
     rdo_data[cs.LISTA_DITTE] = newlist
 
@@ -724,7 +743,7 @@ def allegati_mancanti(d_prat: Pratica):
     "Genera lista allegati mancanti"
     ret = []
     if d_prat.get_passo() >= CdP.INI and not test_all_prev_mepa(d_prat):
-        ret.append(cs.ALL_PREV_MEPA)
+        ret.append(cs.ALL_PREV)
     if d_prat.get_passo() >= CdP.RUI and not test_all_cv_rup(d_prat):
         ret.append(cs.ALL_CV_RUP)
     if d_prat.get_passo() >= CdP.RUI and not test_all_dich_rup(d_prat):
@@ -1112,6 +1131,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         d_prat[cs.STR_MOD_ACQ] = _select(cs.MENU_MOD_ACQ, d_prat.get(cs.MOD_ACQUISTO))
         d_prat[cs.STR_CRIT_ASS] = _select(cs.MENU_CRIT_ASS, d_prat.get(cs.CRIT_ASS))
         d_prat[cs.NOME_RESPONSABILE] = nome_da_email(d_prat[cs.EMAIL_RESPONSABILE], True)
+        d_prat[cs.NOME_DIRETTORE] = CONFIG.config[cs.NOME_DIRETTORE]
         d_prat[cs.SEDE] = CONFIG.config[cs.SEDE]
         d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
         d_prat[cs.FIRMA_APPROV_RESP] = ""
@@ -1210,7 +1230,7 @@ def approvaprogetto():
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     d_prat.next()
-    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.DIRETTORE, cs.RESP]))
+    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESP]))
     storia(d_prat, 'Progetto approvato da resp. fondi.')
     salvapratica(d_prat)
     subj = 'Notifica approvazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
@@ -1281,6 +1301,7 @@ def autorizza():
     send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     d_prat.next()
     storia(d_prat, "Autorizzazione concessa dal direttore")
+    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESP, cs.DIRETTORE]))
     genera_documento(d_prat, (cs.DOC_NOMINARUP, [cs.DIRETTORE]))   # genera versione definitiva
     salvapratica(d_prat)
     return pratica_common(d_prat)
@@ -1359,6 +1380,48 @@ def modificardo():
            'body': rdo(**d_prat)}
     return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
 
+@ACQ.route('/modificaordine', methods=('GET', 'POST', ))
+def modificaordine():                     #pylint: disable=R0914
+    "pagina: modifica ordine (sopl per acquyisti inf. 5k)"
+    logging.info('URL: /modificaordine (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return pratica_common(d_prat)
+    err = check_ordine_modificabile(d_prat)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        logging.error('Gestione ordine non autorizzata: %s. Utente %s, pratica %s',
+                     err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
+        return pratica_common(d_prat)
+    if cs.COSTO_RDO not in d_prat:
+        d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
+    ordn = fms.Ordine(fk.request.form, **d_prat)
+    if fk.request.method == 'POST':
+        if ordn.validate(extra_validators=True):
+            d_prat.update(clean_data(ordn.data))
+            update_costo(d_prat, cs.COSTO_RDO)
+            doc = d_prat.get_passo('f')
+            genera_documento(d_prat, doc)
+            storia(d_prat, f'Generato/modificato ordine N. {d_prat.get(cs.NUMERO_DECISIONE, "")}')
+            salvapratica(d_prat)
+            return pratica_common(d_prat)
+        errors = ordn.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        logging.debug("Errori form Ordine: %s", "; ".join(errors))
+
+    ddp = {'title': 'Immissione dati per ordine',
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+           'before': '<form method=POST action=/modificaordine '
+                     'accept-charset="utf-8" novalidate>',
+           'after': "</form>",
+           'note': cs.OBBLIGATORIO,
+           'body': ordn(d_prat)}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+
+
 @ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
 def modificadecisione():                     #pylint: disable=R0914
     "pagina: modifica decisione di contrarre"
@@ -1389,7 +1452,8 @@ def modificadecisione():                     #pylint: disable=R0914
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
             genera_documento(d_prat, doc)
-            storia(d_prat, f'Generata/modificata decisione a contrarre N. {d_prat[cs.NUMERO_DECISIONE]}')
+            storia(d_prat, 'Generata/modificata decisione a contrarre N. '
+                           f'{d_prat[cs.NUMERO_DECISIONE]}')
             salvapratica(d_prat)
             return pratica_common(d_prat)
         errors = decis.get_errors()

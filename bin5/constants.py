@@ -12,7 +12,7 @@ __author__ = "Luca Fini"
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
-CONFIG_REQUIRED = 3              # versione file configurazione richiesta
+CONFIG_REQUIRED = 4              # versione file configurazione richiesta
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
@@ -32,9 +32,6 @@ BASEDIR = 'basedir'
 AVANTI = "T_avanti"
 ANNULLA = "T_annulla"
 MORE = "T_more"
-
-NOME_DITTA = "nome_ditta"
-SEDE_DITTA = "sede_ditta"
 
 TEMPORARY_KEY_PREFIX = "T_"
 
@@ -130,6 +127,7 @@ DIRETTORE = 'direttore'
 DOC_DECISIONE = "decisione.pdf"
 DOC_NOMINARUP = "nominarup.pdf"
 DOC_PROGETTO = "progetto.pdf"
+DOC_ORDINE = "ordine.pdf"
 DOC_RDO = "rdo.pdf"
 
 # nomi azioni
@@ -153,7 +151,6 @@ COSTO_NETTO = 'costo_netto'                     # dati pratica
 COSTO_ORDINE = 'costo_ordine'                   # dati_pratica
 COSTO_TOTALE = 'costo_totale'                   # dati_pratica
 CRIT_ASS = 'criterio_assegnazione'              # dati_pratica
-CUP = 'cup'                                     # dati_pratica
 DATA_DECISIONE = 'data_decisione'               # dati_pratica
 DATA_NEGOZIAZIONE = 'data_negoziazione'         # dati_pratica
 DATA_OFFERTA = 'data_offerta'                   # dati_pratica
@@ -192,6 +189,8 @@ MOTIVAZIONE_ANNULLAMENTO = 'motivazione_annullamento'   # dati_pratica
 NOME_RESPONSABILE = 'nome_responsabile'         # dati_pratica
 NOME_RICHIEDENTE = 'nome_richiedente'           # dati_pratica
 NOME_RUP = 'nome_rup'                           # dati_pratica
+NUMERO_CIG = "numero_cig"                       # dati_pratica
+NUMERO_CUP = "numero_cup"                       # dati_pratica
 NUMERO_DECISIONE = 'numero_decisione'           # dati_pratica
 NUMERO_NEGOZIAZIONE = 'numero_negoziazione'     # dati praticayy
 NUMERO_OFFERTA = 'numero_offerta'               # dati_pratica
@@ -257,7 +256,7 @@ ALL_DECIS_FIRM = 'Decis. Firmata'
 ALL_DICH_RUP = 'Dich. RUP'
 ALL_GENERICO = "All. Generico"
 ALL_OBBLIG = "Obblig. Perf."
-ALL_PREV_MEPA = "prev. MePA"
+ALL_PREV = "preventivo"
 ALL_RDO = "RdO Firmata"
 
 ALL_OFF_DITTA = 'off_ditta'
@@ -284,8 +283,7 @@ ALL_PRAT = 3    # Allegato singolo con numero pratica
 TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Documento generico", ALL_NAME),
                 ALL_CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
                 ALL_DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
-                ALL_PREV_MEPA: ('A02_Preventivo_trattativa_MePA',
-                                  "Preventivo trattativa diretta MePA", ALL_SING),
+                ALL_PREV: ('A02_Preventivo', "Preventivo", ALL_SING),
                 ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
                 ALL_RDO: ("A16_RdO_Firmata", "RdO con firma digitale RUP", ALL_SING),
                 ALL_DECIS_FIRM: ("A24_Decisione_Firmata",
@@ -305,6 +303,7 @@ class CdP(IntEnum):
     ROG = 60
     DEC = 70
     DCI = 80
+    ORD = 85
     OGP = 90
     END = 100
     FIN = 101
@@ -315,7 +314,7 @@ TABELLA_PASSI = {
     CdP.INI: ("Iniziale",                            # Descrizione stato
               [DOC_PROGETTO, [PROVV]],               # File da generare per procedere (con opzioni)
               ['modificaprogetto', 'inviaprogetto'], # Comandi abilitati
-              [ALL_PREV_MEPA],                       # Allegati necessari per procedere
+              [ALL_PREV],                       # Allegati necessari per procedere
               CdP.PIR),                              # passo successivo
     CdP.PIR: ("Progetto inviato al resp. dei fondi",
               [],
@@ -358,8 +357,14 @@ TABELLA_PASSI = {
               [],
               ['procedi_ogp'],
               [ALL_DECIS_FIRM],
+              {TRATT_MEPA_40: CdP.OGP,   # prossimo passo dipende da
+               TRATT_UBUY_40: CdP.OGP,   # modalità acquisto
+               INFER_5000: CdP.ORD}),
+    CdP.ORD: ("Genera ordine",
+              [DOC_ORDINE, []],
+              ['modificaordine', 'procedi_ord'],
+              [],
               CdP.OGP),
-                                                  # RUP allega Obbligaz. Giur. Perfez.
     CdP.OGP: ("Allega Obbligazione giuridicamente perfezionata",
               [],
               ['procedi_ogp'],

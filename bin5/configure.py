@@ -16,9 +16,9 @@ import ftools
 import constants as cs
 from table import jload, jsave
 
-__version__ = "1.4"
+__version__ = "1.5"
 
-MY_VERSION = 3
+MY_VERSION = 4
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -113,6 +113,10 @@ SEDE_DESC = """Identificazione sede INAF
 [es: INAF - Osservatorio Astrofisico di Arcetri
 """
 
+PART_IVA_DESC = """Partita I.V.A. dell'ente
+[es: 97220210583]
+"""
+
 COD_FISC_DESC = """Codice fiscale dell'ente
 [es: 97220210583]
 """
@@ -135,6 +139,8 @@ SEDE = OrderedDict([(cs.SEDE_IT, SEDE_DESC),
                     (cs.INDIRIZZO, INDIRIZZO_DESC),
                     (cs.CITTA, CITTA_DESC),
                     (cs.WEBSITE, WEBSITE_DESC),
+                    (cs.COD_FISC, COD_FISC_DESC),
+                    (cs.PART_IVA, PART_IVA_DESC),
                     (cs.PEC_OSS, PEC_DESC),
                     (cs.TEL_OSS, TEL_DESC),
                     (cs.CUU, CUU_DESC),

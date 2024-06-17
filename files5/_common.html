@@ -35,7 +35,11 @@
 <div id="overlay">
    <div>
        <center>
+{% if errors %}
        <h3>Attenzione!</h3>
+{% else %}
+       <h3>Notifica</h3>
+{% endif %}
        </center>
 {% for err in errors %}
        <p><font color=red>{{ err }} </font></p>

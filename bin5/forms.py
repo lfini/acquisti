@@ -456,35 +456,36 @@ class Decisione(FormWErrors):
 
 class Ordine(FormWErrors):
     "form per definizione ordine"
-    numero_ordine = MyTextField('Numero ordine', True,
-                                [wt.validators.InputRequired("Manca numero ordine")])
-    termine_giorni = MyTextField('Termine di esecuzione della prestazione (giorni)', True,
-                                [wt.validators.InputRequired("Indicazione termine di esecuzione")])
-    descrizione_ordine = MyTextAreaField('Descrizione', True,
-                                         [wt.validators.InputRequired("Manca descrizione ordine")])
-    note_ordine = MyTextAreaField('Note', False, [wt.validators.Optional()])
+    numero_ordine = MyTextField('Numero ordine', True, [])
+    termine_giorni = MyTextField('Termine di esecuzione della prestazione (giorni)', True, [])
+    descrizione_ordine = MyTextAreaField('Descrizione', True, [])
+    note_ordine = MyTextAreaField('Note', False, [])
 
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
     def validate(self, extra_validators=None):
         "Validazione specifica per il form"
+        self.errlist = []
         if not self.numero_ordine.data:
             self.errlist.append("Manca numero ordine")
         if not self.termine_giorni.data:
             self.errlist.append("Manca indicazione termine di esecuzione")
-        if not self.descrizione_ordine.data:
-            self.errlist.append("Manca descrizione ordine")
-        return len(self.errlist) == 0
+        return not self.errlist
 
-    def renderme(self, d_prat):
+    def __call__(self, d_prat):
         "rendering del form"
         html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
-                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')
-        html += Markup(f'<p>Presso la ditta:<blockquote>{d_prat[cs.NOME_DITTA]}<br>'\
-                          f'{d_prat[cs.SEDE_DITTA]}</blockquote>')+E_TRTD
+                             f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
+                             f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
+        html += Markup(f'''<p><b>Descrizione acquisto:</b>
+        <blockquote>{d_prat[cs.DESCRIZIONE_ACQUISTO]}</blockquote>
+        ''')
+        html += Markup(f'''<p><b>Numero CIG:</b> {d_prat[cs.NUMERO_CIG]}<br>
+        <b>Numero CUP:</b> {d_prat[cs.NUMERO_CUP]}
+        ''')
+        html += Markup(f'<p><b>Fornitore:</b><blockquote>{d_prat[cs.FORNITORE_NOME]}<br>'\
+                          f'{d_prat[cs.FORNITORE_SEDE]}</blockquote>')+E_TRTD
         html += B_TRTD+ render_field(self.numero_ordine)+E_TRTD
         html += B_TRTD+ render_field(self.termine_giorni)+E_TRTD
         html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
