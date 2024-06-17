@@ -1194,7 +1194,7 @@ def inviadecisione():                    #pylint: disable=R0914
         salvapratica(d_prat)
     else:
         fk.flash("Invio e-mail per firma fallito", category="error")
-    genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE, )))  # Elimna barra "provvisorio"
+    genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE, )))  # Elimina barra "provvisorio"
     return pratica_common(d_prat)
 
 @ACQ.route('/approvaprogetto')
@@ -1281,6 +1281,7 @@ def autorizza():
     send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     d_prat.next()
     storia(d_prat, "Autorizzazione concessa dal direttore")
+    genera_documento(d_prat, (cs.DOC_NOMINARUP, [cs.DIRETTORE]))   # genera versione definitiva
     salvapratica(d_prat)
     return pratica_common(d_prat)
 

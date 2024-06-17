@@ -1,3 +1,27 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage{watermark}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% Template: progetto-ub40k.tex. Version 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+((* endif *))
+
+\begin{document}
+\topaddr
+
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{progetto-ub40k.tex}
+\end{quotation}
+((* endif *))
+
 \begin{center}
 \textbf{PROGETTO DI FORNITURA \\ (RICHIESTA DI ACQUISIZIONE DI BENI)}
 \end{center}
@@ -148,3 +172,5 @@ Il Responsabile dei fondi
 ((* include 'direttore.tex' *))
 \end{minipage}
 ((* endif *))
+
+\end{document}

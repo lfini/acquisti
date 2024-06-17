@@ -1,3 +1,26 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage{watermark}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% Template: decisione-inf5k.tex. Version 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+((* endif *))
+
+\begin{document}
+\topaddr
+
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{decisione-inf5k.tex}
+\end{quotation}
+((* endif *))
 
 Pratica N. ((( pratica.numero_pratica )))
 
@@ -7,9 +30,11 @@ Decisione N. ((( pratica.numero_decisione )))
 
 \begin{center}
 \framebox[\linewidth]{%
+\begin{minipage}{0.9\linewidth}
 Decisione di contrarre del ((( pratica.data_decisione ))) – Affidamento diretto
 	della fornitura di ((( pratica.descrizione_acquisto )))
 CIG: ((( pratica.numero_cig ))) - CUP: ((( pratica.numero_cup )))
+\end{minipage}
 }
 
 Il Direttore
@@ -503,3 +528,4 @@ all’articolo 16 del Decreto Legislativo n. 36/2023.
 \end{itemize}
 
 ((* include 'direttore.tex' *))
+\end{document}

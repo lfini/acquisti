@@ -1,3 +1,28 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage{watermark}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% Template: decisione.tex. Version 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+((* endif *))
+
+\begin{document}
+\topaddr
+
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{decisione-tm40k.tex}
+\end{quotation}
+((* endif *))
+
+
 Pratica N. ((( pratica.numero_pratica )))
 
 \begin{flushright}
@@ -490,3 +515,4 @@ all’articolo 16 del Decreto Legislativo n. 36/2023.
 \end{itemize}
 
 ((* include 'direttore.tex' *))
+\end{document}

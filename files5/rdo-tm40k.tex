@@ -1,3 +1,29 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage{watermark}
+\usepackage[italian]{babel} 
+\usepackage[utf8]{inputenc}
+\usepackage{eurosym}
+\usepackage{soul}
+
+%% Template: rdo-tm40k.tex Version 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+((* endif *))
+
+
+\begin{document}
+\topaddr
+
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{rdo-tm40k.tex}
+\end{quotation}
+((* endif *))
+
 \begin{center}
 \textbf{RICHIESTA DI OFFERTA}
 \end{center}
@@ -267,3 +293,4 @@ di Astrofisica con sede legale in Viale del Parco Mellini, 84 - 00136
 Roma, Italia.
 
 ((* include 'rup.tex' *))
+\end{document}

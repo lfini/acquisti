@@ -30,10 +30,10 @@
    [<a href=/vedifile/nominarup.pdf>Vedi</a>]
 {% endif %}
 {% if 'rich_autorizzazione' in info.commands and info.autorizz_richiedibile %}
-&nbsp;&nbsp;[<a href=/rich_autorizzazione>Richiedi autorizzazione al direttore</a>]
+&nbsp;&nbsp;[<a href=/rich_autorizzazione>Richiedi autorizzazione al Direttore</a>]
 {% endif %}
 {% if 'autorizza' in info.commands and info.autorizzabile %}
-&nbsp;&nbsp;[<a href=/autorizza>Autorizzazione direttore</a>]
+&nbsp;&nbsp;[<a href=/autorizza>Autorizzazione Direttore</a>]
 {% endif %}
 <p>
 
@@ -56,7 +56,7 @@
 &nbsp;&nbsp;[<a href=/modificadecisione>Crea/Modifica</a>]
 {% endif %}
 {% if 'inviadecisione' in info.commands and info.decis_inviabile %}
-&nbsp;&nbsp;[<a href=/inviadecisione>Invia al Direttore</a>]
+&nbsp;&nbsp;[<a href=/inviadecisione>Invia per firma digitale</a>]
 {% endif %}
 {% if 'procedi_ogp' in info.commands %}
 &nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
@@ -80,7 +80,7 @@
 <p>
 {% if pratica.pratica_aperta %}
 </td><td valign=top width=40% bgcolor=#ffddaa>
-<form method=POST action=/pratica1 enctype=multipart/form-data novalidate> 
+<form method=POST action=/upload enctype=multipart/form-data novalidate> 
 <b> Allega documenti</b>
 <p>
 {{ upload.upload_file }} <a href="/files5/help_upload.html"  onclick="window.open('/files5/help_upload.html', 'newwindow', 'width=640, height=480, scrollbars=yes'); return false;"><sup><img src=/files5/qm-16.png></sup></a><br> 
