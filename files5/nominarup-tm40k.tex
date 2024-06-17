@@ -5,16 +5,21 @@
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
-%% Template: richiesta.tex. Version 1.9
+%% Template: noiminarup-tm40k.tex  vers. 1.0
 
 ((* include 'header.tex' *))
 
-((* if warning *))
-\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( warning ))) }}}
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
 ((* endif *))
 
 \begin{document}
 \topaddr
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{nominarup-tm40k.tex}
+\end{quotation}
+((* endif *))
 
 \begin{center}
 \textbf{Il Direttore dell’Osservatorio Astrofisico di Arcetri }
@@ -48,6 +53,7 @@ a ((( pratica.nome_rup ))), in servizio presso l’Istituto Nazionale di Astrofi
 Astrofisico di Arcetri, l’incarico di Responsabile Unico di progetto (RUP), in relazione alla procedura
 di affidamento in oggetto.
 
+((* if direttore *))
 ((* include 'direttore.tex' *))
-
+((* endif *))
 \end{document}

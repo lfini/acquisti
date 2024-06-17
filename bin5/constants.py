@@ -48,6 +48,18 @@ TRATT_MEPA_40 = 'tratt.mepa40'
 TRATT_UBUY_143 = 'tratt.ubuy143'
 TRATT_UBUY_40 = 'tratt.ubuy40'
 
+TAB_TEMPLATE = {          # suffissi per i template delle vasrie modalità di acquisto
+        ACCORDO_QUADRO: '',
+        CONSIP: '',
+        INFER_5000: 'inf5k',
+        MEPA: '',
+        TRATT_MEPA_143: '',
+        TRATT_MEPA_40: 'tm40k',
+        TRATT_UBUY_143: '',
+        TRATT_UBUY_40: 'ub40k',
+        }
+
+
 MOD_TUTTE = 'mod.tutte'   # Valido per tutte le modalità di acquisto
 
 # Costanti per menu valuta
@@ -187,7 +199,7 @@ NUMERO_PRATICA = 'numero_pratica'               # dati_pratica
 ONERI_SICUREZZA = 'oneri_sicurezza'             # dati_pratica
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
 PDF_DECISIONE = 'pdf_decisione'                 # dati_pratica
-PDF_DETERMINA_B = 'pdf_determina_b'             # dati_pratica
+PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
 PDF_RDO = 'pdf_rdo'                             # dati_pratica
 PDF_PROGETTO = 'pdf_progetto'                   # dati_pratica
 PRAT_JFILE = 'pratica.json'
@@ -211,9 +223,6 @@ STR_ONERI_IT = 'str_oneri_it'                   # dati_pratica
 STR_ONERI_UK = 'str_oneri_uk'                   # dati_pratica
 STR_PREZZO_GARA = 'str_prezzo_gara'             # dati_pratica
 TAB_PASSI = 'tab_passi'                         # dati pratica
-TEMPL_DECISIONE = 'templ_decisione'             # dati pratica
-TEMPL_PROGETTO = 'templ_progetto'               # dati pratica
-TEMPL_RDO = 'templ_rdo'                         # dati pratica
 VALUTA = "valuta"
 VEDI_STORIA = '_vedi_storia'                    # dati_pratica
 VERSIONE = 'versione'                           # dati_pratica
@@ -226,25 +235,10 @@ VINCITORE = 'ditta_vincitrice'                  # dati_pratica
 MENU_CRIT_ASS = ((PREZ_PIU_BASSO, "Prezzo pi&ugrave; basso"),
                  (OFF_PIU_VANT, "Offerta pi&ugrave; vantaggiosa"))
 
-MENU_IVA = ((IVA_NO, "-"),
-            (IVA22, "+ I.V.A. 22%"),
-            (IVA10, "+ I.V.A. 10%"),
-            (IVA4, "+ I.V.A. 4%"),
-            (IVA_, "+ I.V.A."),
-            (IVAINCL22, "I.V.A. 22% inclusa"),
-            (IVAINCL10, "I.V.A. 10% inclusa"),
-            (IVAINCL4, "I.V.A. 4% inclusa"),
-            (IVAINCL, "I.V.A. inclusa"),
-            (IVAESENTE, "esente I.V.A."))
-
 MENU_VALUTA = ((EURO, "EUR"),
                (POUND, "GBP"),
                (DOLLAR, "USD"),
                (SFR, "SFR"))
-
-MENU_TRASPORTO = ((NON_APP, "Non applicabile"),
-                  (TRASP_INC, "Incluso"),
-                  (SPECIFICARE, "Specificare"))
 
 MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a 143k€"),
@@ -255,10 +249,6 @@ MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_UBUY_143, "Trattativa diretta UBUY sotto 143 k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
                )
-
-# Sequenze passi per modalità di acquisto
-SEQUENZE = { TRATT_MEPA_40: [0, 10, 20, 30, 40, 50, 60, 70, 80],
-           }
 
 # Tipi allegato
 ALL_CIG = "CIG"
@@ -319,39 +309,6 @@ class CdP(IntEnum):
     END = 100
     FIN = 101
     ANN = 500
-
-TABELLA_PROGETTI = {          # nomi dei template del progetto per modalità di acquisto
-        ACCORDO_QUADRO: '',
-        CONSIP: '',
-        INFER_5000: 'progetto-inf5k',
-        MEPA: '',
-        TRATT_MEPA_143: '',
-        TRATT_MEPA_40: 'progetto-tm40k.tex',
-        TRATT_UBUY_143: '',
-        TRATT_UBUY_40: 'progetto-ub40k.tex',
-        }
-
-TABELLA_RDO = {          # nomi dei template del RdO per modalità di acquisto
-        ACCORDO_QUADRO: '',
-        CONSIP: '',
-        INFER_5000: '',
-        MEPA: '',
-        TRATT_MEPA_143: '',
-        TRATT_MEPA_40: 'rdo-tm40k.tex',
-        TRATT_UBUY_143: '',
-        TRATT_UBUY_40: 'rdo-ub40k.tex',
-        }
-
-TABELLA_DECISIONI= {          # nomi dei template del progetto per modalità di acquisto
-        ACCORDO_QUADRO: '',
-        CONSIP: '',
-        INFER_5000: 'decisione-inf5k',
-        MEPA: '',
-        TRATT_MEPA_143: '',
-        TRATT_MEPA_40: 'decisione-tm40k.tex',
-        TRATT_UBUY_143: '',
-        TRATT_UBUY_40: 'decisione-ub40k.tex',
-        }
 
 ############### Tabella generale passi operativi   ############################
 TABELLA_PASSI = {

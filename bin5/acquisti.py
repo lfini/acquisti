@@ -695,7 +695,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} chiusa'
             storia(d_prat, text)
             salvapratica(d_prat)
-        return pratica1()
+        return pratica_common(d_prat)
     if what[0].lower() == 'a':      # Riapri pratica
         err = check_pratica_riapribile(d_prat)
         if err.startswith(NOT):
@@ -707,7 +707,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} riaperta'
             storia(d_prat, text)
             salvapratica(d_prat)
-        return pratica1()
+        return pratica_common(d_prat)
     msg = f'Errore interno - modifica_pratica: codice illegale ({what})'
     fk.flash(msg, category="error")
     logging.error(msg)
@@ -835,9 +835,10 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
         return None
     nome_pdf, opts = spec
     noext = os.path.splitext(nome_pdf)[0]
-    template = os.path.join(cs.FILEDIR, noext+'.tex')
+    nome_tmpl = noext+'-'+cs.TAB_TEMPLATE[d_prat[cs.MOD_ACQUISTO]]+'.tex'
+    template = os.path.join(cs.FILEDIR, nome_tmpl)
     if filenum:
-        nome_pdf = f'{noext}_{filenum}'
+        nome_pdf = f'{noext}_{filenum}.pdf'
     ndata = {}
     if cs.PROVV in opts:
         ndata[cs.PROVV] = 'P R O V V I S O R I O'
@@ -853,7 +854,7 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     ndata["titolo_direttore_uk"] = CONFIG.config['titolo_direttore_uk']
     ndata["nome_direttore"] = CONFIG.config['nome_direttore']
     ndata["dir_is_m"] = CONFIG.config['gender_direttore'].lower() == 'm'
-    logging.info('Generazione documento: %s/%s', d_prat.basedir, nome_pdf)
+    logging.info('Generazione documento: %s/%s (template: %s)', d_prat.basedir, nome_pdf, template)
     latex.makepdf(d_prat.basedir, nome_pdf, template,
                   debug=DEBUG.local, pratica=d_prat.data, **ndata)
     return nome_pdf
@@ -1075,7 +1076,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         fk.flash(err, category="error")
         logging.error('Modifica progetto non possibile: %s. Utente:%s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     if mod_acquisto := fk.request.form.get(cs.MOD_ACQUISTO):
         d_prat[cs.MOD_ACQUISTO] = mod_acquisto
     logging.debug('Modalità acquisto: %s', mod_acquisto)
@@ -1087,7 +1088,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     if not prog.lista_codf.data:    # Workaround per errore wtform (non aggiorna campo)
         prog.lista_codf.process_data(d_prat.get("lista_codf", []))
     if mod_acquisto:
-        if not cs.TABELLA_PROGETTI.get(mod_acquisto):
+        if not cs.TAB_TEMPLATE.get(mod_acquisto):
             err = 'Modalità di acquisto non ancora implementata'
             fk.flash(err, category="error")
             logging.error(err)
@@ -1105,9 +1106,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             d_prat.update({cs.NUMERO_PRATICA: f'{number}/{year:4d}',
                            cs.DATA_PRATICA: ft.today(False)})
             d_prat.set_basedir(basedir)
-            storia(d_prat, f'Creato progetto di acquisto: {d_prat[cs.NUMERO_PRATICA]}')
-        else:
-            storia(d_prat, f'Modificato progetto di acquisto: {d_prat[cs.NUMERO_PRATICA]}')
+            storia(d_prat, f'Aperta pratica: {d_prat[cs.NUMERO_PRATICA]}')
         d_prat.update(clean_data(prog.data))
         d_prat[cs.STR_CODF] = ', '.join(d_prat[cs.LISTA_CODF])
         d_prat[cs.STR_MOD_ACQ] = _select(cs.MENU_MOD_ACQ, d_prat.get(cs.MOD_ACQUISTO))
@@ -1115,16 +1114,15 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         d_prat[cs.NOME_RESPONSABILE] = nome_da_email(d_prat[cs.EMAIL_RESPONSABILE], True)
         d_prat[cs.SEDE] = CONFIG.config[cs.SEDE]
         d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
-        d_prat[cs.PROGETTO_INVIATO] = 0
         d_prat[cs.FIRMA_APPROV_RESP] = ""
-        d_prat[cs.TEMPL_PROGETTO] = cs.TABELLA_PROGETTI[d_prat[cs.MOD_ACQUISTO]]
         update_costo(d_prat, cs.COSTO_PROGETTO)
         doc = d_prat.get_passo('f')
         genera_documento(d_prat, doc)
         d_prat[cs.SAVED] = 1
+        storia(d_prat, 'Generato/modificato progetto di acquisto')
         salvapratica(d_prat)
         avvisi(d_prat, "A")
-        return pratica1()
+        return pratica_common(d_prat)
     errors = prog.get_errors()
     for err in errors:
         fk.flash(err, category="error")
@@ -1142,11 +1140,11 @@ def inviaprogetto():
         fk.flash(err, category="error")
         logging.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
                       d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
     if cannot_go:
         fk.flash(cannot_go, category="error")
-        return pratica1()
+        return pratica_common(d_prat)
     testo = cs.TESTO_APPROVAZIONE.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)+ \
             cs.DETTAGLIO_PRATICA.format(**d_prat)
     subj = 'Richiesta di approvazione progetto di acquisto.'
@@ -1155,13 +1153,13 @@ def inviaprogetto():
         fk.flash("Richiesta di approvazione per  la pratica "
                  f"{d_prat[cs.NUMERO_PRATICA]} inviata a: "
                  f"{d_prat.get(cs.EMAIL_RESPONSABILE)}", category="info")
-        d_prat[cs.PROGETTO_INVIATO] = 1
         d_prat.next()
+        storia(d_prat, 'Progetto inviato al resp. dei fondi per approvazione')
         salvapratica(d_prat)
     else:
         msg = "Invio per approvazione fallito"
         fk.flash(msg, category="error")
-    return pratica1()
+    return pratica_common(d_prat)
 
 @ACQ.route('/inviadecisione')
 def inviadecisione():                    #pylint: disable=R0914
@@ -1174,13 +1172,13 @@ def inviadecisione():                    #pylint: disable=R0914
         fk.flash(err, category="error")
         logging.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
                       d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
     if cannot_go:
         fk.flash(cannot_go, category="error")
-        return pratica1()
+        return pratica_common(d_prat)
     numdec = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
-    doc_pdf = genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE)), filenum=numdec)
+    doc_pdf = genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE, )), filenum=numdec)
     d_prat[cs.DECIS_DA_FIRMARE] = doc_pdf
     testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
             cs.DETTAGLIO_PRATICA.format(**d_prat)
@@ -1189,12 +1187,15 @@ def inviadecisione():                    #pylint: disable=R0914
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
     ret = send_email(recipient, testo, subj, attach=attach)
     if ret:
-        fk.flash(f"Decisione da firmare digitalmente inviata a: {recipient}", category="info")
+        msg = f"Decisione da firmare digitalmente inviata a: {recipient}"
+        fk.flash(msg, category="info")
+        storia(d_prat, msg)
         d_prat.next()
         salvapratica(d_prat)
     else:
         fk.flash("Invio e-mail per firma fallito", category="error")
-    return pratica1()
+    genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE, )))  # Elimna barra "provvisorio"
+    return pratica_common(d_prat)
 
 @ACQ.route('/approvaprogetto')
 def approvaprogetto():
@@ -1207,17 +1208,19 @@ def approvaprogetto():
         fk.flash(err, category="error")
         logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-    else:
-        d_prat.next()
-        salvapratica(d_prat)
-        subj = 'Notifica approvazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
-        body = cs.TESTO_NOTIFICA_APPROVAZIONE.format(**d_prat)
-        if not test_responsabile(d_prat):
-            if send_email(d_prat[cs.EMAIL_RICHIEDENTE], body, subj):
-                fk.flash(f"L'approvazione del progetto {d_prat[cs.NUMERO_PRATICA]} è stata"
-                         " correttamente registrata", category="info")
-        send_email(CONFIG.config[cs.EMAIL_UFFICIO], body, subj)
-    return pratica1()
+        return pratica_common(d_prat)
+    d_prat.next()
+    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.DIRETTORE, cs.RESP]))
+    storia(d_prat, 'Progetto approvato da resp. fondi.')
+    salvapratica(d_prat)
+    subj = 'Notifica approvazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
+    body = cs.TESTO_NOTIFICA_APPROVAZIONE.format(**d_prat)
+    if not test_responsabile(d_prat):
+        if send_email(d_prat[cs.EMAIL_RICHIEDENTE], body, subj):
+            fk.flash(f"L'approvazione del progetto {d_prat[cs.NUMERO_PRATICA]} è stata"
+                     " correttamente registrata", category="info")
+    send_email(CONFIG.config[cs.EMAIL_UFFICIO], body, subj)
+    return pratica_common(d_prat)
 
 @ACQ.route('/indicarup', methods=('GET', 'POST'))
 def indicarup():
@@ -1230,10 +1233,10 @@ def indicarup():
         fk.flash(err, category="error")
         logging.error('Indicazione RUP non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
-        return pratica1()
+        return pratica_common(d_prat)
     rupf = fms.IndicaRUP(fk.request.form)
     rupf.email_rup.choices = _menu_scelta_utente("Seleziona RUP")
     if fk.request.method == 'POST':
@@ -1246,11 +1249,11 @@ def indicarup():
             d_prat.next()
             text = cs.TESTO_INDICA_RUP.format(d_prat[cs.NUMERO_PRATICA], fk.request.root_url)
             send_email(d_prat[cs.EMAIL_RUP], text, "Indicazione come RUP")
-            salvapratica(d_prat)
-            msg = f"{d_prat[cs.NOME_RUP]} indicato come RUP per pratica {d_prat[cs.NUMERO_PRATICA]}"
-            logging.info(msg)
+            msg = f"{d_prat[cs.NOME_RUP]} indicato come RUP"
             fk.flash(msg, category='info')
-            return pratica1()
+            storia(d_prat, msg)
+            salvapratica(d_prat)
+            return pratica_common(d_prat)
         for err in rupf.errlist:
             fk.flash(err, category="error")
     body = rupf()
@@ -1273,12 +1276,13 @@ def autorizza():
         fk.flash(err, category="error")
         logging.error('Autorizzazione richiesta non consentita: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA])
     send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     d_prat.next()
+    storia(d_prat, "Autorizzazione concessa dal direttore")
     salvapratica(d_prat)
-    return pratica1()
+    return pratica_common(d_prat)
 
 @ACQ.route('/rich_autorizzazione', methods=('GET', ))
 def rich_autorizzazione():
@@ -1291,26 +1295,154 @@ def rich_autorizzazione():
         fk.flash(err, category="error")
         logging.error('Invio richiesta di autorizzazione non consentito: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
     if cannot_go:
         fk.flash(cannot_go, category="error")
-        return pratica1()
+        return pratica_common(d_prat)
     subj = 'Richiesta autorizzazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
     body = cs.TESTO_RICHIESTA_AUTORIZZAZIONE.format(url=fk.request.root_url, **d_prat)
     ret = send_email(CONFIG.config[cs.EMAIL_DIREZIONE], body, subj)
     if ret:
         msg = 'Richiesta di autorizzazione inviata al direttore'
         fk.flash(msg, category="info")
-        logging.info(msg)
         d_prat.next()
+        storia(d_prat, msg)
         salvapratica(d_prat)
-        return pratica1()
+        return pratica_common(d_prat)
     err = 'Invio richiesta di autorizzazione al direttore fallito'
     fk.flash(err, category="error")
     logging.error(err)
-    return pratica1()
+    return pratica_common(d_prat)
 
+@ACQ.route('/modificardo', methods=('GET', 'POST'))
+def modificardo():
+    "Gestione form per produzione di RdO"
+    logging.info('URL: /modificardo (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    err = check_rdo_modificabile(d_prat)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        logging.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
+                      err, d_prat.user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
+        return pratica_common(d_prat)
+    if fk.request.method == 'POST':
+        rdo = fms.RdO(fk.request.form)
+        if cs.ANNULLA in fk.request.form:
+            fk.flash('Operazione annullata', category="info")
+            return pratica_common(d_prat)
+        if cs.AVANTI in fk.request.form:
+            if rdo.validate():
+                rdo_data = rdo.data.copy()
+                d_prat.update(clean_data(rdo_data))
+                update_costo(d_prat, cs.COSTO_RDO)
+                genera_documento(d_prat, (cs.DOC_RDO, [cs.DIRETTORE]))
+                d_prat.next()
+                storia(d_prat, 'Generata/modificata RdO')
+                salvapratica(d_prat)
+                return pratica_common(d_prat)
+            errors = rdo.get_errors()
+            for err in errors:
+                fk.flash(err, category="error")
+            logging.debug("Errori form RdO: %s", "; ".join(errors))
+    else:
+        d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
+        rdo = fms.RdO(**d_prat)
+    ddp = {'title': 'Immissione dati per RDO su MePA',
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+           'before': '<form method=POST action=/modificardo '\
+                     'accept-charset="utf-8" novalidate>',
+           'after': "</form>",
+           'note': cs.OBBLIGATORIO,
+           'body': rdo(**d_prat)}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+
+@ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
+def modificadecisione():                     #pylint: disable=R0914
+    "pagina: modifica decisione di contrarre"
+    logging.info('URL: /modificadecisione (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return pratica_common(d_prat)
+    err = check_decisione_modificabile(d_prat)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        logging.error('Gestione decisione di contrarre non autorizzata: %s. Utente %s, pratica %s',
+                     err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
+        return pratica_common(d_prat)
+    if cs.COSTO_RDO not in d_prat:
+        d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
+    if cs.NUMERO_DECISIONE not in d_prat:
+        year = ft.thisyear()
+        ndecis = ft.find_max_decis(year)[0]+1
+        d_prat[cs.NUMERO_DECISIONE] = f"{ndecis}/{year:4d}"
+        d_prat[cs.DATA_DECISIONE] = ft.today(False)
+        logging.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
+    decis = fms.Decisione(fk.request.form, **d_prat)
+    if fk.request.method == 'POST':
+        if decis.validate(extra_validators=True):
+            d_prat.update(clean_data(decis.data))
+            update_costo(d_prat, cs.COSTO_RDO)
+            doc = d_prat.get_passo('f')
+            genera_documento(d_prat, doc)
+            storia(d_prat, f'Generata/modificata decisione a contrarre N. {d_prat[cs.NUMERO_DECISIONE]}')
+            salvapratica(d_prat)
+            return pratica_common(d_prat)
+        errors = decis.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        logging.debug("Errori form Decisione: %s", "; ".join(errors))
+
+    ddp = {'title': 'Immissione dati per decisione di contrarre',
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+           'before': '<form method=POST action=/modificadecisione '
+                     'accept-charset="utf-8" novalidate>',
+           'after': "</form>",
+           'note': cs.OBBLIGATORIO,
+           'body': decis(d_prat)}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+
+@ACQ.route('/upload', methods=('POST', ))
+def upload():               # pylint: disable=R0914,R0911,R0912
+    "pagina per upload di file"
+    logging.info('URL: /upload (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    try:
+        fle = fk.request.files['upload_file']
+    except Exception as exc:               # pylint: disable=W0703
+        fk.flash(f"Errore caricamento file: {exc}", category="error")
+        return pratica_common(d_prat)
+    tipo_allegato = get_tipo_allegato()
+    logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
+    origname, ext = os.path.splitext(fle.filename)
+    origname = secure_filename(origname)
+    ext = ext.lower()
+    if ext not in cs.UPLOAD_TYPES:
+        fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
+        return pratica_common(d_prat)
+    spec = fk.request.form.get(cs.SIGLA_DITTA, "")
+    name = filename_allegato(tipo_allegato, origname, ext, spec, d_prat)
+    if not name:
+        fk.flash("Devi specificare una sigla per la ditta!", category="error")
+        return pratica_common(d_prat)
+    fpath = os.path.join(d_prat.basedir, name)
+    if os.path.exists(fpath):
+        fk.flash(f'File "{name}" già esistente!', category='error')
+        fk.flash('Devi modificare il nome del file '
+                 '(o rimuovere quello esistente)', category="error")
+        return pratica_common(d_prat)
+    fle.save(fpath)        # Archivia file da upload
+    ft.protect(fpath)
+    text = 'Allegato ' + cs.TAB_ALLEGATI[tipo_allegato][1]
+    storia(d_prat, text)
+    salvapratica(d_prat)
+    return pratica_common(d_prat)
+
+##################################################################  Operazioni di supporto
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
 def cancella(name):
     "pagina: cancella allegato"
@@ -1326,7 +1458,7 @@ def cancella(name):
         storia(d_prat, f'Rimosso allegato {name}')
         ft.remove((d_prat.basedir, name))
     salvapratica(d_prat)
-    return pratica1()
+    return pratica_common(d_prat)
 
 @ACQ.route('/vedicodf')
 def vedicodf():
@@ -1546,48 +1678,6 @@ def pratica0(num, year):
         return fk.redirect(fk.url_for('start'))
     return pratica_common(d_prat)
 
-@ACQ.route('/pratica1', methods=('GET', 'POST'))
-def pratica1():               # pylint: disable=R0914,R0911,R0912
-    "pagina: pratica, step 1 (verifica upload)"
-    logging.info('URL: /pratica1 (%s)', fk.request.method)
-    if not (d_prat := check_access()):
-        return fk.redirect(fk.url_for('start'))
-    if fk.request.method == 'POST':
-        if 'upload_file' in fk.request.files:
-            try:
-                fle = fk.request.files['upload_file']
-            except Exception as exc:               # pylint: disable=W0703
-                fk.flash(f"Errore caricamento file: {exc}", category="error")
-                return pratica_common(d_prat)
-            tipo_allegato = get_tipo_allegato()
-            logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
-            origname, ext = os.path.splitext(fle.filename)
-            origname = secure_filename(origname)
-            ext = ext.lower()
-            if ext not in cs.UPLOAD_TYPES:
-                fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
-                return pratica_common(d_prat)
-            spec = fk.request.form.get(cs.SIGLA_DITTA, "")
-            name = filename_allegato(tipo_allegato, origname, ext, spec, d_prat)
-            if not name:
-                fk.flash("Devi specificare una sigla per la ditta!", category="error")
-                return pratica_common(d_prat)
-            fpath = os.path.join(d_prat.basedir, name)
-            if os.path.exists(fpath):
-                fk.flash(f'File "{name}" già esistente!', category='error')
-                fk.flash('Devi modificare il nome del file '
-                         '(o rimuovere quello esistente)', category="error")
-                return pratica_common(d_prat)
-
-            fle.save(fpath)        # Archivia file da upload
-            ft.protect(fpath)
-            text = 'Allegato ' + cs.TAB_ALLEGATI[tipo_allegato][1]
-            storia(d_prat, text)
-                                             # Aggiorna stato pratica
-#           d_prat.next()
-            salvapratica(d_prat)
-    return pratica_common(d_prat)
-
 @ACQ.route('/togglestoria', methods=('GET', 'POST', ))
 def togglestoria():
     "pagina: abilita/disabilita storia pratica"
@@ -1601,96 +1691,6 @@ def togglestoria():
         d_prat[cs.VEDI_STORIA] = 1
     salvapratica(d_prat)
     return pratica_common(d_prat)
-
-@ACQ.route('/modificardo', methods=('GET', 'POST'))
-def modificardo():
-    "Gestione form per produzione di RdO"
-    logging.info('URL: /modificardo (%s)', fk.request.method)
-    if not (d_prat := check_access()):
-        return fk.redirect(fk.url_for('start'))
-    err = check_rdo_modificabile(d_prat)
-    if err.startswith(NOT):
-        fk.flash(err, category="error")
-        logging.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
-                      err, d_prat.user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
-        return pratica1()
-    if fk.request.method == 'POST':
-        rdo = fms.RdO(fk.request.form)
-        if cs.ANNULLA in fk.request.form:
-            fk.flash('Operazione annullata', category="info")
-            return pratica1()
-        if cs.AVANTI in fk.request.form:
-            if rdo.validate():
-                rdo_data = rdo.data.copy()
-                d_prat.update(clean_data(rdo_data))
-                update_costo(d_prat, cs.COSTO_RDO)
-                d_prat[cs.TEMPL_RDO] = cs.TABELLA_RDO[d_prat[cs.MOD_ACQUISTO]]
-                genera_documento(d_prat, (cs.DOC_RDO, [cs.DIRETTORE]))
-                d_prat.next()
-                salvapratica(d_prat)
-                return pratica1()
-            errors = rdo.get_errors()
-            for err in errors:
-                fk.flash(err, category="error")
-            logging.debug("Errori form RdO: %s", "; ".join(errors))
-    else:
-        d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
-        rdo = fms.RdO(**d_prat)
-    ddp = {'title': 'Immissione dati per RDO su MePA',
-           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-           'before': '<form method=POST action=/modificardo '\
-                     'accept-charset="utf-8" novalidate>',
-           'after': "</form>",
-           'note': cs.OBBLIGATORIO,
-           'body': rdo(**d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
-
-@ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
-def modificadecisione():                     #pylint: disable=R0914
-    "pagina: modifica decisione di contrarre"
-    logging.info('URL: /modificadecisione (%s)', fk.request.method)
-    if not (d_prat := check_access()):
-        return fk.redirect(fk.url_for('start'))
-    if cs.ANNULLA in fk.request.form:
-        fk.flash('Operazione annullata', category="info")
-        return pratica1()
-    err = check_decisione_modificabile(d_prat)
-    if err.startswith(NOT):
-        fk.flash(err, category="error")
-        logging.error('Gestione decisione di contrarre non autorizzata: %s. Utente %s, pratica %s',
-                     err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
-    if cs.NUMERO_DECISIONE not in d_prat:
-        year = ft.thisyear()
-        ndet = ft.find_max_decis(year)[0]+1
-        d_prat[cs.NUMERO_DECISIONE] = f"{ndet}/{year:4d}"
-        d_prat[cs.DATA_DECISIONE] = ft.today(False)
-        d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
-        logging.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
-    det = fms.Decisione(fk.request.form, **d_prat)
-    if fk.request.method == 'POST':
-        if det.validate():
-            d_prat.update(clean_data(det.data))
-            update_costo(d_prat, cs.COSTO_RDO)
-            doc = d_prat.get_passo('f')
-            d_prat[cs.TEMPL_DECISIONE] = cs.TABELLA_DECISIONI[d_prat[cs.MOD_ACQUISTO]]
-            genera_documento(d_prat, doc)
-            salvapratica(d_prat)
-            return pratica1()
-        errors = det.get_errors()
-        for err in errors:
-            fk.flash(err, category="error")
-        logging.debug("Errori form Determina agg.: %s", "; ".join(errors))
-
-    ddp = {'title': 'Immissione dati per decisione di contrarre',
-           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
-           'before': '<form method=POST action=/modificadecisione '
-                     'accept-charset="utf-8" novalidate>',
-           'after': "</form>",
-           'note': cs.OBBLIGATORIO,
-           'body': det(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
-
 @ACQ.route('/rollback', methods=('GET', 'POST'))
 def rollback():                       #pylint: disable=R0914
     "Pagina: annulla ultimo passo"
@@ -1702,7 +1702,7 @@ def rollback():                       #pylint: disable=R0914
         fk.flash(err, category="error")
         logging.error('annullamento ultimo passo non autorizzato: %s. Utente %s, pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
-        return pratica1()
+        return pratica_common(d_prat)
     passcode = d_prat.get_passo()
     prevcode = d_prat.get_back()
     logging.debug('Al passo %s rolling back to %s', passcode, prevcode)
@@ -1715,7 +1715,7 @@ def rollback():                       #pylint: disable=R0914
     if 'annulla' in fk.request.form:
         logging.info('Operazione annullata')
         fk.flash('Operazione annullata', category="info")
-        return pratica1()
+        return pratica_common(d_prat)
     if 'conferma' in fk.request.form:
         logging.info('Annullamento confermato')
         if doc_to_remove:
@@ -1729,7 +1729,7 @@ def rollback():                       #pylint: disable=R0914
         salvapratica(d_prat)
         fk.flash(msg, category="info")
         logging.info(msg)
-        return pratica1()
+        return pratica_common(d_prat)
     ddp = {'passo': pass_info(passcode, 'text'),
            'prec': pass_info(prevcode, 'text'),
            'remove_doc': doc_to_remove,
@@ -1757,7 +1757,7 @@ def annullapratica():
         return fk.redirect(fk.url_for('start'))
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
-        return pratica1()
+        return pratica_common(d_prat)
     annul = fms.AnnullaPratica(fk.request.form)
     if fk.request.method == 'POST':
         if annul.validate():
@@ -1767,7 +1767,7 @@ def annullapratica():
             storia(d_prat, msg)
             logging.info(msg)
             fk.flash(msg, category='info')
-            return pratica1()
+            return pratica_common(d_prat)
         msg = "Motivazione annullamento non specificata"
         fk.flash(msg, category="error")
         logging.error(msg)

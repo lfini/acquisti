@@ -1,0 +1,59 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage{watermark}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% Template: nominarup-ub40k.tex  vers. 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+((* endif *))
+
+\begin{document}
+\topaddr
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{nominarup-ub40k.tex}
+\end{quotation}
+((* endif *))
+
+\begin{center}
+\textbf{Il Direttore dell’Osservatorio Astrofisico di Arcetri }
+\end{center}
+
+\textbf{VISTI}	l’art. 15 rubricato: ``Responsabile unico del progetto (RUP)'' e l’allegato I.2 rubricato
+``Attività del RUP'' del Decreto Legislativo 31 marzo 2023 n. 36;
+
+\textbf{CONSIDERATO} 	che ((( pratica.nome_rup ))), in servizio presso l’Istituto Nazionale di
+Astrofisica~–~Osservatorio Astrofisico di Arcetri, risulta in possesso di esperienza in ambito di diritto
+amministrativo e appalti e ha maturato attività formativa specifica presso l’attuale Ente di appartenenza
+in relazione ad appalti pubblici in generale e al ruolo di RUP;
+
+\textbf{CONSIDERATO} che il suddetto, a conoscenza dell’affidamento in oggetto, può essere affiancato sotto il
+profilo tecnico, da ((( pratica.nome_richiedente ))), in servizio presso INAF~–~Istituto Nazionale di
+Astrofisica, che vanta esperienza nel settore oggetto del presente affidamento e che ha assicurato la
+massima disponibilità in tal senso;
+
+\textbf{CONSIDERATO} 	che, fermo quanto disposto dall’art. 15, comma 2 del Decreto Legislativo n. 36/2023,
+((( pratica.nome_rup ))), preventivamente interpellato in merito, ha dato la propria disponibilità ad
+essere nominato quale Responsabile Unico di Progetto in relazione all’affidamento in oggetto;
+
+\textbf{VISTA}	la dichiarazione di assenza di conflitto di interessi, in riferimento alla procedura di affidamento
+in oggetto, sottoscritta da ((( pratica.nome_rup )))
+
+\begin{center}
+	\textbf{AFFIDA}
+\end{center}
+
+a ((( pratica.nome_rup ))), in servizio presso l’Istituto Nazionale di Astrofisica~–~Osservatorio
+Astrofisico di Arcetri, l’incarico di Responsabile Unico di progetto (RUP), in relazione alla procedura
+di affidamento in oggetto.
+
+((* if direttore *))
+((* include 'direttore.tex' *))
+((* endif *))
+\end{document}

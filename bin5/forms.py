@@ -254,7 +254,7 @@ class _Costo(FormWErrors):
                           'al prezzo base di asta\n')
         return ret
 
-    def renderme(self, **_unused):            #pylint: disable=R0201
+    def renderme(self, **_unused):
         'Deve essere definita nel discendente'
         raise RuntimeError('Metodo non definito')
 
@@ -413,6 +413,8 @@ class Decisione(FormWErrors):
                                    [wt.validators.InputRequired("Manca numero decisione")])
     data_decisione = MyTextField('Data (g/m/aaaa)', True,
                                  [wt.validators.Optional("Manca data decisione")])
+    numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
+    numero_cig = MyTextField('CIG', True, [wt.validators.Optional()])
     costo_rdo = MyFormField(Costo1, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
@@ -426,6 +428,9 @@ class Decisione(FormWErrors):
                                 f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione)+BRK
+        if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000:
+            html += render_field(self.numero_cig)+BRK
+            html += render_field(self.numero_cup)+BRK
         html += render_field(self.data_decisione)+BRK
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
@@ -435,14 +440,19 @@ class Decisione(FormWErrors):
 
     def validate(self, extra_validators=None):
         "Validazione specifica per il form"
+        self.errlist = []
         if not self.numero_decisione.data:
             self.errlist.append("Manca numero decisione")
         if not self.data_decisione.data:
             self.errlist.append("Manca data decisione")
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
+        if extra_validators:
+            if not self.numero_cig.data:
+                self.errlist.append("Manca indicazione CIG")
+            if not self.numero_cup.data:
+                self.errlist.append("Manca indicazione CUP")
         return not self.errlist
-
 
 class Ordine(FormWErrors):
     "form per definizione ordine"
@@ -465,18 +475,16 @@ class Ordine(FormWErrors):
             self.errlist.append("Manca indicazione termine di esecuzione")
         if not self.descrizione_ordine.data:
             self.errlist.append("Manca descrizione ordine")
-        if not self.cig.data:
-            self.errlist.append("Manca specifica CIG")
         return len(self.errlist) == 0
 
     def renderme(self, d_prat):
         "rendering del form"
-        html = B_TRTD+Markup(f'Pratica del {d_prat[DATA_PRATICA]}. '\
-                                f'Resp.Fondi: {d_prat[NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[DESCRIZIONE_ACQUISTO]}')
-        html += Markup(f'<p>Presso la ditta:<blockquote>{d_prat[NOME_FORNITORE]}<br>'\
-                          f'{d_prat[IND_FORNITORE]}</blockquote>')+E_TRTD
+        html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
+                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
+        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')
+        html += Markup(f'<p>Presso la ditta:<blockquote>{d_prat[cs.NOME_DITTA]}<br>'\
+                          f'{d_prat[cs.SEDE_DITTA]}</blockquote>')+E_TRTD
         html += B_TRTD+ render_field(self.numero_ordine)+E_TRTD
         html += B_TRTD+ render_field(self.termine_giorni)+E_TRTD
         html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
