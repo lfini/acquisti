@@ -44,7 +44,12 @@
 {% if years %}
 Seleziona: 
 {% for yy in years %}
-[<a href=/pratiche/{{ filtro }}/{{ yy }}/0>{{ yy }}</a>&nbsp;<div class="tooltip"><a href=/pratiche/{{ filtro }}/{{ yy }}/1><img src=/files5/up-16.png><span class="tooltiptext">in ordine crescente</span></a></div>]&nbsp;&nbsp;
+[<a href=/pratiche/{{ filtro }}/{{ yy }}/0>{{ yy }}</a>&nbsp;
+<div class="tooltip"><a href=/pratiche/{{ filtro }}/{{ yy }}/1>
+<img src=/files5/up-16.png><span class="tooltiptext">ordine crescente</span></a></div>
+<div class="tooltip"><a href=/pratiche/{{ filtro }}/{{ yy }}/0>
+<img src=/files5/down-16.png><span class="tooltiptext">ordine decrescente</span></a></div>
+]&nbsp;&nbsp;
 {% endfor %}
 <hr>
 {% endif %}
@@ -52,8 +57,8 @@ Seleziona:
 
 <ul>
 {% for d in dlist %}
-<p>   <li> <em> {{ d.numero_pratica }}</em>. Progetto di acquisto del {{ d.data_pratica }}. 
-       Resp.fondi: {{ d.nome_responsabile }}. Richiedente: {{ d.nome_richiedente }}.<br>
+<p>   <li> <em> {{ d.numero_pratica }}</em>  del {{ d.data_pratica }}. 
+	Resp.fondi: {{ d.nome_responsabile }}. Richiedente: {{ d.nome_richiedente }}. RUP: {{ d.nome_rup }}<br>
        <b> {{ d.descrizione_acquisto }}.</b>&nbsp;&nbsp;&nbsp;&rightarrow; <a href=/pratica0/{{ d.numero_pratica }}>Vedi</a> </li>
 {% endfor %}
 </ul>

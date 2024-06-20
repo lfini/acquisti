@@ -12,6 +12,7 @@ Uso da linea di comando:
 
                               Comandi per supporto sviluppo e debug:
     python ftools.py all    - Elenca tutti i campi definiti in tutte le pratiche
+    python ftools.py filt   - Estrai pratiche in base ad un filtro
     python ftools.py pass   - Genera file per password
     python ftools.py show   - Mostra file per password
     python ftools.py values - Mostra tutti i valori del campo dato
@@ -59,6 +60,7 @@ from Crypto.Cipher import AES
 import pam
 
 import constants as cs
+from constants import CdP
 import table as tb
 import send_email as sm
 
@@ -269,6 +271,9 @@ class DocList:               # pylint: disable=R0903
         "metodo standard per lunghezza"
         return len(self.records)
 
+    def __iter__(self):
+        return self.records.__iter__()
+
 class PratIterator:
     "Iteratore sulle pratiche dell'anno specificato"
     def __init__(self, year=None):
@@ -288,7 +293,6 @@ class PratIterator:
         except tb.TableException:
             prat = {}
         return prat
-
 
 def version():
     "Riporta versione del modulo"
@@ -1003,6 +1007,138 @@ def showvalues():
     for val in vals:
         print(" -", val)
 
+def _int(item):
+    "funzione ausiliaria per sort pratiche"
+    nprat = item.get(cs.NUMERO_PRATICA, '0/0').split('/')[0]
+    return int(nprat)
+
+
+PRAT_APE = 'Elenco pratiche aperte '
+PRAT_CHI = 'Elenco pratiche chiuse '
+PRAT_APP = 'Elenco pratiche approvate '
+PRAT_DAP = 'Elenco pratiche da approvare '
+PRAT_NOR = 'Elenco pratiche in attesa di indicazione del RUP'
+
+FILTRI = { 'ALL_A/ALL_C': "pratica aperta/chiusa",
+           'RIC_A/RIC_C': "pratica aperta/chiusa come richiedente",
+           'RUP_A/RUP_C': "pratica aperta/chiusa come RUP",
+           'RES_0/RES_1': "pratica da approvare/approvata come responsabile dei fondi",
+           'DIR_0/DIR_1': "pratica da approvare/approvata come direttore",
+           'NOR': "pratica in attesa indicazione RUP",
+           'GEN': "seguono stringhe per: stato, richiedente, responsabile, RUP, descrizione"
+         }
+
+#pylint: disable=C3001
+def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #pylint: disable=R0912
+    'genera lista pratiche in base ai filtri definiti'
+    sort_f =  _int if ascendente else lambda x: -_int(x)
+    oper = filtro[:3]
+    if oper == 'ALL':      # Lista pratiche aperte/chiuse
+        if filtro[-1] == 'A':
+            filtro = lambda x: x.get(cs.PRATICA_APERTA)
+            title = PRAT_APE
+        else:
+            filtro = lambda x: not x.get(cs.PRATICA_APERTA)
+            title = PRAT_CHI
+        return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+                title)
+    if oper == 'RIC':   # Lista pratiche aperte/chiuse come richiedente
+        str_ruolo = 'come richiedente'
+        if filtro[-1] == 'A':           # pratica aperta
+            filtro = lambda x: x.get(cs.EMAIL_RICHIEDENTE) == user_email and \
+                              x.get(cs.PRATICA_APERTA)
+            title = PRAT_APE+str_ruolo
+        else:                           # pratica chiusa
+            filtro = lambda x: x.get(cs.EMAIL_RICHIEDENTE) == user_email and \
+                              not x.get(cs.PRATICA_APERTA)
+            title = PRAT_CHI+str_ruolo
+        return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+                title)
+    if oper == 'RES':   # Lista pratiche da approvare/approvate come resp. fondi
+        str_ruolo = 'come responsabile dei fondi'
+        if filtro[-1] == '0':            # pratica da approvare
+            filtro = lambda x: x.get(cs.EMAIL_RESPONSABILE) == user_email and \
+                              x.get(cs.TAB_PASSI[-1], 0) < CdP.PAR
+            title = PRAT_DAP+str_ruolo
+        else:                            # pratica approvata
+            filtro = lambda x: x.get(cs.EMAIL_RESPONSABILE) == user_email and \
+                              x.get(cs.TAB_PASSI[-1], 0) >= CdP.PAR
+            title = PRAT_APP+str_ruolo
+        return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+                title)
+    if oper == 'RUP':   # Lista pratiche aperte/chiuse come RUP
+        str_ruolo = 'come RUP'
+        if filtro[-1] == 'A':
+            filtro = lambda x: x.get(cs.EMAIL_RUP) == user_email and \
+                              x.get(cs.PRATICA_APERTA)
+            title = PRAT_APE+str_ruolo
+        else:
+            filtro = lambda x: x.get(cs.EMAIL_RUP) == user_email and \
+                              not x.get(cs.PRATICA_APERTA)
+            title = PRAT_CHI+str_ruolo
+        return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+                title)
+    if oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate come Direttore
+        str_ruolo = 'come Direttore'
+        if filtro[-1] == '1':
+            filtro = lambda x: x.get(cs.TAB_PASSI[-1], 0) > CdP.DCI
+            title = PRAT_APP+str_ruolo
+        else:
+            filtro = lambda x: x.get(cs.TAB_PASSI[-1], 0) <= CdP.DCI
+            title = PRAT_DAP+str_ruolo
+        return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+                title)
+    if oper == 'NOR':    # Lista pratiche in attesa di indicazione del RUP
+        title = PRAT_NOR
+        filtro = lambda x: CdP.PAR >= x.get(cs.TAB_PASSI[-1], 0) < CdP.RUI
+    else:
+        raise RuntimeError(f'Operazione non valida in lista pratiche ({oper})')
+
+    return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+            title)
+
+def trova_pratiche_2(anno, stato, match_rich, match_resp,         #pylint: disable=R0913
+                     match_rup, match_descr, ascendente=False):
+    'genera lista pratiche con match parola parziali'
+    sort_f =  _int if ascendente else lambda x: -_int(x)
+    match_list = []
+    expr_list = []
+    if stato.lower().startswith('a'):
+        match_list.append(lambda x: x[cs.PRATICA_APERTA])
+        expr_list.append('aperta')
+    elif stato.lower().startswith('c'):
+        match_list.append(lambda x: not x[cs.PRATICA_APERTA])
+        expr_list.append('chiusa')
+    elif stato.lower().startswith('n'):
+        match_list.append(lambda x: (x.get[cs.TAB_PASSI][-1] == CdP.ANN))
+        expr_list.append('annullata')
+    if match_rich:
+        match_rich = match_rich.lower()
+        match_list.append(lambda x: match_rich in x.get(cs.NOME_RICHIEDENTE, '').lower())
+        expr_list.append(f'{match_rich} come richiedente')
+    if match_resp:
+        match_resp = match_resp.lower()
+        match_list.append(lambda x: match_resp in x.get(cs.NOME_RESPONSABILE, '').lower())
+        expr_list.append(f'{match_resp} come responsabile')
+    if match_rup:
+        match_rup = match_rup.lower()
+        match_list.append(lambda x: match_rup in x.get(cs.NOME_RUP, '').lower())
+        expr_list.append(f'{match_rup} come RUP')
+    if match_descr:
+        match_descr = match_descr.lower()
+        match_list.append(lambda x: match_descr in x.get(cs.DESCRIZIONE_ACQUISTO, '').lower())
+        expr_list.append(f'{match_descr} nella descrizione')
+    log_expr = ', '.join(expr_list)
+    def logical_and(x):
+        'definìsce filtro su dati pratica'
+        for func in match_list:
+            if not func(x):
+                return False
+        return True
+    print('FTOOLS title:', log_expr)
+    return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=logical_and, sort=sort_f),
+            log_expr)
+
 def matching(key, klist):
     "Riporta gli elementi in klist che danno match positivo"
     if isinstance(key, int):
@@ -1052,13 +1188,39 @@ def showpratiche():
     print("Elenco pratiche per l'anno", year)
     elenco = DocList(cs.DATADIR, 'pratica.json', year=year, extract=_EXTRACT)
     for rec in elenco.records:
-        print(f" - {rec[cs.NUMERO_PRATICA]} {rec[cs.DATA_PRATICA]}",
-              f"{rec[cs.NOME_RICHIEDENTE]}/{rec[cs.NOME_RESPONSABILE]}")
-        print(f"   {rec[cs.DESCRIZIONE_ACQUISTO]}")
+        print(f" - {rec.get(cs.NUMERO_PRATICA, 'Num?')} {rec.get(cs.DATA_PRATICA, 'Data?')}",
+              f"{rec.get(cs.NOME_RICHIEDENTE, 'Ric?')}/{rec.get(cs.NOME_RESPONSABILE, 'Resp?')}")
+        print(f"   {rec.get(cs.DESCRIZIONE_ACQUISTO, 'Descr?')}")
     if elenco.errors:
         print("Errori di accesso alle pratiche:")
         for err in elenco.errors:
             print("  ", err)
+
+def filtra():
+    'test lista pratiche con filtro'
+    anno = input_anno()
+    print()
+    print('Filtri definiti:')
+    for nome, descr in FILTRI.items():
+        print(f'  {nome}: {descr}')
+    filtro = input('Filtro? ')
+    if filtro.startswith('GEN'):
+        args = ([x.strip() for x in filtro[3:].split(',')]+['', '', '', ''])[:5]
+        prats, title = trova_pratiche_2(anno, *args)
+    else:
+        email = input('Email del ruolo (se necessario)')
+        prats, title = trova_pratiche_1(anno, filtro, email)
+    print()
+    print('Ricerca:', title)
+    print(f'Selezionate {len(prats)} pratiche')
+    ans = input('Vuoi vederle? ')
+    if ans[:1].lower() in ('sy'):
+        for prat in prats:
+            print(f'N. {prat.get(cs.NUMERO_PRATICA, "?")} ',
+                  f'- {prat.get(cs.DATA_PRATICA, "?")} ',
+                  f'- Rich: {prat.get(cs.EMAIL_RICHIEDENTE, "?")}',
+                  f'- Resp: {prat.get(cs.EMAIL_RESPONSABILE, "?")}',
+                  f'- RUP: {prat.get(cs.EMAIL_RUP, "?")}')
 
 def main():                                           # pylint: disable=R0912
     "Procedura per uso da linea di comando e test"
@@ -1075,6 +1237,8 @@ def main():                                           # pylint: disable=R0912
         testlogin()
     elif verb == 'al':
         showallfields()
+    elif verb == 'fi':
+        filtra()
     elif verb == 'nd':
         showmaxdecis()
     elif verb == 'np':

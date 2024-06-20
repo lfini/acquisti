@@ -19,6 +19,7 @@ import re
 import logging
 from collections import UserDict
 from pprint import PrettyPrinter
+import traceback
 
 import wtforms as wt
 import flask as fk
@@ -79,8 +80,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.22'
-__date__ = '17/06/2024'
+__version__ = '5.0.23'
+__date__ = '20/06/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -613,14 +614,6 @@ def check_access(new=False):
 #   logging.debug('Pratica: %s', str(d_prat))
     return Pratica(d_prat, user=user, basedir=basedir)
 
-def word_match(ins, where):
-    "funzione ausiliaria per ricerca di parole case insensitive"
-    setins = frozenset((x.lower() for x in ins.split()))
-    if setins:
-        setwhr = frozenset((x.lower() for x in where.split()))
-        return len(setins.intersection(setwhr)) == len(setins)
-    return False
-
 def sel_menu(tipo_allegato):
     "Genera voce di menu per allegati"
     return (tipo_allegato,)+cs.TAB_ALLEGATI[tipo_allegato][1:3]
@@ -767,11 +760,6 @@ def avvisi(d_prat: Pratica, _fase, _level=0):
 #                    "al Punto Ordinante", category="info")
     if not d_prat.get(cs.FIRMA_APPROV_RESP):
         fk.flash("Occorre richiedere l'approvazione del responsabile dei fondi", category="info")
-
-def _pratica_ascendente(item):
-    "funzione ausiliaria per sort pratiche"
-    nprat = item.get(cs.NUMERO_PRATICA, '0/0').split('/')[0]
-    return int(nprat)
 
 def _pratica_discendente(item):
     "funzione ausiliaria per sort pratiche"
@@ -1539,22 +1527,6 @@ def vedifile(filename):
         return fk.redirect(fk.url_for('start'))
     return fk.send_from_directory(d_prat.basedir, filename, as_attachment=True)
 
-# Filtri applicabili:
-#   RIC_A: pratica aperta come richiedente
-#   RUP_A: pratica aperta come RUP
-#   RES_0: pratica da approvare come responsabile dei fondi
-#   DIR_0: pratica da approvare come direttore
-#   RIC_C: pratica chiusa come richiedente
-#   RUP_C: pratica chiusa come RUP
-#   RES_1: pratica approvata come responsabile dei fondi
-#   DIR_1: pratica approvata come direttore
-
-PRAT_APE = 'Elenco pratiche aperte '
-PRAT_CHI = 'Elenco pratiche chiuse '
-PRAT_APP = 'Elenco pratiche approvate '
-PRAT_DAP = 'Elenco pratiche da approvare '
-PRAT_NOR = 'Elenco pratiche in attesa di indicazione del RUP'
-
 #pylint: disable=C3001
 @ACQ.route('/pratiche/<filtro>/<anno>/<ascendente>')
 def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,R0912,R0914
@@ -1565,84 +1537,27 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
     anno = int(anno)
     if not anno:
         anno = ft.thisyear()
-    if int(ascendente):
-        sort_f = _pratica_ascendente
-    else:
-        sort_f = _pratica_discendente
+    ascendente = bool(int(ascendente))
     oper = filtro[:3]
-    if oper == 'ALL':      # Lista praticahe aperte/chiuse
+    if oper == ('ALL', 'NOR'):
         if not test_admin(user):
-            logging.error('Visualizzazione pratiche come amministrativo non autorizzata. '\
+            logging.error('Operazione non autorizzata. '\
                           'Utente: %s', user['userid'])
             fk.session.clear()
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
-        ruolo = lambda x: True
-        if filtro[-1] == 'A':
-            stato = lambda x: x.get(cs.PRATICA_APERTA)
-            title = PRAT_APE
-        else:
-            stato = lambda x: not x.get(cs.PRATICA_APERTA)
-            title = PRAT_CHI
-    elif oper == 'RIC':   # Lista pratiche aperte/chiuse come richiedente
-        ruolo = test_richiedente
-        str_ruolo = 'come richiedente'
-        if filtro[-1] == 'A':           # pratica aperta
-            stato = lambda x: x.get(cs.PRATICA_APERTA)
-            title = PRAT_APE+str_ruolo
-        else:                           # pratica chiusa
-            stato = lambda x: not x.get(cs.PRATICA_APERTA)
-            title = PRAT_CHI+str_ruolo
-    elif oper == 'RES':   # Lista pratiche da approvare/approvate come resp. fondi
-        ruolo = test_responsabile
-        str_ruolo = 'come responsabile dei fondi'
-        if filtro[-1] == '0':            # pratica da approvare
-            stato = lambda x: not x.get(cs.FIRMA_APPROV_RESP)
-            title = PRAT_DAP+str_ruolo
-        else:                            # pratica approvata
-            stato = lambda x: x.get(cs.FIRMA_APPROV_RESP)
-            title = PRAT_APP+str_ruolo
-    elif oper == 'RUP':   # Lista pratiche aperte/chiuse come RUP
-        ruolo = test_rup
-        str_ruolo = 'come RUP'
-        if filtro[-1] == 'A':
-            stato = lambda x: x.get(cs.PRATICA_APERTA)
-            title = PRAT_APE+str_ruolo
-        else:
-            stato = lambda x: not x.get(cs.PRATICA_APERTA)
-            title = PRAT_CHI+str_ruolo
     elif oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate come Direttore
-        if not test_direttore(user):
-            logging.error('Visualizzazione pratiche come direttore non autorizzata. '\
+        if not (test_direttore(user) or test_admin(user)):
+            logging.error('Operazione non autorizzata '\
                           'Utente: %s', user['userid'])
             fk.session.clear()
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
-        ruolo = lambda x: True
-        str_ruolo = 'come Direttore'
-        if filtro[-1] == '1':
-            stato = lambda x: bool(x.get(cs.FIRMA_AUTORIZZ_DIR))
-            title = PRAT_APP+str_ruolo
-        else:
-            stato = lambda x: not x.get(cs.FIRMA_AUTORIZZ_DIR)
-            title = PRAT_DAP+str_ruolo
-    elif oper == 'NOR':    # Lista pratiche in attesa di indicazione del RUP
-        if not test_admin(user):
-            logging.error('Visualizzazione pratiche come amministrativo non autorizzata. '\
-                          'Utente: %s', user['userid'])
-            fk.session.clear()
-            return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
-        ruolo = lambda x: True
-        title = PRAT_NOR
-        stato = lambda x: (not x.get(cs.EMAIL_RUP)) and x.get(cs.FIRMA_APPROV_RESP)
-    else:
-        err = f'Operazione non valida in lista pratiche ({oper})'
-        raise RuntimeError(err)
-    f_filter = lambda x: ruolo(x) and stato(x)
     try:
-        doclist = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=f_filter, sort=sort_f)
-    except Exception:               # pylint: disable=W0703
-        err_msg = _errore_doclist(anno)
+        doclist, title = ft.trova_pratiche_1(anno, filtro, user['email'], ascendente)
+    except Exception:                      # pylint: disable=W0703
+        errlog = traceback.format_exc(limit=3)
+        logging.error(errlog)
+        err_msg = 'Errore sistema'
         fk.flash(err_msg, category="error")
-        logging.error(err_msg)
         return fk.redirect(fk.url_for('start'))
     theyear = int(anno)
     years = [int(y) for y in doclist.years]
@@ -1669,61 +1584,39 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
     year_menu = list(zip(years, years))
     prf.trova_anno.choices = year_menu
     if fk.request.method == 'POST':
-        theyear = prf.data['trova_anno']
-        ricerca = f" anno={prf.data['trova_anno']} + (pratiche "
+        try:
+            anno = int(prf.data['trova_anno'])
+        except ValueError:
+            anno = ft.thisyear()
         vaperta = int(prf.data.get('trova_prat_aperta', '-1'))
         if vaperta == 0:
-            ricerca += 'aperte)'
-            aperta_func = lambda x: x.get(cs.PRATICA_APERTA, False)
+            stato = 'a'
         elif vaperta == 1:
-            ricerca += 'chiuse)'
-            aperta_func = lambda x: not x.get(cs.PRATICA_APERTA, False)
+            stato = 'c'
         elif vaperta == 2:
-            ricerca += 'annullate)'
-            aperta_func = lambda x: x.passo() == CdP.ANN
+            stato = 'n'
         else:
-            ricerca += 'aperte, chiuse e annullate)'
-            aperta_func = lambda x: True
-        if nome_resp := prf.data['trova_responsabile']:
-            resp_func = lambda x: word_match(nome_resp, x.get(cs.NOME_RESPONSABILE, ''))
-            ricerca += f' + (resp.={nome_resp})'
-        else:
-            resp_func = lambda x: True
-        if nome_rup := prf.data['trova_rup']:
-            rup_func = lambda x: word_match(nome_rup, x.get(cs.NOME_RUP, ''))
-            ricerca += f' + (rup={nome_rup})'
-        else:
-            rup_func = lambda x: True
-        if nome_rich := prf.data['trova_richiedente']:
-            rich_func = lambda x: word_match(nome_rich, x.get(cs.NOME_RICHIEDENTE, ''))
-            ricerca += f' + (richied.={nome_rich})'
-        else:
-            rich_func = lambda x: True
-        if prf.data['trova_parola']:
-            parola_func = lambda x: word_match(prf.data.get('trova_parola', ''),
-                                               x.get(cs.DESCRIZIONE_ACQUISTO, ''))
-            ricerca += f" + (contiene parola={prf.data['trova_parola']})"
-        else:
-            parola_func = lambda x: True
-        selector = lambda x: aperta_func(x) and rich_func(x) and \
-                             resp_func(x) and rup_func(x) and parola_func(x)
-        if prf.data['elenco_ascendente']:
-            sort_f = _pratica_ascendente
-        else:
-            sort_f = lambda x: -1*_pratica_ascendente(x)
+            stato = ''
+        asc = prf.data['elenco_ascendente']
+        match_rich = prf.data['trova_richiedente'].strip()
+        match_resp = prf.data['trova_responsabile'].strip()
+        match_rup = prf.data['trova_rup'].strip()
+        match_descr = prf.data['trova_parola'].strip()
         try:
-            lista = ft.DocList(cs.DATADIR, cs.PRAT_JFILE, theyear,
-                               content_filter=selector, sort=sort_f)
-        except Exception:               # pylint: disable=W0703
-            err_msg = _errore_doclist(theyear)
+            lista, expr = ft.trova_pratiche_2(anno, stato, match_rich, match_resp,
+                                              match_rup, match_descr, ascendente=asc)
+        except Exception:            # pylint: disable=W0703
+            errlog = traceback.format_exc(limit=3)
+            logging.error(errlog)
+            err_msg = 'Errore sistema'
             fk.flash(err_msg, category="error")
-            logging.error(err_msg)
             return fk.redirect(fk.url_for('start'))
+        print('EXPR:', expr)
         title = 'Trova Pratiche'
-        subtitle = 'Risultato per ricerca: '+ricerca+'<br>'+ \
+        subtitle = 'Risultato per ricerca: '+expr+'<br>'+ \
                    f'N. pratiche selezionate: {len(lista)}'
         return fk.render_template('lista_pratiche_per_anno.html', filtro='', pre=[],
-                                  post=[], year=theyear, dlist=lista.records, title=title,
+                                  post=[], year=anno, dlist=lista.records, title=title,
                                   sede=CONFIG.config[cs.SEDE], subtitle=subtitle)
     ddp = {'title': 'Trova pratiche',
            'subtitle': 'Specifica criteri di ricerca',
@@ -2259,6 +2152,7 @@ def localtest():
     if '-V' in sys.argv:
         print(long_version())
         sys.exit()
+
     verifica_tabella_passi()
     logging.basicConfig(level=logging.DEBUG)
     initialize_me()
