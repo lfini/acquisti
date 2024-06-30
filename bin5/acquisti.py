@@ -80,12 +80,12 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.23'
-__date__ = '20/06/2024'
+__version__ = '5.0.24'
+__date__ = '30/06/2024'
 
 __start__ = time.asctime(time.localtime())
 
-# stringhe per check_xxxxx
+# stringhe per auth_xxxxx
 YES = 'SI'
 NOT = 'NO'
 NON_ADMIN = 'non sei amministratore'
@@ -409,9 +409,9 @@ def test_rdo_richiesta(d_prat: Pratica) -> str:
 
 def test_ordine_richiesto(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede generazione dell'ordine"
-    return d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000
+    return d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.TRATT_UBUY_40)
 
-def check_allegati_cancellabili(d_prat: Pratica) -> str:
+def auth_allegati_cancellabili(d_prat: Pratica) -> str:
     "test: allegati cancellabili"
     if not d_prat.get(cs.PRATICA_APERTA):
         return NO_PRATICA_CHIUSA
@@ -426,13 +426,13 @@ def check_allegati_cancellabili(d_prat: Pratica) -> str:
     ret.append(NON_RESP)
     return 'NO: '+', '.join(ret)
 
-def check_progetto_inviabile(d_prat: Pratica) -> str:      # pylint: disable=R0911
+def auth_progetto_inviabile(d_prat: Pratica) -> str:      # pylint: disable=R0911
     "test: progetto inviabile per approv. al resp. fondi"
     if not (test_admin(d_prat.user) or test_richiedente(d_prat)):
         return NO_RICH_AMM
     return YES
 
-def check_progetto_modificabile(d_prat: Pratica) -> str:            # pylint: disable=W0703,R0911
+def auth_progetto_modificabile(d_prat: Pratica) -> str:            # pylint: disable=W0703,R0911
     "test: progetto modificabile"
     if test_admin(d_prat.user) or \
        test_richiedente(d_prat) or \
@@ -440,75 +440,75 @@ def check_progetto_modificabile(d_prat: Pratica) -> str:            # pylint: di
         return YES
     return NO_RICH_RESP_AMM
 
-def check_progetto_approvabile(d_prat: Pratica) -> str:
+def auth_progetto_approvabile(d_prat: Pratica) -> str:
     "test: progetto approvabile"
     if test_responsabile(d_prat):
         return YES
     return NO_RESP
 
-def check_rup_indicabile(d_prat: Pratica) -> str:
+def auth_rup_indicabile(d_prat: Pratica) -> str:
     "test: è possibile indicare il RUP"
     return YES if test_admin(d_prat.user) else NO_NON_ADMIN
 
-def check_autorizz_richiedibile(d_prat: Pratica) -> str:     #pylint: disable=R0911
+def auth_autorizz_richiedibile(d_prat: Pratica) -> str:     #pylint: disable=R0911
     "test: chi può chiedere l'autorizzazione del direttore?"
     return YES if test_admin(d_prat.user) else NO_NON_ADMIN
 
-def check_autorizzabile(d_prat: Pratica) -> str:
+def auth_autorizzabile(d_prat: Pratica) -> str:
     "test: il direttore può autorizzare la richiesta del RUP?"
     if test_direttore(d_prat.user):
         return YES
     return NO_NON_DIR
 
-def check_rollback(d_prat: Pratica) -> str:
+def auth_rollback(d_prat: Pratica) -> str:
     "test: rollback attivabile"
     if test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN
 
-def check_rdo_modificabile(d_prat: Pratica) -> str:
+def auth_rdo_modificabile(d_prat: Pratica) -> str:
     "test: rdo modificabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN_RUP
 
-def check_decisione_modificabile(d_prat: Pratica) -> str:
+def auth_decisione_modificabile(d_prat: Pratica) -> str:
     "test: decisione di contrarre modificabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN_RUP
 
-def check_ordine_modificabile(d_prat: Pratica) -> str:
-    "test: decisione di contrarre modificabile"
+def auth_ordine_modificabile(d_prat: Pratica) -> str:
+    "test: ordine modificabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN_RUP
 
-def check_decisione_inviabile(d_prat: Pratica) -> str:
+def auth_decisione_inviabile(d_prat: Pratica) -> str:
     "test: decisione di contrarre inviabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN_RUP
 
-def check_decisione_cancellabile(d_prat: Pratica) -> str:
+def auth_decisione_cancellabile(d_prat: Pratica) -> str:
     "test: decisione di contrarre cancellabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN_RUP
 
-def check_pratica_riapribile(d_prat: Pratica) -> str:
+def auth_pratica_riapribile(d_prat: Pratica) -> str:
     "test: pratica chiudibile"
     if test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN
 
-def check_pratica_chiudibile(d_prat: Pratica) -> str:
+def auth_pratica_chiudibile(d_prat: Pratica) -> str:
     "test: pratica chiudibile"
     if test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN
 
-def check_pratica_annullabile(d_prat) -> str:
+def auth_pratica_annullabile(d_prat) -> str:
     "test: pratica annullabile"
     if test_admin(d_prat.user):
         return YES
@@ -526,22 +526,22 @@ def make_info(d_prat: Pratica) -> dict:
     info['all_cv_rup'] = YES if test_all_cv_rup(d_prat) else NOT
     info['all_dich_rup'] = YES if test_all_dich_rup(d_prat) else NOT
     info['all_cig'] = YES if test_all_cig(d_prat) else NOT
-    info['allegati_cancellabili'] = check_allegati_cancellabili(d_prat)
-    info['autorizz_richiedibile'] = check_autorizz_richiedibile(d_prat)
-    info['decis_modificabile'] = check_decisione_modificabile(d_prat)
-    info['decis_inviabile'] = check_decisione_inviabile(d_prat)
-    info['ordine_modificabile'] = check_ordine_modificabile(d_prat)
+    info['allegati_cancellabili'] = auth_allegati_cancellabili(d_prat)
+    info['autorizz_richiedibile'] = auth_autorizz_richiedibile(d_prat)
+    info['decis_modificabile'] = auth_decisione_modificabile(d_prat)
+    info['decis_inviabile'] = auth_decisione_inviabile(d_prat)
+    info['ordine_modificabile'] = auth_ordine_modificabile(d_prat)
     info['ordine'] = YES if test_ordine_richiesto(d_prat) else NOT
-    info['pratica_annullabile'] = check_pratica_annullabile(d_prat)
-    info['pratica_chiudibile'] = check_pratica_chiudibile(d_prat)
-    info['progetto_approvabile'] = check_progetto_approvabile(d_prat)
-    info['progetto_modificabile'] = check_progetto_modificabile(d_prat)
-    info['progetto_inviabile'] = check_progetto_inviabile(d_prat)
+    info['pratica_annullabile'] = auth_pratica_annullabile(d_prat)
+    info['pratica_chiudibile'] = auth_pratica_chiudibile(d_prat)
+    info['progetto_approvabile'] = auth_progetto_approvabile(d_prat)
+    info['progetto_modificabile'] = auth_progetto_modificabile(d_prat)
+    info['progetto_inviabile'] = auth_progetto_inviabile(d_prat)
     info['rdo_richiesta'] = YES if test_rdo_richiesta(d_prat) else NOT
-    info['autorizzabile'] = check_autorizzabile(d_prat)
-    info['rollback'] = check_rollback(d_prat)
-    info['rup_indicabile'] = check_rup_indicabile(d_prat)
-    info['rdo_modificabile'] = check_rdo_modificabile(d_prat)
+    info['autorizzabile'] = auth_autorizzabile(d_prat)
+    info['rollback'] = auth_rollback(d_prat)
+    info['rup_indicabile'] = auth_rup_indicabile(d_prat)
+    info['rdo_modificabile'] = auth_rdo_modificabile(d_prat)
     info[cs.PDF_PROGETTO] = YES if test_doc_progetto(d_prat) else NOT
     info[cs.PDF_NOMINARUP] = YES if test_doc_nominarup(d_prat) else NOT
     info[cs.PDF_DECISIONE] = YES if test_doc_decisione(d_prat) else NOT
@@ -696,7 +696,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     if what[0].lower() == 'c':      # Chiudi pratica
-        err = check_pratica_chiudibile(d_prat)
+        err = auth_pratica_chiudibile(d_prat)
         if err.startswith(NOT):
             fk.flash(err, category="error")
             logging.warning('Chiusura pratica rifiutata: %s. Utente %s, pratica %s',
@@ -709,7 +709,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
             salvapratica(d_prat)
         return pratica_common(d_prat)
     if what[0].lower() == 'a':      # Riapri pratica
-        err = check_pratica_riapribile(d_prat)
+        err = auth_pratica_riapribile(d_prat)
         if err.startswith(NOT):
             fk.flash(err, category="error")
             logging.warning('Riapertura pratica rifiutata: %s. Utente %s, pratica %s',
@@ -1078,7 +1078,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     logging.info('URL: /modificaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_progetto_modificabile(d_prat)
+    err = auth_progetto_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Modifica progetto non possibile: %s. Utente:%s pratica %s',
@@ -1143,7 +1143,7 @@ def inviaprogetto():
     logging.info('URL: /inviaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_progetto_inviabile(d_prat)
+    err = auth_progetto_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
@@ -1175,7 +1175,7 @@ def inviadecisione():                    #pylint: disable=R0914
     logging.info('URL: /inviadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_decisione_inviabile(d_prat)
+    err = auth_decisione_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
@@ -1211,7 +1211,7 @@ def approvaprogetto():
     logging.info('URL: /approvaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_progetto_approvabile(d_prat)
+    err = auth_progetto_approvabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
@@ -1236,7 +1236,7 @@ def indicarup():
     logging.info('URL: /indicarup (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_rup_indicabile(d_prat)
+    err = auth_rup_indicabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Indicazione RUP non autorizzata: %s. Utente %s pratica %s',
@@ -1279,7 +1279,7 @@ def autorizza():
     logging.info('URL: /autorizza (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_autorizzabile(d_prat)
+    err = auth_autorizzabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Autorizzazione richiesta non consentita: %s. Utente %s pratica %s',
@@ -1300,7 +1300,7 @@ def rich_autorizzazione():
     logging.info('URL: /rich_autorizzazione (%s)', fk.request.method)     #pylint: disable=W1203
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_autorizz_richiedibile(d_prat)
+    err = auth_autorizz_richiedibile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Invio richiesta di autorizzazione non consentito: %s. Utente %s pratica %s',
@@ -1331,7 +1331,7 @@ def modificardo():
     logging.info('URL: /modificardo (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_rdo_modificabile(d_prat)
+    err = auth_rdo_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
@@ -1377,7 +1377,7 @@ def modificaordine():                     #pylint: disable=R0914
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
-    err = check_ordine_modificabile(d_prat)
+    err = auth_ordine_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Gestione ordine non autorizzata: %s. Utente %s, pratica %s',
@@ -1419,7 +1419,7 @@ def modificadecisione():                     #pylint: disable=R0914
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
-    err = check_decisione_modificabile(d_prat)
+    err = auth_decisione_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Gestione decisione di contrarre non autorizzata: %s. Utente %s, pratica %s',
@@ -1502,7 +1502,7 @@ def cancella(name):
     logging.info('URL: /cancella/%s (%s)', name, fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_allegati_cancellabili(d_prat)
+    err = auth_allegati_cancellabili(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
@@ -1655,7 +1655,7 @@ def rollback():                       #pylint: disable=R0914
     logging.info('URL: /rollback (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    err = check_rollback(d_prat)
+    err = auth_rollback(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         logging.error('annullamento ultimo passo non autorizzato: %s. Utente %s, pratica %s',

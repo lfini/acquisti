@@ -358,7 +358,7 @@ TABELLA_PASSI = {
               ['procedi_ogp'],
               [ALL_DECIS_FIRM],
               {TRATT_MEPA_40: CdP.OGP,   # prossimo passo dipende da
-               TRATT_UBUY_40: CdP.OGP,   # modalità acquisto
+               TRATT_UBUY_40: CdP.ORD,   # modalità acquisto
                INFER_5000: CdP.ORD}),
     CdP.ORD: ("Genera ordine",
               [DOC_ORDINE, []],
