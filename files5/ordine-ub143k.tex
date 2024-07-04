@@ -1,0 +1,269 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% template: ordine.tex. Vers. 2.0
+
+((* include 'header.tex' *))
+
+\begin{document}
+\topaddr
+
+\begin{center}
+	\textbf{DOCUMENTO DI STIPULA}
+\end{center}
+\framebox[\linewidth]{%
+\begin{minipage}{0.9\linewidth}
+In relazione all'Affidamento Diretto di: ((( pratica.descrizione_acquisto )))
+
+CIG: ((( pratica.numero_cig )))  \hfill CUP: ((( pratica.numero_cup )))
+\end{minipage}
+}
+
+\framebox[\linewidth]{ \textbf{Dati generali} }
+
+\textbf{Tipologia di affidamento:} Affidamento diretto \\
+\textbf{Criteri di aggiudicazione:} Minor prezzo \\
+\textbf{Rischi di interferenza nell'esecuzione della prestazione richiesta:} Nessuno \\
+
+\framebox[\linewidth]{ \textbf{Amministrazione contraente} }
+
+\textbf{Nome Ente:} ((( pratica.sede.sede_it ))) \\
+\textbf{Codice Fiscale Ente:} ((( pratica.sede.cod_fisc ))) \\
+\textbf{Telefono:} ((( pratica.sede.tel_oss ))) \\
+\textbf{Email:} ((( pratica.sede.email_ufficio ))) \\
+\textbf{PEC:} ((( pratica.sede.pec_oss ))) \\
+\textbf{RUP:} ((( pratica.nome_rup ))) \\
+\textbf{Punto Ordinante:} ((( pratica.nome_direttore ))) \\
+\textbf{Firmatario del documento di stipula:} ((( pratica.nome_direttore ))) \\
+
+\framebox[\linewidth]{ \textbf{Operatore economico contraente} }
+
+\textbf{Nome\,-\,Denominazione\,-\,Ragione~Sociale:} ((( pratica.fornitore_nome ))) \\
+\textbf{Codice Fiscale:} ((( pratica.fornitore_codfisc ))) \\
+\textbf{Partita IVA:} ((( pratica.fornitore_partiva ))) \\
+\textbf{Sede legale:} ((( pratica.fornitore_sede ))) \\
+\textbf{PEC:} ((( pratica.fornitore_pec ))) \\
+
+\framebox[\linewidth]{ \textbf{Oggetto della fornitura} }
+
+((* if pratica.descrizione_ordine *))
+((( pratica.descrizione_ordine )))
+((* else *))
+((( pratica.descrizione_acquisto )))
+((* endif *))
+
+
+\framebox[\linewidth]{ \textbf{Consegna - Verifica della prestazione - Fatturazione} }
+
+\textbf{Termine di esecuzione della prestazione:} ((( pratica.termine_giorni ))) giorni della stipula \\
+
+L'Operatore Economico contraente prende atto di quanto segue.
+
+La verifica finale della conformità della prestazione sarà effettuata
+dal Responsabile Unico del Progetto (RUP).
+
+L'INAF provvederà al pagamento del corrispettivo, dietro il previo
+invio di regolare fattura da parte dell'aggiudicatario e rilascio di
+certificato di regolare esecuzione contrattuale del Responsabile Unico
+del Progetto (RUP).
+
+Tutte le fatture dovranno essere trasmesse tramite il Sistema di
+Interscambio (SdI) dell'Agenzia delle Entrate, utilizzando il Codice
+Univoco Ufficio (CUU): ((( pratica.sede.cuu ))).
+
+Il pagamento del corrispettivo sarà effettuato, entro 30 giorni dal
+ricevimento previa verifica della Regolarità  Contributiva,  nel
+rispetto di quanto previsto dall'art. 125 del D.lgs. numero 36/2023 e
+successive modifiche ed integrazioni, mediante bonifico bancario su conto
+corrente dedicato, anche in via non esclusiva, alle commesse pubbliche che
+l'Operatore Economico contraente provvederà ad indicare ad INAF entro 7
+(sette) giorni dalla data della sua accensione, ove già non ne risulti
+intestatario. L'Operatore Economico contraente dovrà inoltre comunicare
+entro lo stesso termine le generalità e il codice fiscale delle persone
+delegate ad operare su di esso. Ai sensi della legge numero 136/2010 e
+successive modifiche ed integrazioni, l'Operatore Economico contraente
+\textbf{si obbliga a garantire la tracciabilità dei flussi finanziari relativi al
+presente appalto inserendo in fattura i sopra richiamati codici CIG e CUP},
+pena la risoluzione del contratto. Il pagamento sarà subordinato alla
+verifica d'ufficio della regolarità contributiva dell' Operatore
+Economico contraente nonché, alle verifiche previste dall'art. 48
+bis del d.P.R. numero 602/1973 e successive modifiche ed integrazioni,
+da parte di INAF. L' Operatore Economico contraente si impegna a
+comunicare tempestivamente all'INAF le eventuali variazioni delle
+coordinate bancarie, esonerando l'INAF in difetto di tale notifica,
+da ogni responsabilità per i pagamenti eseguiti, anche ove le predette
+variazioni siano pubblicate nei modi di legge.
+
+
+\textbf{Indirizzo di consegna:} ((( pratica.sede.indirizzo ))). 
+
+\textbf{Dati di fatturazione:} \\
+Intestazione: ((( pratica.sede.sede_it ))); \\
+Indirizzo: ((( pratica.sede.indirizzo ))); \\
+Codice Fiscale: ((( pratica.sede.cod_fisc ))); \\
+Partita IVA: ((( pratica.sede.part_iva ))); \\
+Codice e-fattura: ((( pratica.sede.cuu ))); \\
+
+\framebox[\linewidth]{ \textbf{Disciplina del contratto} }
+
+\textbf{Articolo 1}
+
+Con l'accettazione del presente documento di stipula l'Operatore
+Economico Stipulante ne accetta integralmente le condizioni.
+
+\textbf{Articolo 2}
+
+L'Operatore Economico contraente si obbliga in particolare a:
+
+\begin{enumerate}
+	\item eseguire la prestazione oggetto del Contratto, impiegando tutte le
+strutture ed il personale necessario per la loro realizzazione secondo
+quanto stabilito nel Contratto e negli atti relativi al presente
+affidamento;
+
+\item predisporre tutti gli strumenti e le metodologie, comprensivi della
+relativa documentazione, atti a garantire elevati livelli di servizio,
+ivi compresi quelli relativi alla sicurezza e riservatezza, nonché atti
+a consentire a INAF di monitorare la conformità della prestazione alle
+norme previste nel Contratto;
+
+\item manlevare e tenere indenne INAF per quanto di rispettiva competenza, dalle
+pretese che i terzi dovessero avanzare in relazione ai danni derivanti da
+servizi resi in modalità diverse rispetto a quanto previsto nel presente
+Contratto, ovvero in relazione a diritti di privativa vantati da terzi;
+
+\item per il personale impiegato a qualsiasi titolo nel presente appalto,
+ad ottemperare nei confronti dei propri dipendenti e collaboratori,
+a tutti gli obblighi derivanti dalle vigenti disposizioni legislative,
+regolamentari e di CCNL di categoria, in materia di retribuzione,
+previdenza, assistenza e assicurazione con esclusione di qualsiasi
+responsabilità da parte dell'INAF;
+
+\item all'osservanza delle norme e delle disposizioni legislative in materia
+di prevenzione dagli infortuni e di igiene sul lavoro, impartendo ai
+propri dipendenti e collaboratori precise istruzioni sui rischi specifici
+esistenti nell'ambiente di lavoro in cui sono chiamati a prestare la
+loro attività. In particolare, l'AFFIDATARIO si impegna a rispettare,
+nell'esecuzione delle obbligazioni contrattuali, le disposizioni di cui
+al D.lgs. numero 81/2008 e successive modifiche ed integrazioni. 
+
+\item a far osservare, per quanto compatibile, ai propri dipendenti e
+collaboratori il Codice di comportamento in materia di anticorruzione del
+personale INAF, pubblicato nella sezione “Amministrazione trasparente”
+del sito istituzionale dell'INAF. L'Operatore Economico contraente
+dichiara di aver preso visione e di essere a conoscenza del contenuto
+del predetto Codice; nelle ipotesi di grave violazione delle diposizioni
+ivi contenute, la stazione appaltante si riserva la facoltà di risolvere
+il contratto;
+
+\item al rispetto delle disposizioni di cui all'art. 53, comma 16-ter del
+D.lgs. numero 165/2001 e successive modifiche ed integrazioni in materia
+di conferimento di incarichi o contratti di lavoro ad ex dipendenti
+della stazione appaltante pena l'obbligo di restituzione dei compensi
+illegittimamente percepiti ed accertati ad essi riferiti.
+\end{enumerate}
+
+\textbf{Articolo 3}
+
+\begin{enumerate}
+	\item Nel caso di inadempienze o di ritardi nell'esecuzione del presente
+Contratto l'AFFIDATARIO sarà tenuto al pagamento di una penale pari
+a all'uno per mille dell'importo contrattuale, per ogni giorno di
+ritardata consegna o inadempimento rispetto al termine indicato nella
+diffida.
+
+\item L'applicazione delle penali non preclude all'INAF il diritto di agire
+per il risarcimento degli eventuali maggiori danni o per l'eventuale
+risoluzione del Contratto.
+\end{enumerate}
+
+
+\textbf{Articolo 4}
+
+L'INAF si riserva il diritto di risolvere il presente Contratto, ai sensi
+e per gli effetti dell'art. 1456 del Codice Civile con comunicazione
+scritta da inviarsi con raccomandata con avviso di ricevimento (a/r)
+o mediante posta elettronica certificata (PEC), con un preavviso di 20
+(venti) giorni, nei seguenti casi:
+
+\begin{itemize}
+\item[a)] qualora nei confronti dell'appaltatore sia intervenuta l'emanazione
+di un provvedimento definitivo che dispone l'applicazione di una o più
+misure di prevenzione di cui all'art. 67 e seguenti del D.lgs. numero
+159/2011 e successive modifiche ed integrazioni, ovvero sia intervenuta
+sentenza di condanna passata in giudicato per frodi nei riguardi della
+Stazione Appaltante, di subcontraenti, di subappaltatori, di fornitori,
+di lavoratori o di altri soggetti comunque interessati all'appalto,
+nonché per violazioni gravi degli obblighi attinenti alla sicurezza
+sul lavoro; 
+
+\item[b)] per l'intervenuto accertamento in via definitiva di violazioni gravi
+alla normativa previdenziale ed assicurativa, nonché al pagamento di
+imposte e tasse. Restano in ogni caso impregiudicati i diritti dell'INAF
+al risarcimento di eventuali ulteriori danni e all'incameramento della
+garanzia fideiussoria. 
+
+\item[c)] L'INAF si riserva la facoltà di risolvere il contratto nei casi di
+cui all'art. 122 del d.l.gs 36/2023.
+
+\item[d)] L'INAF si riserva, inoltre, il diritto di recedere unilateralmente
+dal Contratto in qualsiasi momento senza alcun onere a suo carico,
+con un preavviso di almeno 20 (venti) giorni solari, da comunicarsi
+all'Operatore Economico contraente mediante raccomandata con
+avviso di ricevimento (a/r) o mediante posta elettronica certificata
+(PEC). In caso di recesso all'Operatore Economico contraente, spetterà
+il corrispettivo limitatamente alla prestazione sino ad allora resa,
+secondo i corrispettivi e le condizioni previsti nel presente Contratto,
+oltre al decimo dell'importo delle forniture non eseguite, in ossequio
+a quanto previsto dall'art. 123 del D.Lgs. 36/2023. 
+\end{itemize}
+
+
+\textbf{Articolo 5}
+
+\begin{enumerate}
+	\item Con la sottoscrizione del presente atto si assumono tutti gli oneri
+assicurativi e previdenziali di legge, nonché l'obbligo di osservare
+le norme vigenti in materia di sicurezza sul lavoro e di retribuzione
+dei lavoratori dipendenti, nonché si accettano tutte le condizioni
+contrattuali e le penalità.
+
+\item Si prende atto che i termini stabiliti nella documentazione allegata
+alla procedura di affidamento, relativamente ai tempi di esecuzione del
+Contratto, sono da considerarsi termini essenziali ai sensi e per gli
+effetti dell'art. 1457 C.C.
+
+\item Il presente Documento di Stipula è esente da registrazione ai sensi de
+Testo Unico del 22/12/1986 n. 917, art. 6 e s.m.i., salvo che in caso
+d'uso ovvero da quanto diversamente e preventivamente esplicitato dalla
+Stazione Appaltante nelle Condizioni Particolari di Fornitura.
+
+\item Sono a carico dell'Operatore Economico contraente tutti gli eventuali
+oneri tributari, le eventuali spese contrattuali ivi comprese quelle
+relative all'eventuale assoggettamento ad imposta di bollo.
+\end{enumerate}
+
+\textbf{Articolo 6}
+
+\begin{enumerate}
+	\item Il presente documento si intende privo di effetti ove privo di
+sottoscrizione con valida firma digitale.
+
+\item L'Operatore Economico contraente si impegna a ritrasmettere copia
+del presente atto controfirmata con firma digitale del legale
+rappresentante all'indirizzo PEC della stazione appaltante:
+ inafoaarcetri@pcert.postecert.it.
+
+\item Il rapporto oggetto della presente stipulazione si intenderà perfezionato
+solo al momento in cui la medesima Stazione Appaltante avrà notizia
+della sottoscrizione del presente atto da parte dell'Operatore Economico
+contraente, come sopra specificato.
+\end{enumerate}
+
+((* include 'direttore.tex' *))
+
+
+\end{document}

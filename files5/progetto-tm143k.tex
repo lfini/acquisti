@@ -1,0 +1,161 @@
+\documentclass[a4paper,12pt]{letter}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage{watermark}
+\usepackage[italian]{babel} 
+\usepackage{eurosym}
+
+%% Template: progetto-tm143k.tex. Version 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+((* endif *))
+
+\begin{document}
+\topaddr
+
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{progetto-tm143k.tex}
+\end{quotation}
+((* endif *))
+
+\begin{center}
+\textbf{PROGETTO DI FORNITURA \\ (RICHIESTA DI ACQUISIZIONE DI BENI)}
+\end{center}
+
+~\\
+\textbf{Soggetto richiedente: ((( pratica.nome_richiedente )))} \\
+
+In qualità di:          %
+((* if resp_fondi *)) Responsabile dei fondi (Ob.~Fu ((( pratica.stringa_codf ))))
+((* else *)) dipendente
+((* endif *))
+
+~\\
+\begin{center}
+\textbf{\underline{Richiede l'acquisizione del seguente bene}}
+\end{center}
+
+~\\
+\textbf{Descrizione tecnica del bene/servizio richiesto:}
+\begin{quote}
+((( pratica.descrizione_acquisto )))
+\end{quote}
+
+~\\
+Cfr. preventivo Operatore Economico 
+
+~\\
+\textbf{Motivazioni relative alla necessità dell’acquisto: }
+\begin{quote}
+((( pratica.motivazione_acquisto )))
+\end{quote}
+
+
+\textbf{PROCEDURA: } %% Testo procedura per trattativa mepa sotto 40 k€
+
+Affidamento diretto ai sensi del combinato disposto dagli articoli 17 comma 2 e 50, comma 1 lett. b) D.Lgs. 36/2023.
+
+L’esplorazione informale di mercato sin qui condotta ha consentito infatti di individuare:
+
+\begin{itemize}
+\item un importo stimato del progettato affidamento sicuramente al di sotto della soglia contemplata dalla norma innanzi richiamata;
+\item l’assenza di una Convenzione in ambito Consip;
+\item presenza su MePA di almeno una ditta di riferimento che assicurasse le condizioni (tecniche e di budget) ritenute ottimali;
+\item una ditta in grado di rispondere efficacemente al quadro esigenziale connesso al presente affidamento,
+individuata sul mercato all’esito di una informale esplorazione e specificamente:
+((( pratica.fornitore_nome ))) con sede legale in ((( pratica.fornitore_sede ))),
+Cod.Fisc.: (((pratica.fornitore_codfisc ))), Part.IVA: ((( pratica.fornitore_partiva ))),
+con la quale avviare una procedura di affidamento su piattaforma ''MePA''.
+\end{itemize}
+
+Si richiama inoltre l’art. 10, comma 3, D. Lgs. 218/2016 a mente
+del quale ''Le disposizioni di cui all'articolo 1, commi 450, primo
+periodo, e 452, primo periodo, della legge 27 dicembre 2006, n. 296, non
+si applicano agli Enti per l'acquisto di beni e servizi funzionalmente
+destinati all'attività di ricerca''.
+
+
+
+\textbf{VERIFICA DELL’INTERESSE TRANSFRONTALIERO}
+
+Si ritiene peraltro l’insussistenza, in relazione all’affidamento in
+oggetto, dei presupposti giustificanti l’applicazione dell’art. 48,
+comma 2, Decreto Legislativo 31 marzo 2023 n. 36, in considerazione delle
+specificità dell’affidamento, che non consentono di identificare in
+esso un interesse transfrontaliero certo. 
+
+\textbf{VERIFICA DEL RISPETTO DEL PRINCIPIO DI ROTAZIONE DEGLI AFFIDAMENTI}
+
+In relazione all’affidamento in oggetto è verificato il rispetto del
+principio di rotazione degli affidamenti, di cui all’articolo 49 del
+Decreto Legislativo 31 marzo 2023 n. 36. 
+
+\textbf{L’acquisto non prevede ripetizioni o altre opzioni.}
+
+Ai fini della inventariazione, ove necessaria in ragione della fornitura
+in oggetto, è riservata la successiva precisazione degli effettivi
+utilizzatori e della effettiva localizzazione dei beni da inventariare.
+
+\textbf{La consegna della fornitura deve avvenire presso:}
+
+((( pratica.sede.sede_it ))). ((( pratica.sede.indirizzo )))
+\par\noindent\rule{\textwidth}{0.4pt}
+
+\textbf{Quadro economico della fornitura: }
+
+((* include 'quadro_economico.tex' *))
+
+\begin{minipage}{\linewidth}
+A gravare su: Ob. Fu ((( pratica.stringa_codf ))) - 
+Responsabile Fondi: ((( pratica.nome_responsabile ))).
+
+((* if pratica.nota_progetto *))
+\vspace{0.5cm}
+\textbf{Note:}
+	((( pratica.note_progetto )))
+((* endif *))
+
+\vspace{0.5cm}
+\begin{flushright}
+\begin{minipage}[c]{6cm}
+\begin{center}
+Il Richiedente
+
+((( pratica.nome_richiedente )))
+
+\end{center}
+\end{minipage}
+\end{flushright}
+\end{minipage}
+
+((* if responsabile *))
+\begin{minipage}{\linewidth}
+\begin{center}
+	VISTO SI AUTORIZZA
+\end{center}
+\begin{flushright}
+\begin{minipage}[c]{6cm}
+\begin{center}
+Il Responsabile dei fondi
+
+((( pratica.nome_responsabile )))
+
+\end{center}
+\end{minipage}
+\end{flushright}
+\end{minipage}
+((* endif *))
+
+((* if direttore *))
+\begin{minipage}{\linewidth}
+\begin{center}
+	VISTO SI AUTORIZZA
+\end{center}
+((* include 'direttore.tex' *))
+\end{minipage}
+((* endif *))
+\end{document}

@@ -80,8 +80,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.24'
-__date__ = '30/06/2024'
+__version__ = '5.0.25'
+__date__ = '04/07/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -358,7 +358,8 @@ def test_doc_ordine(d_prat: Pratica) -> bool:
 
 def test_all_prev_mepa(d_prat: Pratica) -> bool:
     "test esistenza preventivo mepa"
-    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40, cs.INFER_5000):
+    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40, cs.INFER_5000,
+                                       cs.TRATT_MEPA_143, cs.TRATT_UBUY_143):
         return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_PREV][0]))
     return True
 
@@ -405,11 +406,13 @@ def test_doc_rdo(d_prat: Pratica) -> bool:
 
 def test_rdo_richiesta(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede RdO"
-    return d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40)
+    return d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40,
+                                       cs.TRATT_MEPA_143, cs.TRATT_UBUY_143)
 
 def test_ordine_richiesto(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede generazione dell'ordine"
-    return d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.TRATT_UBUY_40)
+    return d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.TRATT_UBUY_40,
+                                       cs.TRATT_UBUY_143)
 
 def auth_allegati_cancellabili(d_prat: Pratica) -> str:
     "test: allegati cancellabili"
@@ -528,17 +531,18 @@ def make_info(d_prat: Pratica) -> dict:
     info['all_cig'] = YES if test_all_cig(d_prat) else NOT
     info['allegati_cancellabili'] = auth_allegati_cancellabili(d_prat)
     info['autorizz_richiedibile'] = auth_autorizz_richiedibile(d_prat)
+    info['autorizzabile'] = auth_autorizzabile(d_prat)
     info['decis_modificabile'] = auth_decisione_modificabile(d_prat)
     info['decis_inviabile'] = auth_decisione_inviabile(d_prat)
     info['ordine_modificabile'] = auth_ordine_modificabile(d_prat)
     info['ordine'] = YES if test_ordine_richiesto(d_prat) else NOT
     info['pratica_annullabile'] = auth_pratica_annullabile(d_prat)
-    info['pratica_chiudibile'] = auth_pratica_chiudibile(d_prat)
     info['progetto_approvabile'] = auth_progetto_approvabile(d_prat)
+    info['pratica_chiudibile'] = auth_pratica_chiudibile(d_prat)
+    info['pratica_riapribile'] = auth_pratica_riapribile(d_prat)
     info['progetto_modificabile'] = auth_progetto_modificabile(d_prat)
     info['progetto_inviabile'] = auth_progetto_inviabile(d_prat)
     info['rdo_richiesta'] = YES if test_rdo_richiesta(d_prat) else NOT
-    info['autorizzabile'] = auth_autorizzabile(d_prat)
     info['rollback'] = auth_rollback(d_prat)
     info['rup_indicabile'] = auth_rup_indicabile(d_prat)
     info['rdo_modificabile'] = auth_rdo_modificabile(d_prat)
@@ -614,9 +618,16 @@ def check_access(new=False):
 #   logging.debug('Pratica: %s', str(d_prat))
     return Pratica(d_prat, user=user, basedir=basedir)
 
-def sel_menu(tipo_allegato):
-    "Genera voce di menu per allegati"
-    return (tipo_allegato,)+cs.TAB_ALLEGATI[tipo_allegato][1:3]
+def menu_allegati(d_prat: Pratica, all_mancanti):
+    'genera menù per allegati'
+    def sel_menu(t_alleg):
+        "Genera voce di menu per allegati"
+        return (t_alleg,)+cs.TAB_ALLEGATI[t_alleg][1:3]
+    menu = [sel_menu(x) for x in all_mancanti]
+    if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000:
+        menu.append(sel_menu(cs.ALL_LISTA_DETT))
+    menu.append(sel_menu(cs.ALL_GENERICO))
+    return menu
 
 def salvapratica(d_prat: Pratica):
     'Salva pratica, rimuovendo campi provvisori'
@@ -679,7 +690,7 @@ def pratica_common(d_prat: Pratica):
     "parte comune alle pagine relative alla pratica"
     info = check_all(d_prat)
     all_mancanti = allegati_mancanti(d_prat)
-    menu = [sel_menu(x) for x in all_mancanti] + [sel_menu(cs.ALL_GENERICO)]
+    menu = menu_allegati(d_prat, all_mancanti)
     upl = fms.MyUpload(menu)
     pdf_files = ft.flist(d_prat.basedir, filetypes=cs.UPLOAD_TYPES)
     info['attach'] = [(a, _clean_name(a), a.startswith('A99')) \
@@ -687,6 +698,7 @@ def pratica_common(d_prat: Pratica):
     info['allegati_mancanti'] = ', '.join(all_mancanti)
     info['stato_pratica'] = d_prat.get_passo('t')
     info['commands'] = d_prat.get_passo('cmd')
+    print('Al passo:', d_prat.get_passo(), 'CMD:', info['commands'])
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, upload=upl,
                               sede=CONFIG.config[cs.SEDE])
@@ -716,6 +728,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
                             err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
             d_prat.back()
+            d_prat[cs.PRATICA_APERTA] = True
             text = f'Pratica {d_prat[cs.NUMERO_PRATICA]} riaperta'
             storia(d_prat, text)
             salvapratica(d_prat)

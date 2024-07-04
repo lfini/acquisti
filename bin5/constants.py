@@ -45,14 +45,14 @@ TRATT_MEPA_40 = 'tratt.mepa40'
 TRATT_UBUY_143 = 'tratt.ubuy143'
 TRATT_UBUY_40 = 'tratt.ubuy40'
 
-TAB_TEMPLATE = {          # suffissi per i template delle vasrie modalità di acquisto
+TAB_TEMPLATE = {          # suffissi per i template delle varie modalità di acquisto
         ACCORDO_QUADRO: '',
         CONSIP: '',
         INFER_5000: 'inf5k',
         MEPA: '',
-        TRATT_MEPA_143: '',
+        TRATT_MEPA_143: 'tm143k',
         TRATT_MEPA_40: 'tm40k',
-        TRATT_UBUY_143: '',
+        TRATT_UBUY_143: 'ub143k',
         TRATT_UBUY_40: 'ub40k',
         }
 
@@ -255,6 +255,7 @@ ALL_CV_RUP = 'CV RUP'
 ALL_DECIS_FIRM = 'Decis. Firmata'
 ALL_DICH_RUP = 'Dich. RUP'
 ALL_GENERICO = "All. Generico"
+ALL_LISTA_DETT = "Lista dett."
 ALL_OBBLIG = "Obblig. Perf."
 ALL_PREV = "preventivo"
 ALL_RDO = "RdO Firmata"
@@ -288,6 +289,8 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Documento generico", ALL_NAME),
                 ALL_RDO: ("A16_RdO_Firmata", "RdO con firma digitale RUP", ALL_SING),
                 ALL_DECIS_FIRM: ("A24_Decisione_Firmata",
                                   "Decisione di contrarre con firma digitale", ALL_SING),
+                ALL_LISTA_DETT: ("A30_Lista_Dettagliata",
+                                 "Lista dettagliata da allegare all'ordine", ALL_SING),
                 ALL_OBBLIG: ("A30_Obbligaz_Giurid_Perfezionata",
                                   "Obbligazione giuridicamente perfezionata", ALL_SING),
                }
@@ -337,10 +340,12 @@ TABELLA_PASSI = {
               [],
               {TRATT_MEPA_40: CdP.AUD,   # prossimo passo dipende da
                TRATT_UBUY_40: CdP.AUD,   # modalità acquisto
+               TRATT_MEPA_143: CdP.AUD,
+               TRATT_UBUY_143: CdP.AUD,
                INFER_5000: CdP.DEC}),
     CdP.AUD: ("Generazione Richiesta di Offerta",
               [DOC_RDO, []],
-              ['modificardo', 'procedi_dec'],
+              ['modificardo', 'procedi_rdo'],
               [ALL_CIG],
               CdP.ROG),
     CdP.ROG: ("Genera decisione, allega RdO firmata",
@@ -355,10 +360,12 @@ TABELLA_PASSI = {
               CdP.DCI),
     CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
               [],
-              ['procedi_ogp'],
+              ['procedi_dec'],
               [ALL_DECIS_FIRM],
               {TRATT_MEPA_40: CdP.OGP,   # prossimo passo dipende da
                TRATT_UBUY_40: CdP.ORD,   # modalità acquisto
+               TRATT_MEPA_143: CdP.OGP,
+               TRATT_UBUY_143: CdP.ORD,
                INFER_5000: CdP.ORD}),
     CdP.ORD: ("Genera ordine",
               [DOC_ORDINE, []],
@@ -367,7 +374,7 @@ TABELLA_PASSI = {
               CdP.OGP),
     CdP.OGP: ("Allega Obbligazione giuridicamente perfezionata",
               [],
-              ['procedi_ogp'],
+              ['procedi_ord'],
               [ALL_OBBLIG],
               CdP.END),
     CdP.END: ("Pratica conclusa. Attesa chiusura",

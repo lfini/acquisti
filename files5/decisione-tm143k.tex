@@ -5,7 +5,7 @@
 \usepackage[italian]{babel} 
 \usepackage{eurosym}
 
-%% Template: decisione-ub40k.tex. Version 1.0
+%% Template: decisione-tm143k.tex. Version 1.0
 
 ((* include 'header.tex' *))
 
@@ -18,7 +18,7 @@
 
 ((* if debug *))
 \begin{quotation}
-	\textbf{DEBUG:} template = \texttt{decisione-ub40k.tex}
+	\textbf{DEBUG:} template = \texttt{decisione-tm143k.tex}
 \end{quotation}
 ((* endif *))
 
@@ -313,36 +313,43 @@ di mercato l’importo stimato del progettato affidamento si attesterà
 certamente al di sotto della soglia di cui all’articolo 50 comma 1
 lett. b) del Decreto Legislativo 31 marzo 2023, numero 36;
 
-\textbf{RITENUTO~} di potere procedere, anche nell’ottica di
-ottimizzare i tempi di realizzazione del suddetto progetto, mediante
-affidamento diretto;
-
-\textbf{CONSIDERATO~}  che INAF – Istituto Nazionale di
-Astrofisica – si è dotato di una piattaforma di e-procurement
-per la gestione delle gare dematerializzate denominato "UBUY"
-(\texttt{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp});
+\textbf{CONSIDERATO~}  che l'Operatore Economico individuato
+è iscritto alla piattaforma di e-procurement per la
+gestione delle gare dematerializzate denominato "MePA"
+(\texttt{https://www.acquistinretepa.it})
 
 \textbf{RITENUTO~} di potere avviare su sopramenzionata piattaforma di
  e-procurement  la procedura diretta a provocare una formale offerta,
  da parte del suddetto O.E., confermativa o migliorativa della precedente
  acquisita in sede di esplorazione informale di mercato;
 
-\textbf{PRESO ATTO~} che in data ((( pratica.data_gara ))) veniva
+\textbf{PRESO ATTO~} che in data ((( pratica.data_negoziazione ))) veniva
  avviata sulla menzionata piattaforma di e-procurement la procedura -
- id gara ((( pratica.id_gara ))), con termine di
-scadenza per la presentazione dell’offerta ((( pratica.data_scadenza))) ore 23:59;
+ di negoziazione ((( pratica.numero_negoziazione ))), con termine di
+scadenza per la presentazione dell’offerta ((( pratica.data_scadenza
+))) ore 23:59;
 
 
 \textbf{RILEVATO~} che in data  ((( pratica.data_offerta )))
-l'O.E. depositava su piattaforma l'offerta economica e gli allegati richiesti.
+l'O.E. depositava su piattaforma l'offerta economica e la richiesta
+documentazione amministrativa (ID offerta ((( pratica.numero_offerta
+))));
+
+
+\textbf{CONSIDERATO~} che l’Operatore Economico ha tempestivamente
+e correttamente aderito a detta richiesta di offerta, (((
+pratica.conferma_migliora )))  le condizioni offerte in  sede di
+preliminare esplorazione di mercato e caricando la documentazione
+amministrativa, correttamente compilata e sottoscritta digitalmente dal
+legale rappresentante;
 
 \textbf{VISTA~} l'offerta di tale Operatore Economico, per complessivi Euro ((( pratica.costo_netto ))),
 al netto di IVA;
 
-\textbf{CONSIDERATO~} che il Responsabile Unico del
-Progetto, consultatosi preventivamente con il 
- Richiedente, ((( pratica.nome_richiedente ))), ha giudicato l’offerta congrua
- e valida;
+\textbf{CONSIDERATO~} che il Responsabile Unico del Progetto,
+consultatosi preventivamente con il 
+ Richiedente, ((( pratica.nome_richiedente ))), ha giudicato l’offerta
+ congrua e valida;
 
 \textbf{ACQUISITE~}   le dichiarazioni sostitutive
 di atto di notorietà richieste dalla vigente normativa in materia di
