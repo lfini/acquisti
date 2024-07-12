@@ -80,8 +80,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.25'
-__date__ = '04/07/2024'
+__version__ = '5.0.26'
+__date__ = '12/07/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1678,11 +1678,11 @@ def rollback():                       #pylint: disable=R0914
     prevcode = d_prat.get_back()
     logging.debug('Al passo %s rolling back to %s', passcode, prevcode)
     doc_to_remove = pass_info(passcode, what='file')
-    doc_to_remove = doc_to_remove[0] if doc_to_remove else 'Nessuno'
+    doc_to_remove_str = doc_to_remove[0] if doc_to_remove else 'Nessuno'
     cod_all = pass_info(passcode, what='alleg')
     all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
-    logging.debug('Documento da cancellare: %s', doc_to_remove)
-    logging.debug('Allegati da cancellare: %s', str(all_to_remove))
+    logging.debug('Documento da cancellare: %s', doc_to_remove_str)
+    logging.debug('Allegati da cancellare: %s', ', '.join(all_to_remove))
     if 'annulla' in fk.request.form:
         logging.info('Operazione annullata')
         fk.flash('Operazione annullata', category="info")

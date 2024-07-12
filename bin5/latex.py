@@ -341,7 +341,7 @@ def main():
 
     pratica = ft.get_pratica(anno, nprat)
 
-    templfile = os.path.join(FILEDIR, 'progetto.tex')
+    templfile = os.path.join(FILEDIR, 'progetto-tm40k.tex')
     pdffile = 'test_document.pdf'
     headerpath=os.path.join(FILEDIR, "header.png")
     footerpath=os.path.join(FILEDIR, "footer.png")
