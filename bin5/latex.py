@@ -105,7 +105,7 @@ CHLIST = {35: "\\#",
           243: "\\'o",
           249: "\\`u",
           250: "\\'u",
-          8364: "\\euro{}"}
+          8364: "\\EURtm{}"}
 
 def set_path(pdflatex):
     "Imposta path per pdflatex"
