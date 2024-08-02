@@ -80,8 +80,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.26'
-__date__ = '12/07/2024'
+__version__ = '5.0.27'
+__date__ = '24/07/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1138,10 +1138,10 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         d_prat[cs.FIRMA_APPROV_RESP] = ""
         update_costo(d_prat, cs.COSTO_PROGETTO)
         doc = d_prat.get_passo('f')
-        genera_documento(d_prat, doc)
         d_prat[cs.SAVED] = 1
         storia(d_prat, 'Generato/modificato progetto di acquisto')
         salvapratica(d_prat)
+        genera_documento(d_prat, doc)
         avvisi(d_prat, "A")
         return pratica_common(d_prat)
     errors = prog.get_errors()
@@ -1361,7 +1361,7 @@ def modificardo():
                 d_prat.update(clean_data(rdo_data))
                 update_costo(d_prat, cs.COSTO_RDO)
                 genera_documento(d_prat, (cs.DOC_RDO, [cs.DIRETTORE]))
-                d_prat.next()
+#               d_prat.next()
                 storia(d_prat, 'Generata/modificata RdO')
                 salvapratica(d_prat)
                 return pratica_common(d_prat)
@@ -1690,7 +1690,7 @@ def rollback():                       #pylint: disable=R0914
     if 'conferma' in fk.request.form:
         logging.info('Annullamento confermato')
         if doc_to_remove:
-            ft.remove((d_prat.basedir, doc_to_remove))
+            ft.remove((d_prat.basedir, doc_to_remove[0]))
         for tipo in cod_all:
             name = filename_allegato(tipo, '', '.pdf', '', d_prat)
             ft.remove((d_prat.basedir, name))
