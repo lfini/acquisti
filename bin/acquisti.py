@@ -80,8 +80,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.27'
-__date__ = '24/07/2024'
+__version__ = '5.0.28'
+__date__ = '03/08/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1091,6 +1091,11 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     logging.info('URL: /modificaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        if d_prat.get(cs.NUMERO_PRATICA, '-').startswith('-'):
+            return fk.redirect(fk.url_for('start'))
+        return pratica_common(d_prat)
     err = auth_progetto_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1583,14 +1588,14 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
     "pagina: trova pratica"
     logging.info('URL: /trovapratica (%s)', fk.request.method)
     fk.session[cs.BASEDIR] = ''
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return fk.redirect(fk.url_for('start'))
     user = user_info()
     if not (test_admin(user) or test_direttore(user)):
         logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
         fk.session.clear()
         return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
-    if cs.ANNULLA in fk.request.form:
-        fk.flash('Operazione annullata', category="info")
-        return fk.redirect(fk.url_for('start'))
     prf = fms.TrovaPratica(fk.request.form)
     years = ft.get_years(cs.DATADIR)
     years.sort(reverse=True)
