@@ -1,19 +1,19 @@
 [Unit]
 Description=Procedura Acquisti
 After=network.target
-RequiresMountsFor=/export/home/sisifo
+RequiresMountsFor=/home/sisifo
 
 [Service]
 Type=forking
-WorkingDirectory=/home/sisifo/acquisti
-PIDFile=/home/sisifo/acquisti/work/acquisti5.pid
+WorkingDirectory=/home/sisifo/acquisti/v5
+PIDFile=/home/sisifo/acquisti/v5/work/acquisti.pid
 User=acquisti
 ExecStart=/usr/local/bin/gunicorn -w 5 -b 0.0.0.0:5000 \
-             --pythonpath=/home/sisifo/acquisti/bin5 -D \
-             --log-file=/home/sisifo/acquisti/work/httpd-acquisti5.log \
-             --pid=/home/sisifo/acquisti/work/acquisti5.pid --user=acquisti \
+             --pythonpath=/home/sisifo/acquisti/v5/bin -D \
+             --log-file=/home/sisifo/acquisti/v5/work/httpd-acquisti.log \
+             --pid=/home/sisifo/acquisti/v5/work/acquisti.pid --user=acquisti \
              --certfile=/etc/pki/tls/certs/sisifo.crt \
-             --keyfile=/etc/pki/tls/private/sisifo.key acquisti:ACQ
+             --keyfile=/etc/pki/tls/private/sisifo.key        acquisti:ACQ
 ExecStop=/bin/kill -s TERM $MAINPID
 ExecReload=/bin/kill -s HUP $MAINPID
 

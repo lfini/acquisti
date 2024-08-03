@@ -13,17 +13,17 @@
 
 REMOTE=acquisti@sisifo
 
-VERSION=`python3 ./bin5/acquisti.py -v`
+VERSION=`python3 ./bin/acquisti.py -v`
 
-bin_target=$REMOTE:bin-$VERSION
-files_target=$REMOTE:files-$VERSION
+bin_target=$REMOTE:v5/bin-$VERSION
+files_target=$REMOTE:v5/files-$VERSION
 
 rm -f bin/*.pyc           # clean bin directory
 rm -rf bin/__pycache__     # clean bin directory
 
 rsync -vrpz --delete switch $REMOTE:
-rsync -vrpz --exclude tmp --exclude .git --exclude .pylintrc --delete bin5/ $bin_target
-rsync -vrpz --exclude .git --delete files5/ $files_target
+rsync -vrpz --exclude tmp --exclude .git --exclude .pylintrc --delete bin/ $bin_target
+rsync -vrpz --exclude .git --delete files/ $files_target
 
 echo
 echo "Deployed version " $VERSION

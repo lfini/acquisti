@@ -2,20 +2,17 @@
 
 # Procedura per commutare versione corrente
 #
-# NOTA: la pricedura è stata modificata il 6/3/2024 per consentire
-#       la gestione della versione 5 del codice che utilizza i link
-#       bin5 e files5 al posto di bin e files. La versione corrente
-#       rimane fissata a 4.10
+# NOTA: la procedura è stata modificata il 2/8/2024 per funzionare
+#       con il nuovo layout, con directory v4: vecchia versione,
+#       v5: versione attuale, devel: versione di test
 #
-# La procedura deve essere lanciata dalla home directory
+# La procedura deve essere lanciata dalla directory v5
 # del programma acquisti, e si limita a modificare i link
 # di nome "bin" e "files" per puntare alla versione richiesta
 
 # NOTA: occorre prima interrompere i servizi
 #
 #     systemctl stop acquisti5
-#     systemctl stop manageldap5
-#
 
 VERSION=$1
 
@@ -28,10 +25,10 @@ if [ ! \( -d $bin_target -a -d $files_target \) ]; then
    exit 1
 fi
 
-rm -f bin5
-ln -s $bin_target bin5
-rm -f files5
-ln -s $files_target files5
+rm -f bin
+ln -s $bin_target bin
+rm -f files
+ln -s $files_target files
 
 echo
 echo "Enabled version:  $VERSION"

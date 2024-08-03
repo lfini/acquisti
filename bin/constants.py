@@ -492,9 +492,9 @@ Il documento: {decis_da_firmare} deve essere inviato al direttore per la firma d
 BINDIR = os.path.dirname(os.path.abspath(__file__))  # Path della directory eseguibili
 PKG_ROOT = os.path.abspath(os.path.join(BINDIR, ".."))  # Path della root del package
 
-AUXFILEDIR = "files5"          # nome directory per file ausiliari
+AUXFILEDIR = "files"          # nome directory per file ausiliari
 
-DATADIR = os.path.join(PKG_ROOT, "data5")     # path della directory per i dati"
+DATADIR = os.path.join(PKG_ROOT, "data")     # path della directory per i dati"
 FILEDIR = os.path.join(PKG_ROOT, AUXFILEDIR)  # path della directory dei files ausiliari"
 WORKDIR = os.path.join(PKG_ROOT, "work")      # path della directory di lavoro"
 

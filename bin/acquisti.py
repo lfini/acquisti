@@ -2179,7 +2179,7 @@ def production():
     logging.basicConfig(level=logging.INFO)    # Livello logging normale
 #   logging.basicConfig(level=logging.DEBUG)   # Più verboso
     initialize_me()
-    ft.set_file_logger((cs.WORKDIR, 'acquisti5.log'))
+    ft.set_file_logger((cs.WORKDIR, 'acquisti.log'))
     ft.set_mail_logger(CONFIG.config[cs.SMTP_HOST], CONFIG.config[cs.EMAIL_PROCEDURA],
                        CONFIG.config[cs.EMAIL_WEBMASTER], 'Notifica errore ACQUISTI')
 
