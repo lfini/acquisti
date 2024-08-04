@@ -19,7 +19,6 @@ Dove:
 import sys
 import os
 import subprocess
-import logging
 import random
 
 from jinja2 import Environment
@@ -38,12 +37,13 @@ import ftools as ft             # Necessario per test
 # VERSION 3.6    11/6/2024   - Ripristinato modo test locale
 
 __author__ = 'Luca Fini'
-__version__ = '3.6'
-__date__ = '11/6/2024'
+__version__ = '3.7'
+__date__ = '03/08/2024'
 
 class PDFLATEX:         # pylint: disable=R0903
     "Info ausiliaria per lancio di pdflatex"
     cmd = '/usr/bin/pdflatex'
+    log = None
 
 _NOTA1 = 'Il prezzo '+chr(232)+' specificato in Euro ('+chr(8364)+')'
 _NOTA2 = """
@@ -107,9 +107,10 @@ CHLIST = {35: "\\#",
           250: "\\'u",
           8364: "\\EURtm{}"}
 
-def set_path(pdflatex):
+def set_path(pdflatex, logger):
     "Imposta path per pdflatex"
     PDFLATEX.cmd = pdflatex
+    PDFLATEX.log = logger
 
 def tempnam(destdir='./', prefix='', suffix=''):
     "Genera un nome file temporaneo"
@@ -162,7 +163,7 @@ class SplittedAttachment:
             output.add_page(pdfa.pages[npage])
             with open(pgfile, mode="wb") as ofp:
                 output.write(ofp)
-            logging.debug('Written attachment page: %s', pgfile)
+            PDFLATEX.log.debug('Written attachment page: %s', pgfile)
 
     def __getitem__(self, idx):
         "Implementa accesso come lista"
@@ -197,7 +198,7 @@ def insert_attachments(dst, atcs, debug=False):
     for atc in atcs:
         dst.write(INIZIO_ALLEGATO % nallegato)
         if debug:
-            logging.debug('Aggiunta allegato %d', nallegato)
+            PDFLATEX.log.debug('Aggiunta allegato %d', nallegato)
         for npage, page in enumerate(atc):
             hdline = HEADER_PAGINA % (nallegato, npage+1)
             dst.write(hdline)
@@ -251,12 +252,12 @@ def makepdf(destdir, pdfname, template, remove=False,  #pylint: disable=R0912,R0
     tmppdf = tname+'.pdf'
     tpath, tname = os.path.split(tname)
     if debug:
-        logging.debug("Template: %s", template.name)
+        PDFLATEX.log.debug("Template: %s", template.name)
 
     atcs = []
     if attach:
         for atch in attach:
-            logging.debug('Processing attachment: %s', atch)
+            PDFLATEX.log.debug('Processing attachment: %s', atch)
             atcs.append(SplittedAttachment(tempdir, atch, debug))
     newdata = sanitize(data)
     newdata['debug'] = bool(debug)
@@ -267,7 +268,7 @@ def makepdf(destdir, pdfname, template, remove=False,  #pylint: disable=R0912,R0
         except FileNotFoundError:
             pass
         else:
-            logging.debug('Rimosso file: %s', pdffile)
+            PDFLATEX.log.debug('Rimosso file: %s', pdffile)
     with open(tmplatex, encoding='utf-8', mode='w') as fpt:
         tex = template.render(**newdata)
         fpt.write(tex)
@@ -277,23 +278,23 @@ def makepdf(destdir, pdfname, template, remove=False,  #pylint: disable=R0912,R0
     if BATCHMODE.on:
         cmd.extend(['-interaction', 'batchmode'])
     cmd.extend(['-output-directory', tpath, tmplatex])
-    logging.info('LaTeX cmd: %s', ' '.join(cmd))
+    PDFLATEX.log.info('LaTeX cmd: %s', ' '.join(cmd))
     with subprocess.Popen(cmd, stderr=subprocess.PIPE) as subp:
         errors = subp.stderr.readlines()
     for err in errors:
-        logging.error("LaTeX stderr: %s", err.strip())
+        PDFLATEX.log.error("LaTeX stderr: %s", err.strip())
     if not os.path.exists(tmppdf):
         raise RuntimeError(f"LaTeX did not generate temp file: {tmppdf}")
-    logging.debug("Renaming %s to %s", tmppdf, pdffile)
+    PDFLATEX.log.debug("Renaming %s to %s", tmppdf, pdffile)
     try:
         os.rename(tmppdf, pdffile)
         os.chmod(pdffile, 0o600)
         ret = True
     except Exception as excp:  #pylint: disable=W0703
         ret = True
-        logging.error("renaming %s to %s [%s]", tmppdf, pdffile, str(excp))
+        PDFLATEX.log.error("renaming %s to %s [%s]", tmppdf, pdffile, str(excp))
     if  debug:
-        logging.debug("Temp. dir not removed: %s", tempdir)
+        PDFLATEX.log.debug("Temp. dir not removed: %s", tempdir)
     else:
         cleantempdir(tempdir)
     return ret
@@ -336,8 +337,8 @@ def main():
         print(ARGERR)
         sys.exit()
 
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger = PDFLATEX.log.getLogger()
+    logger.setLevel(PDFLATEX.log.DEBUG)
 
     pratica = ft.get_pratica(anno, nprat)
 

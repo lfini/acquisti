@@ -50,7 +50,7 @@ from pprint import pprint
 import readline           # pylint: disable=W0611
 import subprocess
 import logging
-from logging.handlers import RotatingFileHandler, SMTPHandler
+from logging.handlers import RotatingFileHandler
 from logging import StreamHandler
 from functools import reduce
 from getpass import getpass
@@ -93,7 +93,6 @@ class GMailHandler(StreamHandler):           # pylint: disable=R0903
         self.fromaddr = fromaddr
         self.dest = [toaddr]
         self.subject = subject
-#       print("GMailHandler init:", self.dest)
 
     def emit(self, record):
         "Invia messaggio di log via GMail"
@@ -317,48 +316,41 @@ def checkdir():
 
 CONFIG = tb.jload((checkdir(), 'config.json'))
 
-def setformatter():
-    'definisce formato di log'
-    logger = logging.getLogger()
-    if not hasattr(logger, 'fHandler'):
-        return
-    fmtstr = '%(asctime)s '+ logger.host_info + ' ['+logger.user_info+'] %(levelname)s %(message)s'
-    formatter = logging.Formatter(fmt=fmtstr)
-    logger.fHandler.setFormatter(formatter)
-    if hasattr(logger, 'eHandler'):
-        logger.eHandler.setFormatter(formatter)
-
 def _last_resort_log(message):
     "funzione chamata quando c'è un errore nel logger"
     fname = os.path.join(cs.WORKDIR, time.strftime("%Y-%m-%dT%H:%M:%S.lrl"))
     with open(fname, "a", encoding='utf8') as f_out:
         print(message, file=f_out)
 
-def set_file_logger(path):
-    "imposta logger su file"
-    logger = logging.getLogger()
-    fpath = os.path.join(*path)
-    hndl = RotatingFileHandler(fpath, maxBytes=1000000, backupCount=3, encoding='utf8')
-    logger.fHandler = hndl
-    logger.setLevel(logging.INFO)
-    logger.host_info = 'x.x.x.x'
-    logger.user_info = '----------'
-    logger.addHandler(hndl)
-    setformatter()
+class MyFormatter(logging.Formatter):
+    'formatter per logging'
+    remote = '-'
+    userid = '-'
+    def format(self, record):
+        if not record.msg.startswith('['):
+            record.msg = f'[{MyFormatter.remote}:{MyFormatter.userid}] '+record.msg
+        ret = super().format(record)
+        return ret
 
-def set_mail_logger(mailhost, sender, recipient, subject):
-    "imposta logger via e-email"
-    logger = logging.getLogger()
-    if mailhost == '-':
-        ehndl = GMailHandler(sender, recipient, subject)
-        logger.info("Abilitato log via GMail")
-    else:
-        ehndl = SMTPHandler(mailhost, sender, recipient, subject)
-        logger.info("Abilitato log via SMTP: %s", mailhost)
-    ehndl.setLevel(logging.ERROR)
-    logger.eHandler = ehndl
-    logger.addHandler(ehndl)
-    setformatter()
+def set_log_context(remote, userid):
+    'Imposta contesto per logger'
+    MyFormatter.remote = remote
+    MyFormatter.userid = userid
+
+def set_logger(applogger, path, sender, recipient, subject):
+    "imposta logger su file e via mail"
+    fpath = os.path.join(*path)
+    formatter = MyFormatter('%(asctime)s %(levelname)s %(message)s')
+    hndl = RotatingFileHandler(fpath, maxBytes=1000000, backupCount=3, encoding='utf8')
+    hndl.setLevel(logging.INFO)
+    hndl.setFormatter(formatter)
+    applogger.addHandler(hndl)
+
+    hndl = GMailHandler(sender, recipient, subject)
+    hndl.setLevel(logging.ERROR)
+    hndl.setFormatter(formatter)
+    applogger.addHandler(hndl)
+    applogger.info("Abilitato log errori via GMail")
 
 I16 = b'1ZxqYcE4LjMc72oy'
 P24 = 'xyCjhWT3fPtOel5MN02RDUYE'
@@ -403,13 +395,7 @@ def send_email(mailhost, sender, recipients, subj, body, attach=None, debug_addr
         subjd = subj
     if mailhost.strip() == "-":
         mailhost = None
-    try:
-        sm.send(mailhost, None, sender, dest, subjd, message, attach)
-    except Exception as excp:
-        errmsg = f"Mail to: {recipients} - "+str(excp)
-        logging.error(errmsg)
-        return ''
-    return dest
+    sm.send(mailhost, None, sender, dest, subjd, message, attach)
 
 LETTERS = 'ABCDEFGHIJKLMNOPQRTSUVWXYZ'
 
@@ -467,11 +453,7 @@ def _find_max_field(what, year=None):
     prat = ''
     for nprat in plist:
         path = os.path.join(dpath, nprat)
-        try:
-            dati_pratica = tb.jload((path, 'pratica.json'))
-        except tb.TableException:
-            logging.warning("Errore lettura pratica %s", path)
-            continue
+        dati_pratica = tb.jload((path, 'pratica.json'))
         for item in what:
             value = dati_pratica.get(item)
             try:
@@ -504,7 +486,7 @@ def clean_locks(datadir):
                 os.unlink(lockfile)
 
 def host(url):
-    "Estra la porzione 'host' da una URL"
+    "Estrae la porzione 'host' da una URL"
     splt = url.split(':')
     return ':'.join(splt[0:2])
 
@@ -587,15 +569,8 @@ def flist(basedir, filetypes=(), exclude=()):
 
 def newdir(thedir):
     "Crea una directory con log"
-    try:
-        os.makedirs(thedir, 0o740)
-    except Exception as excp:
-        logging.error("Errore creazione directory %s [%s]", thedir, str(excp))
-        ret = ''
-    else:
-        logging.info("Creata directory: %s", thedir)
-        ret = thedir
-    return ret
+    os.makedirs(thedir, 0o740)
+    return thedir
 
 def spawn(command, inp=None):
     "Lancia comando dato"
@@ -643,11 +618,10 @@ def _read_userlist():
     "Legge la lista utenti"
     GlobLists.USERLIST = FTable((cs.DATADIR, 'userlist.json'))
     if GlobLists.USERLIST.empty():
-        logging.error("Errore lettura userlist: %s", GlobLists.USERLIST.filename)
+        raise RuntimeError(f"Errore lettura userlist: {GlobLists.USERLIST.filename}")
     user_sn = GlobLists.USERLIST.columns((2, 3))
     user_fn = [f'{x[0]} {x[1]}' for x in user_sn]
     GlobLists.USERLIST.add_column(6, 'fullname', column=user_fn)
-    logging.info("Lista utenti aggiornata")
 
 def update_userlist():
     "Aggiorna la lista utenti"
@@ -661,12 +635,11 @@ def _read_codflist():
     "Legge la lista dei codici Fu.Ob."
     GlobLists.CODFLIST = FTable((cs.DATADIR, 'codf.json'))
     if GlobLists.CODFLIST.empty():
-        logging.warning("Errore lettura lista codici fondi: %s", GlobLists.CODFLIST.filename)
+        raise RuntimeError(f"Errore lettura lista codici fondi: {GlobLists.CODFLIST.filename}")
                           # Integrazione codflist (aggiunge nome esteso)
     resp_em = GlobLists.CODFLIST.column(4)
     resp_names = [_fullname(x) for x in resp_em]
     GlobLists.CODFLIST.add_column(1, 'nome_Responsabile', column=resp_names)
-    logging.info("Lista Codici Fu.Ob. aggiornata")
 
 def update_codflist():
     "Aggiorna la lista dei codici Fu.Ob."
@@ -695,22 +668,15 @@ def authenticate(userid, password, ldap_host, ldap_port):            # pylint: d
     user = get_user(userid)
     if (pswd := user.get('pw')) != '-':
         if _crypt(password, userid) == pswd:
-            logging.info('autenticazione locale OK')
-            return True, "Accesso autorizzato"
-    auth_ok = False
-    ret = ldap_authenticate(userid, password, ldap_host, ldap_port)
-    if ret < 0:
-        logging.error("Errore di connessione al server LDAP")
-    elif ret > 0:
-        auth_ok = True
-        logging.info("autenticazione LDAP OK")
-    if not auth_ok:
-        auth_ok = PAM_AUTH(userid, password)
-        logging.info('autenticazione PAM OK')
-    if not auth_ok:
-        return False, "ID/password errati"
-    if user:
-        return True, "Accesso autorizzato"
+            return True, "Accesso autorizzato (CRYPT)"
+    auth_ok = PAM_AUTH(userid, password)
+    if auth_ok:
+        return True, "Accesso autorizzato (PAM)"
+    if ldap_host:
+        ret = ldap_authenticate(userid, password, ldap_host, ldap_port)
+        if ret <= 0:
+            return False, "Errore di connessione al server LDAP"
+        return True, "Accesso autorizzato (LDAP)"
     return False, NON_ABILITATO%userid
 
 def makeuser(userid):                         # pylint: disable=R0912,R0915
@@ -858,20 +824,14 @@ def namebasedir(anno, num):
 
 IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
 
-def remove(path, show_error=True):
-    "Remove files"
+def remove(path):
+    "Remove files ignora FileNotFoudError"
     fullname = tb.getpath(path)
     try:
         os.unlink(fullname)
-    except Exception as excp:
-        if show_error:
-            logging.error("Errore cancellazione file: %s [%s]", fullname, str(excp))
-        ret = False
-    else:
-        logging.info("cancellato file: %s", fullname)
-        ret = True
-    return ret
-
+    except FileNotFoundError:
+        return ''
+    return fullname
 
 def testlogin():
     "Test funzionamento login"

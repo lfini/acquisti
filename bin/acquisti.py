@@ -149,30 +149,30 @@ def verifica_tabella_passi():
     some_err = False
     for code in codes:
         if code not in t_keys:
-            logging.error('Elemento CdP.%s non usato', code)
+            ACQ.logger.error('Elemento CdP.%s non usato', code)
             some_err = True
 
     for key, value in tab.items():
         if len(value) != 5:
-            logging.error('Errore passo %s: lunghezza', key)
+            ACQ.logger.error('Errore passo %s: lunghezza', key)
             some_err = True
         if not isinstance(value[0], str):
-            logging.error('Errore passo %s[0]: non stringa', key)
+            ACQ.logger.error('Errore passo %s[0]: non stringa', key)
             some_err = True
         if not isinstance(value[1], list):
-            logging.error('Errore passo %s[1]: non lista', key)
+            ACQ.logger.error('Errore passo %s[1]: non lista', key)
             some_err = True
         if len(value[1]) not in (0, 2):
-            logging.error('Errore passo %s[1]: lunghezza diversa da 2', key)
+            ACQ.logger.error('Errore passo %s[1]: lunghezza diversa da 2', key)
             some_err = True
         if not isinstance(value[2], list):
-            logging.error('Errore passo %s[2]: non lista', key)
+            ACQ.logger.error('Errore passo %s[2]: non lista', key)
             some_err = True
         if not isinstance(value[3], list):
-            logging.error('Errore passo %s[3]: non lista', key)
+            ACQ.logger.error('Errore passo %s[3]: non lista', key)
             some_err = True
         if not isinstance(value[4], (dict, cs.CdP)):
-            logging.error('Errore passo %s[4]: non enum CdP', key)
+            ACQ.logger.error('Errore passo %s[4]: non enum CdP', key)
             some_err = True
     if some_err:
         raise RuntimeError('Trovati errori in Tabella generale passi')
@@ -249,12 +249,12 @@ Pratica:
         if doc:
             fname = doc[0]
             if not ft.findfiles(self.basedir, fname):
-                logging.debug('Incremento non applicato: file mancante')
+                ACQ.logger.debug('Incremento non applicato: file mancante')
                 return 'Documento mancante', cpasso
         if alleg:
             for alg in alleg:
                 if not ft.findfiles(self.basedir, cs.TAB_ALLEGATI[alg][0]):
-                    logging.debug('Incremento non applicato: allegato mancante')
+                    ACQ.logger.debug('Incremento non applicato: allegato mancante')
                     return 'Allegato mancante', cpasso
         return '', npasso
 
@@ -264,7 +264,7 @@ Pratica:
         if ret:
             return ret
         self.data[cs.TAB_PASSI].append(npasso)
-        logging.debug('Passo raggiunto: %s', str(npasso))
+        ACQ.logger.debug('Passo raggiunto: %s', str(npasso))
         return ''
 
     def back(self):
@@ -273,11 +273,13 @@ Pratica:
             return False
         cpasso = self.data[cs.TAB_PASSI].pop(-1)
         ppasso = self.data[cs.TAB_PASSI][-1]
-        logging.debug('back(), {%s} -> {%s}', cpasso, ppasso)
+        ACQ.logger.debug('back(), {%s} -> {%s}', cpasso, ppasso)
         alleg = self.get_passo('a')
         for alg in alleg:
             name = cs.TAB_ALLEGATI[alg][0]
-            ft.remove((self.basedir, name), show_error=False)
+            ret = ft.remove((self.basedir, name))
+            if ret:
+                ACQ.logger.info('Rimosso file: %s', ret)
         doc = self.get_passo('f')
         genera_documento(self, doc)
         return True
@@ -298,12 +300,6 @@ class DEBUG:         # pylint: disable=R0903
 FASE_ERROR = Exception("Manca specifica fase")
 NO_BASEDIR = Exception("Basedir non definita")
 ILL_ATCH = Exception("Modello allegato non previsto")
-
-def setdebug():
-    "Determina modo DEBUG"
-    DEBUG.local = True
-    DEBUG.email = CONFIG.config[cs.EMAIL_WEBMASTER]
-    fms.debug_enable()
 
 def update_lists():
     "Riinizializza tabelle"
@@ -573,7 +569,7 @@ def storia(d_prat: Pratica, text: str):
     'aggiunge record alla storia della pratica'
     line = f'{text} - {ft.today()} ({d_prat.user["fullname"]})'
     d_prat[cs.STORIA_PRATICA].append(line)
-    logging.info(text)
+    ACQ.logger.info(text)
 
 def send_email(eaddr, text, subj, attach=None):
     'invio mail a utente'
@@ -581,21 +577,24 @@ def send_email(eaddr, text, subj, attach=None):
     if DEBUG.local:
         recipients = [CONFIG.config[cs.EMAIL_WEBMASTER]]
     else:
-        recipients = [eaddr]
-    ret = ft.send_email(CONFIG.config.get(cs.SMTP_HOST), sender, recipients,
-                        subj, text, attach=attach, debug_addr=DEBUG.email)
-    if ret:
-        logging.info('Inviato messaggio "%s" a: %s', subj, eaddr)
-    else:
-        logging.error('Invio messaggio "%s" a: %s', subj, eaddr)
-    return ret
+        if isinstance(eaddr, (list, tuple)):
+            recipients = eaddr
+        else:
+            recipients = [eaddr]
+    try:
+        ft.send_email(CONFIG.config.get(cs.SMTP_HOST), sender, recipients,
+                      subj, text, attach=attach, debug_addr=DEBUG.email)
+    except Exception as excp:    #pylint: disable=W0718
+        ACQ.logger.error('Invio messaggio "%s" a: %s (%s)', subj, eaddr, str(excp))
+        return False
+    return True
 
 def check_access(new=False):
     "Verifica accesso alla pratica"
     user = user_info()
     if not user:
         err = 'utente non autorizzato'
-        logging.error(err)
+        ACQ.logger.error(err)
         fk.flash(err, category="error")
         return None
     if new:
@@ -611,11 +610,11 @@ def check_access(new=False):
                   cs.DATA_PRATICA: ft.today(False),
                   cs.TAB_PASSI: [CdP.INI],
                   cs.PRATICA_APERTA: True}
-    logging.debug('Session: %s', str(fk.session))
-    logging.debug('Request form:')
+    ACQ.logger.debug('Session: %s', str(fk.session))
+    ACQ.logger.debug('Request form:')
     for key, val in fk.request.form.items():
-        logging.debug(' - %s: %s', key, val)
-#   logging.debug('Pratica: %s', str(d_prat))
+        ACQ.logger.debug(' - %s: %s', key, val)
+#   ACQ.logger.debug('Pratica: %s', str(d_prat))
     return Pratica(d_prat, user=user, basedir=basedir)
 
 def menu_allegati(d_prat: Pratica, all_mancanti):
@@ -634,7 +633,7 @@ def salvapratica(d_prat: Pratica):
     if not d_prat.basedir:
         raise RuntimeError(f'Manca basedir. Pratica: {d_prat[cs.NUMERO_PRATICA]}')
     tb.jsave((d_prat.basedir, cs.PRAT_JFILE), d_prat.data)
-    logging.info('Salvati dati pratica: %s/%s', d_prat.basedir, cs.PRAT_JFILE)
+    ACQ.logger.info('Salvati dati pratica: %s/%s', d_prat.basedir, cs.PRAT_JFILE)
 
 def clean_dict(adict):
     "Crea newdict rimuovendo da adict le chiavi che iniziano per T_"
@@ -698,7 +697,6 @@ def pratica_common(d_prat: Pratica):
     info['allegati_mancanti'] = ', '.join(all_mancanti)
     info['stato_pratica'] = d_prat.get_passo('t')
     info['commands'] = d_prat.get_passo('cmd')
-    print('Al passo:', d_prat.get_passo(), 'CMD:', info['commands'])
     return fk.render_template('pratica.html', info=info,
                               pratica=d_prat, upload=upl,
                               sede=CONFIG.config[cs.SEDE])
@@ -711,7 +709,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
         err = auth_pratica_chiudibile(d_prat)
         if err.startswith(NOT):
             fk.flash(err, category="error")
-            logging.warning('Chiusura pratica rifiutata: %s. Utente %s, pratica %s',
+            ACQ.logger.warning('Chiusura pratica rifiutata: %s. Utente %s, pratica %s',
                             err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
             d_prat[cs.PRATICA_APERTA] = False
@@ -724,7 +722,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
         err = auth_pratica_riapribile(d_prat)
         if err.startswith(NOT):
             fk.flash(err, category="error")
-            logging.warning('Riapertura pratica rifiutata: %s. Utente %s, pratica %s',
+            ACQ.logger.warning('Riapertura pratica rifiutata: %s. Utente %s, pratica %s',
                             err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         else:
             d_prat.back()
@@ -735,7 +733,7 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
         return pratica_common(d_prat)
     msg = f'Errore interno - modifica_pratica: codice illegale ({what})'
     fk.flash(msg, category="error")
-    logging.error(msg)
+    ACQ.logger.error(msg)
     return fk.redirect(fk.url_for('start'))
 
 def _mydel(key, d_prat):
@@ -850,7 +848,7 @@ def _nome_resp(ulist, eaddr, prima_nome=True):
 
 def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     'genera un documento da template e opzioni'
-    logging.debug('Genera_documento - spec=%s, filenum=%s', str(spec), str(filenum))
+    ACQ.logger.debug('Genera_documento - spec=%s, filenum=%s', str(spec), str(filenum))
     if not spec:
         return None
     nome_pdf, opts = spec
@@ -874,7 +872,8 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     ndata["titolo_direttore_uk"] = CONFIG.config['titolo_direttore_uk']
     ndata["nome_direttore"] = CONFIG.config['nome_direttore']
     ndata["dir_is_m"] = CONFIG.config['gender_direttore'].lower() == 'm'
-    logging.info('Generazione documento: %s/%s (template: %s)', d_prat.basedir, nome_pdf, template)
+    ACQ.logger.info('Generazione documento: %s/%s (template: %s)',
+                 d_prat.basedir, nome_pdf, template)
     latex.makepdf(d_prat.basedir, nome_pdf, template,
                   debug=DEBUG.local, pratica=d_prat.data, **ndata)
     return nome_pdf
@@ -942,7 +941,7 @@ def login():
     if os.stat(cs.CONFIG_FILE).st_mtime > CONFIG.time:
         CONFIG.time = time.time()
         CONFIG.config = tb.jload(cs.CONFIG_FILE)
-        logging.info('Riletta configurazione aggiornata')
+        ACQ.logger.info('Riletta configurazione aggiornata')
     uid = fk.request.form.get('userid')
     pwd = fk.request.form.get('password')
     form = fms.MyLoginForm(cs.DATADIR, uid, pwd, CONFIG.config.get(cs.LDAP_HOST),
@@ -952,7 +951,7 @@ def login():
         if ret:
             fk.session['userid'] = fk.request.form['userid']
             return fk.redirect(fk.url_for('start'))
-        logging.error('Accesso negato: userid: "%s" (%s)', uid, why)
+        ACQ.logger.error('Accesso negato: userid: "%s" (%s)', uid, why)
         fk.flash(f'Accesso negato: {why}', category="error")
     return fk.render_template('login.html', form=form, sede=CONFIG.config[cs.SEDE],
                               title='Procedura per acquisti')
@@ -973,18 +972,15 @@ def before():
     "procedura da eseguire prima di ogni pagina"
     if CONFIG.config.get(cs.CONFIG_VERSION, -1) != cs.CONFIG_REQUIRED:
         raise RuntimeError('File configurazione incompatibile')
-    logger = logging.getLogger()
-    logger.host_info = fk.request.remote_addr
+    remote = fk.request.remote_addr
     if userid := fk.session.get('userid'):
         update_lists()
-        logger.user_info = userid
         ret = None
     else:
-        logger.user_info = '----------'
+        userid = '-'
         ret = login()
-    ft.setformatter()
+    ft.set_log_context(remote, userid)
     return ret
-
 
 def user_info():
     'trova record utente'
@@ -995,7 +991,7 @@ def user_info():
 @ACQ.route("/")
 def start():
     "pagina: iniziale"
-    logging.info('URL: / (%s)', fk.request.method)
+    ACQ.logger.info('URL: / (%s)', fk.request.method)
     user = user_info()
     fk.session[cs.BASEDIR] = ''
     rooturl = ft.host(fk.request.url_root)
@@ -1012,7 +1008,7 @@ def start():
 @ACQ.route("/about")
 def about():                                 # pylint: disable=R0915
     "pagina: informazioni sulle procedure"
-    logging.info('URL: /about (%s)', fk.request.method)
+    ACQ.logger.info('URL: /about (%s)', fk.request.method)
     user = user_info()
     html = []
     html.append('<table cellpadding=3 border=1>')
@@ -1068,14 +1064,14 @@ def about():                                 # pylint: disable=R0915
 @ACQ.route("/clearsession")
 def clearsession():
     "pagina: logout"
-    logging.info('URL: /clearsession (%s)', fk.request.method)
+    ACQ.logger.info('URL: /clearsession (%s)', fk.request.method)
     fk.session.clear()
     return login()
 
 @ACQ.route('/procedi', methods=('GET', ))
 def procedi():
     "pagina per avanzamento generico"
-    logging.info('URL: /procedi (%s)', fk.request.method)
+    ACQ.logger.info('URL: /procedi (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     ret = d_prat.next()
@@ -1088,7 +1084,7 @@ def procedi():
 @ACQ.route('/modificaprogetto', methods=('GET', 'POST'))
 def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     "pagina: modifica progetto"
-    logging.info('URL: /modificaprogetto (%s)', fk.request.method)
+    ACQ.logger.info('URL: /modificaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     if cs.ANNULLA in fk.request.form:
@@ -1099,12 +1095,12 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     err = auth_progetto_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Modifica progetto non possibile: %s. Utente:%s pratica %s',
+        ACQ.logger.error('Modifica progetto non possibile: %s. Utente:%s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     if mod_acquisto := fk.request.form.get(cs.MOD_ACQUISTO):
         d_prat[cs.MOD_ACQUISTO] = mod_acquisto
-    logging.debug('Modalità acquisto: %s', mod_acquisto)
+    ACQ.logger.debug('Modalità acquisto: %s', mod_acquisto)
     prog = fms.ProgettoAcquisto(fk.request.form, **d_prat)
     codfs = ft.GlobLists.CODFLIST.column('Codice', unique=True)
     codf_menu = list(zip(codfs, codfs))
@@ -1116,7 +1112,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         if not cs.TAB_TEMPLATE.get(mod_acquisto):
             err = 'Modalità di acquisto non ancora implementata'
             fk.flash(err, category="error")
-            logging.error(err)
+            ACQ.logger.error(err)
             return fk.redirect(fk.url_for('start'))
     if fk.request.method == 'GET':
         return render_progetto(prog, d_prat)
@@ -1127,7 +1123,8 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
             number = ft.find_max_prat(year)+1
             basedir = ft.namebasedir(year, number)
             fk.session[cs.BASEDIR] = basedir
-            ft.newdir(basedir)
+            thedir = ft.newdir(basedir)
+            ACQ.logger.info("Creata directory: %s", thedir)
             d_prat.update({cs.NUMERO_PRATICA: f'{number}/{year:4d}',
                            cs.DATA_PRATICA: ft.today(False)})
             d_prat.set_basedir(basedir)
@@ -1152,19 +1149,19 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     errors = prog.get_errors()
     for err in errors:
         fk.flash(err, category="error")
-    logging.debug("Errori form Progetto di acquisto: %s", "; ".join(errors))
+    ACQ.logger.debug("Errori form Progetto di acquisto: %s", "; ".join(errors))
     return render_progetto(prog, d_prat)
 
 @ACQ.route('/inviaprogetto')
 def inviaprogetto():
     "pagina: invia progetto per approvazione resp. fondi"
-    logging.info('URL: /inviaprogetto (%s)', fk.request.method)
+    ACQ.logger.info('URL: /inviaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_progetto_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
+        ACQ.logger.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
                       d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
@@ -1190,13 +1187,13 @@ def inviaprogetto():
 @ACQ.route('/inviadecisione')
 def inviadecisione():                    #pylint: disable=R0914
     "pagina: invia decisione di contrarre per firma digitale direttore"
-    logging.info('URL: /inviadecisione (%s)', fk.request.method)
+    ACQ.logger.info('URL: /inviadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_decisione_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
+        ACQ.logger.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
                       d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
@@ -1209,7 +1206,7 @@ def inviadecisione():                    #pylint: disable=R0914
     testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
             cs.DETTAGLIO_PRATICA.format(**d_prat)
     subj = 'Decisione di contrarre da inviare al direttore per firma'
-    recipient = d_prat[cs.EMAIL_RUP]
+    recipient = (d_prat[cs.EMAIL_RUP], CONFIG.config[cs.EMAIL_SERVIZIO])
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
     ret = send_email(recipient, testo, subj, attach=attach)
     if ret:
@@ -1226,13 +1223,13 @@ def inviadecisione():                    #pylint: disable=R0914
 @ACQ.route('/approvaprogetto')
 def approvaprogetto():
     "pagina: resp.fondi approva progetto"
-    logging.info('URL: /approvaprogetto (%s)', fk.request.method)
+    ACQ.logger.info('URL: /approvaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_progetto_approvabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
+        ACQ.logger.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     d_prat.next()
@@ -1251,13 +1248,13 @@ def approvaprogetto():
 @ACQ.route('/indicarup', methods=('GET', 'POST'))
 def indicarup():
     "pagina: indica RUP"
-    logging.info('URL: /indicarup (%s)', fk.request.method)
+    ACQ.logger.info('URL: /indicarup (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_rup_indicabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Indicazione RUP non autorizzata: %s. Utente %s pratica %s',
+        ACQ.logger.error('Indicazione RUP non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
@@ -1294,13 +1291,13 @@ def indicarup():
 @ACQ.route('/autorizza', methods=('GET', ))
 def autorizza():
     "autorizzazione del direttore"
-    logging.info('URL: /autorizza (%s)', fk.request.method)
+    ACQ.logger.info('URL: /autorizza (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_autorizzabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Autorizzazione richiesta non consentita: %s. Utente %s pratica %s',
+        ACQ.logger.error('Autorizzazione richiesta non consentita: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA])
@@ -1315,14 +1312,15 @@ def autorizza():
 @ACQ.route('/rich_autorizzazione', methods=('GET', ))
 def rich_autorizzazione():
     "pagina: richiesta autorizzazione del direttore"
-    logging.info('URL: /rich_autorizzazione (%s)', fk.request.method)     #pylint: disable=W1203
+    ACQ.logger.info('URL: /rich_autorizzazione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_autorizz_richiedibile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Invio richiesta di autorizzazione non consentito: %s. Utente %s pratica %s',
-                      err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
+        ACQ.logger.error('Invio richiesta di autorizzazione non consentito: '\
+                         '%s. Utente %s pratica %s',
+                         err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
     if cannot_go:
@@ -1340,20 +1338,21 @@ def rich_autorizzazione():
         return pratica_common(d_prat)
     err = 'Invio richiesta di autorizzazione al direttore fallito'
     fk.flash(err, category="error")
-    logging.error(err)
+    ACQ.logger.error(err)
     return pratica_common(d_prat)
 
 @ACQ.route('/modificardo', methods=('GET', 'POST'))
 def modificardo():
     "Gestione form per produzione di RdO"
-    logging.info('URL: /modificardo (%s)', fk.request.method)
+    ACQ.logger.info('URL: /modificardo (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_rdo_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
-                      err, d_prat.user['userid'], d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
+        ACQ.logger.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
+                      err, d_prat.user['userid'],
+                      d_prat.get(cs.NUMERO_PRATICA, 'N.A.'))
         return pratica_common(d_prat)
     if fk.request.method == 'POST':
         rdo = fms.RdO(fk.request.form)
@@ -1373,7 +1372,7 @@ def modificardo():
             errors = rdo.get_errors()
             for err in errors:
                 fk.flash(err, category="error")
-            logging.debug("Errori form RdO: %s", "; ".join(errors))
+            ACQ.logger.debug("Errori form RdO: %s", "; ".join(errors))
     else:
         d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
         rdo = fms.RdO(**d_prat)
@@ -1389,7 +1388,7 @@ def modificardo():
 @ACQ.route('/modificaordine', methods=('GET', 'POST', ))
 def modificaordine():                     #pylint: disable=R0914
     "pagina: modifica ordine (sopl per acquyisti inf. 5k)"
-    logging.info('URL: /modificaordine (%s)', fk.request.method)
+    ACQ.logger.info('URL: /modificaordine (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     if cs.ANNULLA in fk.request.form:
@@ -1398,7 +1397,7 @@ def modificaordine():                     #pylint: disable=R0914
     err = auth_ordine_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Gestione ordine non autorizzata: %s. Utente %s, pratica %s',
+        ACQ.logger.error('Gestione ordine non autorizzata: %s. Utente %s, pratica %s',
                      err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     if cs.COSTO_RDO not in d_prat:
@@ -1416,7 +1415,7 @@ def modificaordine():                     #pylint: disable=R0914
         errors = ordn.get_errors()
         for err in errors:
             fk.flash(err, category="error")
-        logging.debug("Errori form Ordine: %s", "; ".join(errors))
+        ACQ.logger.debug("Errori form Ordine: %s", "; ".join(errors))
 
     ddp = {'title': 'Immissione dati per ordine',
            'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
@@ -1431,7 +1430,7 @@ def modificaordine():                     #pylint: disable=R0914
 @ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
 def modificadecisione():                     #pylint: disable=R0914
     "pagina: modifica decisione di contrarre"
-    logging.info('URL: /modificadecisione (%s)', fk.request.method)
+    ACQ.logger.info('URL: /modificadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     if cs.ANNULLA in fk.request.form:
@@ -1440,8 +1439,9 @@ def modificadecisione():                     #pylint: disable=R0914
     err = auth_decisione_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Gestione decisione di contrarre non autorizzata: %s. Utente %s, pratica %s',
-                     err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
+        ACQ.logger.error('Gestione decisione di contrarre non autorizzata: ' \
+                         '%s. Utente %s, pratica %s',
+                          err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     if cs.COSTO_RDO not in d_prat:
         d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
@@ -1450,7 +1450,7 @@ def modificadecisione():                     #pylint: disable=R0914
         ndecis = ft.find_max_decis(year)[0]+1
         d_prat[cs.NUMERO_DECISIONE] = f"{ndecis}/{year:4d}"
         d_prat[cs.DATA_DECISIONE] = ft.today(False)
-        logging.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
+        ACQ.logger.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     decis = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
         if decis.validate(extra_validators=True):
@@ -1465,7 +1465,7 @@ def modificadecisione():                     #pylint: disable=R0914
         errors = decis.get_errors()
         for err in errors:
             fk.flash(err, category="error")
-        logging.debug("Errori form Decisione: %s", "; ".join(errors))
+        ACQ.logger.debug("Errori form Decisione: %s", "; ".join(errors))
 
     ddp = {'title': 'Immissione dati per decisione di contrarre',
            'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
@@ -1479,7 +1479,7 @@ def modificadecisione():                     #pylint: disable=R0914
 @ACQ.route('/upload', methods=('POST', ))
 def upload():               # pylint: disable=R0914,R0911,R0912
     "pagina per upload di file"
-    logging.info('URL: /upload (%s)', fk.request.method)
+    ACQ.logger.info('URL: /upload (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     try:
@@ -1488,7 +1488,7 @@ def upload():               # pylint: disable=R0914,R0911,R0912
         fk.flash(f"Errore caricamento file: {exc}", category="error")
         return pratica_common(d_prat)
     tipo_allegato = get_tipo_allegato()
-    logging.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
+    ACQ.logger.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
     origname, ext = os.path.splitext(fle.filename)
     origname = secure_filename(origname)
     ext = ext.lower()
@@ -1517,30 +1517,32 @@ def upload():               # pylint: disable=R0914,R0911,R0912
 @ACQ.route('/cancella/<name>', methods=('GET', 'POST'))
 def cancella(name):
     "pagina: cancella allegato"
-    logging.info('URL: /cancella/%s (%s)', name, fk.request.method)
+    ACQ.logger.info('URL: /cancella/%s (%s)', name, fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_allegati_cancellabili(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
+        ACQ.logger.error('Rimozione allegato non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
     else:
         storia(d_prat, f'Rimosso allegato {name}')
-        ft.remove((d_prat.basedir, name))
+        ret = ft.remove((d_prat.basedir, name))
+        if ret:
+            ACQ.logger.info('Rimosso file: %s', ret)
     salvapratica(d_prat)
     return pratica_common(d_prat)
 
 @ACQ.route('/vedicodf')
 def vedicodf():
     "pagine: visualizza lista codici Fu.Ob."
-    logging.info('URL: /vedicodf (%s)', fk.request.method)
+    ACQ.logger.info('URL: /vedicodf (%s)', fk.request.method)
     return ft.GlobLists.CODFLIST.render(title="Lista Codici Fu.Ob. e responsabili")
 
 @ACQ.route('/vedifile/<filename>')
 def vedifile(filename):
     "pagina: visualizza file PDF"
-    logging.info('URL: /vedifile/%s (%s)', filename, fk.request.method)
+    ACQ.logger.info('URL: /vedifile/%s (%s)', filename, fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     return fk.send_from_directory(d_prat.basedir, filename, as_attachment=True)
@@ -1549,7 +1551,8 @@ def vedifile(filename):
 @ACQ.route('/pratiche/<filtro>/<anno>/<ascendente>')
 def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,R0912,R0914
     "pagina: lista pratiche"
-    logging.info('URL: /pratiche/%s/%s/%s (%s)', filtro, anno, ascendente, fk.request.method)
+    ACQ.logger.info('URL: /pratiche/%s/%s/%s (%s)', filtro, anno, ascendente,
+                                                 fk.request.method)
     user = user_info()
     fk.session[cs.BASEDIR] = ''
     anno = int(anno)
@@ -1559,13 +1562,13 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
     oper = filtro[:3]
     if oper == ('ALL', 'NOR'):
         if not test_admin(user):
-            logging.error('Operazione non autorizzata. '\
+            ACQ.logger.error('Operazione non autorizzata. '\
                           'Utente: %s', user['userid'])
             fk.session.clear()
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
     elif oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate come Direttore
         if not (test_direttore(user) or test_admin(user)):
-            logging.error('Operazione non autorizzata '\
+            ACQ.logger.error('Operazione non autorizzata '\
                           'Utente: %s', user['userid'])
             fk.session.clear()
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
@@ -1573,7 +1576,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
         doclist, title = ft.trova_pratiche_1(anno, filtro, user['email'], ascendente)
     except Exception:                      # pylint: disable=W0703
         errlog = traceback.format_exc(limit=3)
-        logging.error(errlog)
+        ACQ.logger.error(errlog)
         err_msg = 'Errore sistema'
         fk.flash(err_msg, category="error")
         return fk.redirect(fk.url_for('start'))
@@ -1586,14 +1589,14 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
 @ACQ.route('/trovapratica', methods=('POST', 'GET'))
 def trovapratica():               # pylint: disable=R0912,R0914,R0915
     "pagina: trova pratica"
-    logging.info('URL: /trovapratica (%s)', fk.request.method)
+    ACQ.logger.info('URL: /trovapratica (%s)', fk.request.method)
     fk.session[cs.BASEDIR] = ''
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return fk.redirect(fk.url_for('start'))
     user = user_info()
     if not (test_admin(user) or test_direttore(user)):
-        logging.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
+        ACQ.logger.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
         fk.session.clear()
         return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
     prf = fms.TrovaPratica(fk.request.form)
@@ -1620,16 +1623,17 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
         match_resp = prf.data['trova_responsabile'].strip()
         match_rup = prf.data['trova_rup'].strip()
         match_descr = prf.data['trova_parola'].strip()
+        ACQ.logger.debug('trova - anno: %d, rich. %s, resp: %s, rup: %s, descriz: %s',
+                      anno, match_rich, match_resp, match_rup, match_descr)
         try:
             lista, expr = ft.trova_pratiche_2(anno, stato, match_rich, match_resp,
                                               match_rup, match_descr, ascendente=asc)
         except Exception:            # pylint: disable=W0703
             errlog = traceback.format_exc(limit=3)
-            logging.error(errlog)
+            ACQ.logger.error(errlog)
             err_msg = 'Errore sistema'
             fk.flash(err_msg, category="error")
             return fk.redirect(fk.url_for('start'))
-        print('EXPR:', expr)
         title = 'Trova Pratiche'
         subtitle = 'Risultato per ricerca: '+expr+'<br>'+ \
                    f'N. pratiche selezionate: {len(lista)}'
@@ -1647,7 +1651,7 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
     "pagina: accesso a pratica indicata"
-    logging.info('URL: /pratica0/%s/%s (%s)', num, year, fk.request.method)
+    ACQ.logger.info('URL: /pratica0/%s/%s (%s)', num, year, fk.request.method)
     basedir = ft.namebasedir(year, num)
     fk.session[cs.BASEDIR] = basedir
     if not (d_prat := check_access()):
@@ -1657,7 +1661,7 @@ def pratica0(num, year):
 @ACQ.route('/togglestoria', methods=('GET', 'POST', ))
 def togglestoria():
     "pagina: abilita/disabilita storia pratica"
-    logging.info('URL: /togglestoria (%s)', fk.request.method)
+    ACQ.logger.info('URL: /togglestoria (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     sst = d_prat.get(cs.VEDI_STORIA, 0)
@@ -1670,41 +1674,45 @@ def togglestoria():
 @ACQ.route('/rollback', methods=('GET', 'POST'))
 def rollback():                       #pylint: disable=R0914
     "Pagina: annulla ultimo passo"
-    logging.info('URL: /rollback (%s)', fk.request.method)
+    ACQ.logger.info('URL: /rollback (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     err = auth_rollback(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        logging.error('annullamento ultimo passo non autorizzato: %s. Utente %s, pratica %s',
+        ACQ.logger.error('annullamento ultimo passo non autorizzato: %s. Utente %s, pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
     passcode = d_prat.get_passo()
     prevcode = d_prat.get_back()
-    logging.debug('Al passo %s rolling back to %s', passcode, prevcode)
+    ACQ.logger.debug('Al passo %s rolling back to %s', passcode, prevcode)
     doc_to_remove = pass_info(passcode, what='file')
     doc_to_remove_str = doc_to_remove[0] if doc_to_remove else 'Nessuno'
     cod_all = pass_info(passcode, what='alleg')
     all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
-    logging.debug('Documento da cancellare: %s', doc_to_remove_str)
-    logging.debug('Allegati da cancellare: %s', ', '.join(all_to_remove))
+    ACQ.logger.debug('Documento da cancellare: %s', doc_to_remove_str)
+    ACQ.logger.debug('Allegati da cancellare: %s', ', '.join(all_to_remove))
     if 'annulla' in fk.request.form:
-        logging.info('Operazione annullata')
+        ACQ.logger.info('Operazione annullata')
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
     if 'conferma' in fk.request.form:
-        logging.info('Annullamento confermato')
+        ACQ.logger.info('Annullamento confermato')
         if doc_to_remove:
-            ft.remove((d_prat.basedir, doc_to_remove[0]))
+            ret = ft.remove((d_prat.basedir, doc_to_remove[0]))
+            if ret:
+                ACQ.logger.info('Rimosso file: %s', ret)
         for tipo in cod_all:
             name = filename_allegato(tipo, '', '.pdf', '', d_prat)
-            ft.remove((d_prat.basedir, name))
+            ret = ft.remove((d_prat.basedir, name))
+            if ret:
+                ACQ.logger.info('Rimosso file: %s', ret)
         msg = "Annullato ultimo passo pratica"
         storia(d_prat, msg)
         d_prat.back()
         salvapratica(d_prat)
         fk.flash(msg, category="info")
-        logging.info(msg)
+        ACQ.logger.info(msg)
         return pratica_common(d_prat)
     ddp = {'passo': pass_info(passcode, 'text'),
            'prec': pass_info(prevcode, 'text'),
@@ -1716,19 +1724,19 @@ def rollback():                       #pylint: disable=R0914
 @ACQ.route('/chiudipratica')
 def chiudipratica():
     "pagina: chiudi pratica"
-    logging.info('URL: /chiudipratica (%s)', fk.request.method)
+    ACQ.logger.info('URL: /chiudipratica (%s)', fk.request.method)
     return modifica_pratica('chiudi')
 
 @ACQ.route('/apripratica')
 def apripratica():
     "pagina: apri pratica"
-    logging.info('URL: /apripratica (%s)', fk.request.method)
+    ACQ.logger.info('URL: /apripratica (%s)', fk.request.method)
     return modifica_pratica('apri')
 
 @ACQ.route('/annullapratica', methods=('GET', 'POST'))
 def annullapratica():
     "pagina: annulla pratica"
-    logging.info('URL: /annullapratica (%s)', fk.request.method)
+    ACQ.logger.info('URL: /annullapratica (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     if cs.ANNULLA in fk.request.form:
@@ -1741,12 +1749,12 @@ def annullapratica():
             salvapratica(d_prat)
             msg = f"Pratica {d_prat[cs.NUMERO_PRATICA]} annullata"
             storia(d_prat, msg)
-            logging.info(msg)
+            ACQ.logger.info(msg)
             fk.flash(msg, category='info')
             return pratica_common(d_prat)
         msg = "Motivazione annullamento non specificata"
         fk.flash(msg, category="error")
-        logging.error(msg)
+        ACQ.logger.error(msg)
     body = annul()
     before_text = NOTA_ANNULLAMENTO + '''
 <form method=POST action=/annullapratica 
@@ -1762,13 +1770,13 @@ accept-charset="utf-8" novalidate>
 @ACQ.route('/files/<name>')
 def files(name):
     "download file"
-    logging.info('URL: /files/%s (%s)', name, fk.request.method)     #pylint: disable=W1203
+    ACQ.logger.info('URL: /files/%s (%s)', name, fk.request.method)
     return  ACQ.send_static_file(name)
 
 @ACQ.route('/devel', methods=('GET', 'POST'))
 def devel():                     #pylint: disable=R0915
     'operazioni per supporto sviluppo'
-    logging.info('URL: /devel (%s)', fk.request.method)
+    ACQ.logger.info('URL: /devel (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
     if not test_developer(d_prat.user):
@@ -1826,7 +1834,7 @@ def devel():                     #pylint: disable=R0915
 @ACQ.route('/housekeeping')
 def housekeeping():
     "Inizio procedura housekeeping"
-    logging.info('URL: /housekeeping (%s)', fk.request.method)
+    ACQ.logger.info('URL: /housekeeping (%s)', fk.request.method)
     user = user_info()
     status = {'footer': f"Procedura housekeeping.py. Vers. {__version__} - " \
                         f"L. Fini, {__date__}",
@@ -1843,7 +1851,7 @@ def housekeeping():
 @ACQ.route("/sortcodf/<field>")
 def sortcodf(field):
     "Riporta codici Fu.Ob. con ordine specificato"
-    logging.info('URL: /sortcodf/%s (%s)', field, fk.request.method)
+    ACQ.logger.info('URL: /sortcodf/%s (%s)', field, fk.request.method)
     user = user_info()
     if not test_admin(user):
         return fk.render_template('noaccess.html').encode('utf8')
@@ -1865,14 +1873,14 @@ def sortcodf(field):
 @ACQ.route("/codf")
 def codf():
     "Riporta codici Fu.Ob."
-    logging.info('URL: /codf (%s)', fk.request.method)
+    ACQ.logger.info('URL: /codf (%s)', fk.request.method)
     return sortcodf('')
 
 
 @ACQ.route('/addcodf', methods=('GET', 'POST'))
 def addcodf():
     "Aggiungi codice Fu.Ob."
-    logging.info('URL: /addcodf (%s)', fk.request.method)
+    ACQ.logger.info('URL: /addcodf (%s)', fk.request.method)
     user = user_info()
     if not test_admin(user):
         return fk.render_template('noaccess.html').encode('utf8')
@@ -1892,10 +1900,10 @@ def addcodf():
             ncodf.insert_row(data)
             ncodf.save()
             msg = f"Aggiunto Codice Fu.Ob.: {data['Codice']}"
-            logging.info(msg)
+            ACQ.logger.info(msg)
             fk.flash(msg)
             return fk.redirect(fk.url_for('codf'))
-        logging.debug("Validation errors: %s", cfr.errlist)
+        ACQ.logger.debug("Validation errors: %s", cfr.errlist)
     return ncodf.render_item_as_form('Aggiungi Codice Fu.Ob.', cfr,
                                      fk.url_for('addcodf'),
                                      errors=cfr.errlist)
@@ -1903,7 +1911,7 @@ def addcodf():
 @ACQ.route('/editcodf/<nrec>', methods=('GET', 'POST'))
 def editcodf(nrec):
     "Modifica tabella codici Fu.Ob."
-    logging.info('URL: /editcodf/%s (%s)', nrec, fk.request.method)
+    ACQ.logger.info('URL: /editcodf/%s (%s)', nrec, fk.request.method)
     nrec = int(nrec)
     user = user_info()
     if not test_admin(user):
@@ -1914,7 +1922,7 @@ def editcodf(nrec):
     resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
     resp_menu.sort(key=lambda x: x[1])
     if fk.request.method == 'GET':
-        logging.debug("Codice row=%s", row)
+        ACQ.logger.debug("Codice row=%s", row)
         cfr = fms.CodfForm(**row)
         cfr.email_Responsabile.choices = resp_menu
     else:
@@ -1927,7 +1935,7 @@ def editcodf(nrec):
             msg = "Cancellato Codice Fu.Ob.: " \
                   f"{row['Codice']} ({row['email_Responsabile']})"
             fk.flash(msg)
-            logging.info(msg)
+            ACQ.logger.info(msg)
             return fk.redirect(fk.url_for('codf'))
         if 'annulla' in fk.request.form:
             fk.flash('Operazione annullata')
@@ -1940,9 +1948,9 @@ def editcodf(nrec):
                 msg = "Modificato Codice Fu.Ob.: " \
                       f"{row['Codice']} ({row['email_Responsabile']})"
                 fk.flash(msg)
-                logging.info(msg)
+                ACQ.logger.info(msg)
             return fk.redirect(fk.url_for('codf'))
-        logging.debug("Validation errors: %s", cfr.errlist)
+        ACQ.logger.debug("Validation errors: %s", cfr.errlist)
     return ncodf.render_item_as_form('Modifica Codice Fu.Ob.', cfr,
                                      fk.url_for('editcodf', nrec=str(nrec)),
                                      errors=cfr.errlist, nrow=nrec)
@@ -1950,13 +1958,13 @@ def editcodf(nrec):
 @ACQ.route('/downloadcodf', methods=('GET', 'POST'))
 def downloadcodf():
     "Download tabella codici Fu.Ob."
-    logging.info('URL: /downloadcodf (%s)', fk.request.method)
+    ACQ.logger.info('URL: /downloadcodf (%s)', fk.request.method)
     return download('codf')
 
 @ACQ.route('/downloadutenti', methods=('GET', 'POST'))
 def downloadutenti():
     "Download tabella utenti"
-    logging.info('URL: /downloadutenti (%s)', fk.request.method)
+    ACQ.logger.info('URL: /downloadutenti (%s)', fk.request.method)
     return download('utenti')
 
 def download(_unused):
@@ -1966,7 +1974,7 @@ def download(_unused):
 @ACQ.route("/utenti")
 def utenti():
     "Genera lista utenti"
-    logging.info('URL: /utenti (%s)', fk.request.method)
+    ACQ.logger.info('URL: /utenti (%s)', fk.request.method)
     user = user_info()
     if test_admin(user):
         users = ft.FTable((cs.DATADIR, 'userlist.json'))
@@ -1988,7 +1996,7 @@ def utenti():
 @ACQ.route('/adduser', methods=('GET', 'POST'))
 def adduser():
     "Aggiungi utente"
-    logging.info('URL: /adduser (%s)', fk.request.method)
+    ACQ.logger.info('URL: /adduser (%s)', fk.request.method)
     user = user_info()
     if test_admin(user):
         cfr = fms.UserForm(formdata=fk.request.form)
@@ -2004,10 +2012,10 @@ def adduser():
                 users.insert_row(data)
                 users.save()
                 msg = f"Aggiunto Utente: {data['surname']} {data['name']}"
-                logging.info(msg)
+                ACQ.logger.info(msg)
                 fk.flash(msg)
                 return fk.redirect(fk.url_for('utenti'))
-            logging.debug("Validation errors: %s", cfr.errlist)
+            ACQ.logger.debug("Validation errors: %s", cfr.errlist)
         return users.render_item_as_form('Aggiungi utente', cfr,
                                          fk.url_for('adduser'),
                                          errors=cfr.errlist,
@@ -2017,7 +2025,7 @@ def adduser():
 @ACQ.route('/edituser/<nrec>', methods=('GET', 'POST'))
 def edituser(nrec):
     "Modifica dati utente"
-    logging.info('URL: /edituser/%s (%s)', nrec, fk.request.method)
+    ACQ.logger.info('URL: /edituser/%s (%s)', nrec, fk.request.method)
     nrec = int(nrec)
     user = user_info()
     if test_admin(user):
@@ -2025,9 +2033,9 @@ def edituser(nrec):
         users.sort(3)
         row = users.get_row(nrec, as_dict=True)
         if fk.request.method == 'GET':
-            logging.debug("Userlist row=%s", row)
+            ACQ.logger.debug("Userlist row=%s", row)
             cfr = fms.UserForm(**row)
-            logging.debug("UserForm inizializzato: %s", cfr.data)
+            ACQ.logger.debug("UserForm inizializzato: %s", cfr.data)
         else:
             cfr = fms.UserForm(formdata=fk.request.form)
             if 'annulla' in fk.request.form:
@@ -2039,21 +2047,21 @@ def edituser(nrec):
                 users.sort(3)
                 users.save()
                 msg = f"Cancellato utente N. {nrec}: {row['name']} {row['surname']}"
-                logging.info(msg)
+                ACQ.logger.info(msg)
                 fk.flash(msg)
                 return fk.redirect(fk.url_for('utenti'))
             if cfr.validate():
                 if 'avanti' in fk.request.form:
-                    logging.debug("Pressed: avanti. Modifica utente")
+                    ACQ.logger.debug("Pressed: avanti. Modifica utente")
                     row.update(cfr.data)
                     users.insert_row(row, nrec)
                     users.sort(3)
                     users.save()
                     msg = f"Modificato utente: {row['name']} {row['surname']}"
-                    logging.info(msg)
+                    ACQ.logger.info(msg)
                     fk.flash(msg)
                 return fk.redirect(fk.url_for('utenti'))
-            logging.debug("Validation errors: %s", cfr.errlist)
+            ACQ.logger.debug("Validation errors: %s", cfr.errlist)
         return users.render_item_as_form('Modifica utente', cfr,
                                          fk.url_for('edituser', nrec=str(nrec)),
                                          nrow=nrec, errors=cfr.errlist,
@@ -2063,7 +2071,7 @@ def edituser(nrec):
 @ACQ.route('/environ', methods=('GET',))
 def environ():
     "Mostra informazioni su environment"
-    logging.info('URL: /environ (%s)', fk.request.method)
+    ACQ.logger.info('URL: /environ (%s)', fk.request.method)
     user = user_info()
     if not test_developer(user):
         fk.session.clear()
@@ -2096,7 +2104,7 @@ def environ():
 @ACQ.route('/testmail', methods=('GET',))
 def testmail():
     "Invia messaggio di prova all'indirizzo di webmaster"
-    logging.info('URL: /testmail (%s)', fk.request.method)
+    ACQ.logger.info('URL: /testmail (%s)', fk.request.method)
     user = user_info()
     if not test_developer(user):
         fk.session.clear()
@@ -2119,7 +2127,7 @@ def testmail():
 @ACQ.route('/force_excp', methods=('GET',))
 def force_excp():                       #pylint: disable=R1710
     "Causa una eccezione"
-    logging.info('URL: /force_excp (%s)', fk.request.method)
+    ACQ.logger.info('URL: /force_excp (%s)', fk.request.method)
     user = user_info()
     if not test_developer(user):
         fk.session.clear()
@@ -2131,16 +2139,16 @@ def force_excp():                       #pylint: disable=R1710
 
 def initialize_me():
     "inizializza tutto il necessario"
-    logging.info('Starting %s', long_version())
-    logging.info('PKG_ROOT: %s', cs.PKG_ROOT)
-    logging.info('DATADIR: %s', cs.DATADIR)
-    logging.info('WORKDIR: %s', cs.WORKDIR)
+    ACQ.logger.info('Starting %s', long_version())
+    ACQ.logger.info('PKG_ROOT: %s', cs.PKG_ROOT)
+    ACQ.logger.info('DATADIR: %s', cs.DATADIR)
+    ACQ.logger.info('WORKDIR: %s', cs.WORKDIR)
 
     configname = os.path.join(cs.DATADIR, 'config.json')
-    logging.info('Config loaded from: %s', configname)
+    ACQ.logger.info('Config loaded from: %s', configname)
 
-    latex.set_path(CONFIG.config.get("latex_path", ""))
-    logging.info("LaTeX path: %s", latex.PDFLATEX.cmd)
+    latex.set_path(CONFIG.config.get("latex_path", ""), ACQ.logger)
+    ACQ.logger.info("LaTeX path: %s", latex.PDFLATEX.cmd)
 
     update_lists()
     ft.init_helplist()
@@ -2148,7 +2156,7 @@ def initialize_me():
 
     ft.clean_locks(cs.DATADIR)
 
-    logging.info('Inizializzazione terminata correttamente')
+    ACQ.logger.info('Inizializzazione terminata correttamente')
 
 def short_version():
     "riporta numero di versione (major.minor)"
@@ -2171,22 +2179,29 @@ def localtest():
         print(long_version())
         sys.exit()
 
+    DEBUG.local = True
+    DEBUG.email = CONFIG.config[cs.EMAIL_WEBMASTER]
+    fms.debug_enable()
+
+    ACQ.logger.setLevel(logging.DEBUG)
+    fk.logging.default_handler.setLevel(logging.DEBUG)
+    ft.set_logger(ACQ.logger, (cs.WORKDIR, 'acquisti.log'),
+                  CONFIG.config[cs.EMAIL_PROCEDURA],
+                  CONFIG.config[cs.EMAIL_WEBMASTER],
+                  f'Notifica errore ACQUISTI v. {__version__} (debug)')
     verifica_tabella_passi()
-    logging.basicConfig(level=logging.DEBUG)
     initialize_me()
-    setdebug()
-    ft.set_mail_logger(CONFIG.config[cs.SMTP_HOST], CONFIG.config[cs.EMAIL_PROCEDURA],
-                       CONFIG.config[cs.EMAIL_WEBMASTER], 'Notifica errore ACQUISTI (debug)')
     ACQ.run(host="0.0.0.0", port=4001, debug=True)
 
 def production():
     "lancia la procedura in modo produzione (all'interno del web server)"
-    logging.basicConfig(level=logging.INFO)    # Livello logging normale
-#   logging.basicConfig(level=logging.DEBUG)   # Più verboso
+    ACQ.logger.setLevel(logging.INFO)
+    ft.set_logger(ACQ.logger, (cs.WORKDIR, 'acquisti.log'),
+                  CONFIG.config[cs.EMAIL_PROCEDURA],
+                  CONFIG.config[cs.EMAIL_WEBMASTER],
+                  f'Notifica errore ACQUISTI v. {__version__}')
+    ACQ.logger.removeHandler(fk.logging.default_handler)
     initialize_me()
-    ft.set_file_logger((cs.WORKDIR, 'acquisti.log'))
-    ft.set_mail_logger(CONFIG.config[cs.SMTP_HOST], CONFIG.config[cs.EMAIL_PROCEDURA],
-                       CONFIG.config[cs.EMAIL_WEBMASTER], 'Notifica errore ACQUISTI')
 
 if __name__ == '__main__':
     localtest()

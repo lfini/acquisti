@@ -141,7 +141,6 @@ CHIUDI_PRATICA = 'chiudi_pratica'
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
-CONFERMA_MIGLIORA = 'conferma_migliora'         # dati_pratica
 COSTO_PROGETTO = 'costo_progetto'               # dati_pratica
 COSTO_RDO = 'costo_rdo'                         # dati_pratica
 COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
