@@ -1050,7 +1050,7 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #
                 title)
     if oper == 'NOR':    # Lista pratiche in attesa di indicazione del RUP
         title = PRAT_NOR
-        filtro = lambda x: CdP.PAR >= x.get(cs.TAB_PASSI[-1], 0) < CdP.RUI
+        filtro = lambda x: not x.get(cs.EMAIL_RUP, '')
     else:
         raise RuntimeError(f'Operazione non valida in lista pratiche ({oper})')
 

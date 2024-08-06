@@ -30,7 +30,7 @@ CIG: ((( pratica.numero_cig ))) - CUP: ((( pratica.numero_cup )))
 \end{minipage}
 }
 
-Il Direttore
+Il Direttore ((* if pratica.dec_firma_vicario *)) Vicario ((* endif *))
 
 \end{center}
 \textbf{VISTA~}	la Legge 7 agosto 1990, numero 241, e successive modifiche
@@ -164,8 +164,8 @@ del 5 giugno 2020 n. 46, modificato dal medesimo Organo di Governo con
 Delibera del 29 aprile 2021, numero 21, pubblicato in data 24 giugno
 2021 ed entrato in vigore il 9 luglio 2021;
 
-\textbf{VISTO~}	il "Piano Triennale per la Informatica nella Pubblica
-Amministrazione;
+\textbf{VISTO~}	il vigente "Piano Triennale per la Informatica nella Pubblica
+Amministrazione";
 
 \textbf{VISTA~}	la Direttiva 2014/24/UE del Parlamento Europeo e del
 Consiglio, del 26 febbraio 2014, sugli appalti pubblici e che abroga la
@@ -312,8 +312,8 @@ affidamento diretto;
 
 \textbf{CONSIDERATO~}  che INAF – Istituto Nazionale di
 Astrofisica – si è dotato di una piattaforma di e-procurement
-per la gestione delle gare dematerializzate denominato "UBUY"
-(\texttt{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp});
+per la gestione delle gare dematerializzate denominato
+"UBUY"\footnote{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp};
 
 \textbf{RITENUTO~} di potere avviare su sopramenzionata piattaforma di
  e-procurement  la procedura diretta a provocare una formale offerta,
@@ -378,27 +378,12 @@ Pubblici di Ricerca", e, quindi anche allo "Osservatorio Astrofisico
 Arcetri dello "Istituto Nazionale di Astrofisica";
 \end{enumerate}
 
-\textbf{VISTA~}	la Delibera del 20 dicembre 2023, numero 82, con la
-quale il Consiglio di Amministrazione ha designato, tra gli altri,
-il Dott. Simone Esposito, con decorrenza dal 01 gennaio 2024 e per la
-durata di un triennio, quale Direttore dello "Osservatorio Astrofisico
-di Arcetri";
+((* include 'nomina-direttore.tex' *))
 
-\textbf{VISTO~}	il Decreto del Presidente del 21 dicembre 2023,
-numero 32, con il quale, in attuazione della Delibera del Consiglio di
-Amministrazione del 20 dicembre 2023, numero 82, e per i periodi temporali
-in essa specificati, sono stati nominati, ai sensi dell’articolo
-18 dello Statuto dello "Istituto Nazionale di Astrofisica", i nuovi
-Direttori delle "Strutture di Ricerca;
+((* if pratica.dec_firma_vicario *))
+((* include 'nomina-vicxario.tex' *))
+((* endif *))
 
-\textbf{VISTO~}	inoltre, la Determina Direttoriale del 28 dicembre 2023,
-numero 160, con la quale il Dottore Gaetano Telesio, nella sua qualità
-di Direttore Generale dello "Istituto Nazionale di Astrofisica", ha
-conferito, ai sensi dell’articolo 14, comma 3, lettera g), del vigente
-Statuto, a decorrere dal 01 gennaio 2024 e per la durata di un triennio,
-l'incarico di Direttore dello "Osservatorio Astrofisico di Arcetri"
-al Dott. Simone Esposito;
-   
 \textbf{VISTA~}	la delibera di approvazione del Bilancio di previsione
 dell’Istituto Nazionale di Astrofisica per l’esercizio finanziario
  in corso;
@@ -499,5 +484,9 @@ all’articolo 16 del Decreto Legislativo n. 36/2023.
 
 \end{itemize}
 
+((* if pratica.dec_firma_vicario *))
+((* include 'vicario.tex' *))
+((* else *))
 ((* include 'direttore.tex' *))
+((* endif *))
 \end{document}

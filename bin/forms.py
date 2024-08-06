@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.4"
-__date__ = "22/05/2024"
+__version__ = "2.5"
+__date__ = "06/08/2024"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -322,6 +322,7 @@ class IndicaRUP(FormWErrors):
     'Form per nomina RUP'
     email_rup = MySelectField('', True, [])
     interno_rup = MyTextField('Tel. Interno', True, [])
+    rup_firma_vicario = MyBooleanField('Firma il Direttore Vicario', False)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -329,6 +330,7 @@ class IndicaRUP(FormWErrors):
         "rendering del form"
         html = B_TRTD+render_field(self.email_rup, size=20)+BRK+BRK
         html += render_field(self.interno_rup, sameline=True, size=3)+E_TRTD
+        html += B_TRTD+render_field(self.rup_firma_vicario, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
@@ -418,6 +420,7 @@ class Decisione(FormWErrors):
     costo_rdo = MyFormField(Costo1, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
+    dec_firma_vicario = MyBooleanField('Firma il Direttore Vicario', False)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
     T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
 
@@ -427,14 +430,15 @@ class Decisione(FormWErrors):
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
                                 f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_decisione)+BRK
+        html += B_TRTD+render_field(self.numero_decisione, sameline=True)+BRK
         if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000:
-            html += render_field(self.numero_cig)+BRK
-            html += render_field(self.numero_cup)+BRK
-        html += render_field(self.data_decisione)+BRK
+            html += render_field(self.numero_cig, sameline=True)+BRK
+            html += render_field(self.numero_cup, sameline=True)+BRK
+        html += render_field(self.data_decisione, sameline=True)+BRK
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
-        html += render_field(self.capitolo)+BRK
+        html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
+        html += render_field(self.dec_firma_vicario, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
@@ -450,8 +454,6 @@ class Decisione(FormWErrors):
         if extra_validators:
             if not self.numero_cig.data:
                 self.errlist.append("Manca indicazione CIG")
-            if not self.numero_cup.data:
-                self.errlist.append("Manca indicazione CUP")
         return not self.errlist
 
 class Ordine(FormWErrors):
@@ -459,6 +461,7 @@ class Ordine(FormWErrors):
     numero_ordine = MyTextField('Numero ordine', True, [])
     termine_giorni = MyTextField('Termine di esecuzione della prestazione (giorni)', True, [])
     descrizione_ordine = MyTextAreaField('Descrizione', True, [])
+    ord_firma_vicario = MyBooleanField('Firma il Direttore Vicario', False)
     note_ordine = MyTextAreaField('Note', False, [])
 
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
@@ -489,6 +492,7 @@ class Ordine(FormWErrors):
         html += B_TRTD+ render_field(self.numero_ordine)+E_TRTD
         html += B_TRTD+ render_field(self.termine_giorni)+E_TRTD
         html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
+        html += B_TRTD+render_field(self.ord_firma_vicario, sameline=True)+E_TRTD
         html += B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
@@ -566,7 +570,7 @@ def new_lista_ditte(label, m_entries=5):
 
 class RdO(FormWErrors):
     "form per specifiche per la generazione di RdO"
-    numero_cup = MyTextField('CUP', True, [wt.validators.InputRequired()])
+    numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
     numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
     fine_gara = MyTextField('Data scadenza presentazione offerta (g/m/aaaa)', True)
@@ -585,8 +589,6 @@ class RdO(FormWErrors):
     def validate(self, extra_validators=None):
         "Validazione"
         tt0 = ft.date_to_time(self.fine_gara.data)
-        if not self.numero_cup.data:
-            self.errlist.append("Manca indicazione numero CUP")
         if not self.numero_cig.data:
             self.errlist.append("Manca indicazione numero CIG")
         if tt0 is None:

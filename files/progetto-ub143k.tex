@@ -56,21 +56,21 @@ L’esplorazione informale di mercato sin qui condotta ha consentito infatti di 
 
 \begin{itemize}
 
-\item un importo stimato del progettato affidamento sicuramente al di
-sotto della soglia contemplata dalla norma innanzi richiamata;
+\item un importo stimato del progettato affidamento sicuramente al di sotto
+della soglia contemplata dalla norma innanzi richiamata;
 
 \item l’assenza di una Convenzione in ambito Consip;
 
-\item assenza su MePA di almeno una ditta di riferimento che assicurasse
+\item l'assenza su MePA di almeno una ditta di riferimento che assicurasse
 le condizioni (tecniche e di budget) ritenute ottimali;
 
 \item la presenza  sulla piattaforma di e-procurement
-per la gestione delle gare dematerializzate in uso a INAF
-– Istituto Nazionale di Astrofisica, denominato "UBUY"
-(\texttt{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.w}) di almeno un
-Operatore Economico in grado di garantire la fornitura in oggetto;
+per la gestione delle gare dematerializzate in uso a
+INAF~-~Istituto Nazionale di Astrofisica, denominato
+"UBUY"\footnote{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp}
+di almeno un Operatore Economico in grado di garantire la fornitura in oggetto;
 
-\item migliore ditta in grado di rispondere efficacemente al quadro esigenziale
+\item la migliore ditta in grado di rispondere efficacemente al quadro esigenziale
 connesso al presente affidamento, individuata sul mercato all’esito di
 una informale esplorazione e specificamente:
 ((( pratica.fornitore_nome ))) con sede legale in ((( pratica.fornitore_sede ))),
@@ -157,12 +157,16 @@ Il Responsabile dei fondi
 \end{minipage}
 ((* endif *))
 
-((* if direttore *))
+((* if direttore *))      # include firma direttore/vicario
 \begin{minipage}{\linewidth}
 \begin{center}
 	VISTO SI AUTORIZZA
 \end{center}
+((* if pratica.rup_firma_vicario *))
+((* include 'vicario.tex' *))
+((* else *))
 ((* include 'direttore.tex' *))
+((* endif *))
 \end{minipage}
 ((* endif *))
 

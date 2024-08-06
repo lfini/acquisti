@@ -15,7 +15,6 @@
 \end{quotation}
 ((* endif *))
 
-
 \begin{center}
 \textbf{PROGETTO DI FORNITURA \\ (RICHIESTA DI ACQUISIZIONE DI BENI)}
 \end{center}
@@ -49,29 +48,37 @@ Cfr. preventivo Operatore Economico 
 \end{quote}
 
 
-\textbf{PROCEDURA: }
-
-
-%% Testo procedura per trattativa diretta sotto 5000 €
+\textbf{PROCEDURA: } %% Testo procedura per trattativa diretta sotto 5000 €
 
 Affidamento diretto ai sensi del combinato disposto dagli articoli 17 comma 2 e 50, comma 1 lett. b) D.Lgs. 36/2023.
 
 L’esplorazione informale di mercato sin qui condotta ha consentito infatti di individuare:
-\begin{itemize}
-\item un importo stimato del progettato affidamento sicuramente al di sotto della soglia contemplata dalla norma innanzi richiamata;
-\item un importo stimato inferiore a 5.000 Euro;
-\item l’assenza di una Convenzione in ambito Consip;
-\item l'assenza su MePA di almeno una ditta di riferimento che assicurasse le condizioni (tecniche e di budget) ritenute ottimali;
-\item l'assenza sulla piattaforma di e-procurement per la gestione delle gare dematerializzate in uso a
-	INAF~-~Istituto Nazionale di Astrofisica - denominato ''UBUY''
-	(http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp) di almeno un Operatore Economico in
-	grado di garantire la fornitura in oggetto;
 
-\item una ditta in grado di rispondere efficacemente al quadro esigenziale connesso al presente affidamento,
-individuata sul mercato all’esito di una informale esplorazione e specificamente:
+\begin{itemize}
+
+\item un importo stimato del progettato affidamento sicuramente al di sotto
+della soglia contemplata dalla norma innanzi richiamata;
+
+\item un importo stimato inferiore a 5.000 Euro;
+
+\item l’assenza di una Convenzione in ambito Consip;
+
+\item l'assenza su MePA di almeno una ditta di riferimento che assicurasse
+le condizioni (tecniche e di budget) ritenute ottimali;
+
+\item l'assenza sulla piattaforma di e-procurement
+per la gestione delle gare dematerializzate in uso a
+INAF~-~Istituto Nazionale di Astrofisica, denominato
+"UBUY"\footnote{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp}
+di almeno un Operatore Economico in grado di garantire la fornitura in oggetto;
+
+\item una ditta in grado di rispondere efficacemente al quadro esigenziale
+connesso al presente affidamento, individuata sul mercato all’esito di
+una informale esplorazione e specificamente:
 ((( pratica.fornitore_nome ))) con sede legale in ((( pratica.fornitore_sede ))),
 Cod.Fisc.: (((pratica.fornitore_codfisc ))), Part.IVA: ((( pratica.fornitore_partiva ))),
 con la quale avviare una procedura di affidamento diretto;
+
 \end{itemize}
 
 Si richiama inoltre l’art. 10, comma 3, D. Lgs. 218/2016 a mente
@@ -98,7 +105,7 @@ Decreto Legislativo 31 marzo 2023 n. 36. 
 
 \textbf{L’acquisto non prevede ripetizioni o altre opzioni.}
 
-Ai fini della inventariazione, ove necessaria in ragione della fornitura
+\textbf{Ai fini della inventariazione}, ove necessaria in ragione della fornitura
 in oggetto, è riservata la successiva precisazione degli effettivi
 utilizzatori e della effettiva localizzazione dei beni da inventariare.
 
@@ -157,7 +164,11 @@ Il Responsabile dei fondi
 \begin{center}
 	VISTO SI AUTORIZZA
 \end{center}
+((* if pratica.rup_firma_vicario *))
+((* include 'vicario.tex' *))
+((* else *))
 ((* include 'direttore.tex' *))
+((* endif *))
 \end{minipage}
 ((* endif *))
 

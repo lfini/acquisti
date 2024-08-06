@@ -16,7 +16,11 @@
 ((* endif *))
 
 \begin{center}
+((* if pratica.rup_firma_vicario *))
+\textbf{Il Direttore Vicario dell’Osservatorio Astrofisico di Arcetri }
+((* else *))
 \textbf{Il Direttore dell’Osservatorio Astrofisico di Arcetri }
+((* endif *))
 \end{center}
 
 \textbf{VISTI}	l’art. 15 rubricato: ``Responsabile unico del progetto (RUP)'' e l’allegato I.2 rubricato
@@ -47,7 +51,9 @@ a ((( pratica.nome_rup ))), in servizio presso l’Istituto Nazionale di Astrofi
 Astrofisico di Arcetri, l’incarico di Responsabile Unico di progetto (RUP), in relazione alla procedura
 di affidamento in oggetto.
 
-((* if direttore *))
+((* if pratica.rup_firma_vicario *))
+((* include 'vicario.tex' *))
+((* else *))
 ((* include 'direttore.tex' *))
 ((* endif *))
 \end{document}

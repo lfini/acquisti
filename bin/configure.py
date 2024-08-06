@@ -16,9 +16,9 @@ import ftools
 import constants as cs
 from table import jload, jsave
 
-__version__ = "1.5"
+__version__ = "1.6"
 
-MY_VERSION = 4
+MY_VERSION = 5
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -59,12 +59,6 @@ Se non è necessaria una differenziazione, può essere specificato
 l'indirizzo e-mail dell'ufficio ordini. [es.: proc-acquisti.oaa@inaf.it]
 """
 
-TITOLO_DIRETTORE_DESC = """Titolo del direttore [es: Dott.ssa]
-"""
-
-TITOLO_DIRETTORE_UK_DESC = """Titolo del direttore per ordini in inglese [es: Dr.]
-"""
-
 EMAIL_DIRETTORE_DESC = """Indirizzo e-mail personale del direttore
 
 ****************************************************************
@@ -80,7 +74,19 @@ Se tale indirizzo non esiste, specificare l'indirizzo personale
 del direttore. [es: direttore.oaa@inaf.it]
 """
 
-NOME_DIRETTORE_DESC = """Nome del direttore [es: Simone Esposito]
+EMAIL_VICARIO_DESC = """Indirizzo e-mail personale del direttore vicario
+
+****************************************************************
+NOTA: è NECESSARIO usare lo stesso indirizzo e-mail specificato
+nella lista degli utenti della procedura.
+****************************************************************
+[es: luca.fini@inaf.it]
+"""
+
+NOME_VICARIO_DESC = """Titolo e nome del direttore vicario [es: Dott.ssa Elena Amato]
+"""
+
+NOME_DIRETTORE_DESC = """Titolo e nome del direttore [es: Dott. Simone Esposito]
 """
 
 GENDER_DIRETTORE_DESC = """Genere direttore (per la personalizzazione dei testi)
@@ -151,8 +157,8 @@ PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (cs.NOME_DIRETTORE, NOME_DIRETTORE_DESC),
                       (cs.GENDER_DIRETTORE, GENDER_DIRETTORE_DESC),
                       (cs.EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
-                      (cs.TITOLO_DIRETTORE, TITOLO_DIRETTORE_DESC),
-                      (cs.TITOLO_DIRETTORE_UK, TITOLO_DIRETTORE_UK_DESC),
+                      (cs.EMAIL_VICARIO, EMAIL_VICARIO_DESC),
+                      (cs.NOME_VICARIO, NOME_VICARIO_DESC),
                       (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
                       (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
                       (cs.EMAIL_SERVIZIO, EMAIL_SERVIZIO_DESC),

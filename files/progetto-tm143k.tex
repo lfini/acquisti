@@ -55,9 +55,15 @@ Affidamento diretto ai sensi del combinato disposto dagli articoli 17 comma 2 e 
 L’esplorazione informale di mercato sin qui condotta ha consentito infatti di individuare:
 
 \begin{itemize}
-\item un importo stimato del progettato affidamento sicuramente al di sotto della soglia contemplata dalla norma innanzi richiamata;
+
+\item un importo stimato del progettato affidamento sicuramente al di sotto
+della soglia contemplata dalla norma innanzi richiamata;
+
 \item l’assenza di una Convenzione in ambito Consip;
-\item presenza su MePA di almeno una ditta di riferimento che assicurasse le condizioni (tecniche e di budget) ritenute ottimali;
+
+\item presenza su MePA di almeno una ditta di riferimento che assicurasse
+le condizioni (tecniche e di budget) ritenute ottimali;
+
 \item una ditta in grado di rispondere efficacemente al quadro esigenziale connesso al presente affidamento,
 individuata sul mercato all’esito di una informale esplorazione e specificamente:
 ((( pratica.fornitore_nome ))) con sede legale in ((( pratica.fornitore_sede ))),
@@ -143,12 +149,16 @@ Il Responsabile dei fondi
 \end{minipage}
 ((* endif *))
 
-((* if direttore *))
+((* if direttore *))      # include firma direttore/vicario
 \begin{minipage}{\linewidth}
 \begin{center}
 	VISTO SI AUTORIZZA
 \end{center}
+((* if pratica.rup_firma_vicario *))
+((* include 'vicario.tex' *))
+((* else *))
 ((* include 'direttore.tex' *))
+((* endif *))
 \end{minipage}
 ((* endif *))
 \end{document}

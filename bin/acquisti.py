@@ -21,6 +21,7 @@ from collections import UserDict
 from pprint import PrettyPrinter
 import traceback
 
+import jinja2 as j2
 import wtforms as wt
 import flask as fk
 import constants as cs
@@ -80,7 +81,7 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.28'
+__version__ = '5.0.29'
 __date__ = '03/08/2024'
 
 __start__ = time.asctime(time.localtime())
@@ -862,15 +863,14 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
         ndata[cs.PROVV] = 'P R O V V I S O R I O'
     if cs.RESP in opts:
         ndata[cs.RESP] = 'responsabile'
+    ndata[cs.NOME_DIRETTORE] = CONFIG.config[cs.NOME_DIRETTORE]
     if cs.DIRETTORE in opts:
-        ndata[cs.DIRETTORE] = CONFIG.config[cs.TITOLO_DIRETTORE]+' '+ \
-                              CONFIG.config[cs.NOME_DIRETTORE]
-    ndata['sede'] = CONFIG.config[cs.SEDE]
+        ndata[cs.DIRETTORE] = 1
+        if cs.VICARIO in opts:
+            ndata[cs.NOME_VICARIO] = CONFIG.config[cs.NOME_VICARIO]
+    ndata[cs.SEDE] = CONFIG.config[cs.SEDE]
     ndata["headerpath"] = os.path.join(cs.FILEDIR, "header.png")
     ndata["footerpath"] = os.path.join(cs.FILEDIR, "footer.png")
-    ndata["titolo_direttore"] = CONFIG.config['titolo_direttore']
-    ndata["titolo_direttore_uk"] = CONFIG.config['titolo_direttore_uk']
-    ndata["nome_direttore"] = CONFIG.config['nome_direttore']
     ndata["dir_is_m"] = CONFIG.config['gender_direttore'].lower() == 'm'
     ACQ.logger.info('Generazione documento: %s/%s (template: %s)',
                  d_prat.basedir, nome_pdf, template)
@@ -1002,6 +1002,9 @@ def start():
         status['developer'] = 1
     if test_direttore(user):
         status['direttore'] = 1
+    anno = ft.thisyear()
+    doclist, _ = ft.trova_pratiche_1(anno, 'NOR', user['email'])
+    status['no_rup'] = len(doclist)
     return fk.render_template('start_acquisti.html', sede=CONFIG.config[cs.SEDE],
                               user=user, status=status)
 
@@ -1032,6 +1035,8 @@ def about():                                 # pylint: disable=R0915
     html.append(fmt.format('table.py', ft.tb.__version__, ft.tb.__date__, ft.tb.__author__))
     html.append(fmt.format('Flask', fk.__version__, '-',
                            'Vedi: <a href=http://flask.pocoo.org>Flask home</a>'))
+    html.append(fmt.format('Jinja2', j2.__version__, '-',
+                           'Vedi: <a href=https://jinja.palletsprojects.com/en/3.1.x/>Jinja2 home</a>'))
     html.append(fmt.format('WtForms', wt.__version__, '-',
                            'Vedi: <a href=https://wtforms.readthedocs.org>WtForms home</a>'))
     html.append('</table></td></tr>')
@@ -1201,7 +1206,10 @@ def inviadecisione():                    #pylint: disable=R0914
         fk.flash(cannot_go, category="error")
         return pratica_common(d_prat)
     numdec = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
-    doc_pdf = genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE, )), filenum=numdec)
+    doc_opts = [cs.DIRETTORE]
+    if d_prat.get(cs.DEC_FIRMA_VICARIO):
+        doc_opts.append(cs.VICARIO)
+    doc_pdf = genera_documento(d_prat, (cs.DOC_DECISIONE, doc_opts), filenum=numdec)
     d_prat[cs.DECIS_DA_FIRMARE] = doc_pdf
     testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
             cs.DETTAGLIO_PRATICA.format(**d_prat)
@@ -1209,6 +1217,7 @@ def inviadecisione():                    #pylint: disable=R0914
     recipient = (d_prat[cs.EMAIL_RUP], CONFIG.config[cs.EMAIL_SERVIZIO])
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
     ret = send_email(recipient, testo, subj, attach=attach)
+    d_prat[cs.DATA_DECISIONE] = ft.today()
     if ret:
         msg = f"Decisione da firmare digitalmente inviata a: {recipient}"
         fk.flash(msg, category="info")
@@ -1217,7 +1226,7 @@ def inviadecisione():                    #pylint: disable=R0914
         salvapratica(d_prat)
     else:
         fk.flash("Invio e-mail per firma fallito", category="error")
-    genera_documento(d_prat, (cs.DOC_DECISIONE, (cs.DIRETTORE, )))  # Elimina barra "provvisorio"
+    genera_documento(d_prat, (cs.DOC_DECISIONE, doc_opts))  # Elimina barra "provvisorio"
     return pratica_common(d_prat)
 
 @ACQ.route('/approvaprogetto')
@@ -1267,6 +1276,7 @@ def indicarup():
             d_prat[cs.EMAIL_RUP] = rupf.email_rup.data
             d_prat[cs.INTERNO_RUP] = rupf.interno_rup.data
             d_prat[cs.NOME_RUP] = nome_da_email(d_prat[cs.EMAIL_RUP], True)
+            d_prat[cs.RUP_FIRMA_VICARIO] = 1 if rupf.rup_firma_vicario.data else 0
             doc = d_prat.get_passo('f')
             genera_documento(d_prat, doc)
             d_prat.next()
@@ -1304,8 +1314,11 @@ def autorizza():
     send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     d_prat.next()
     storia(d_prat, "Autorizzazione concessa dal direttore")
-    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESP, cs.DIRETTORE]))
-    genera_documento(d_prat, (cs.DOC_NOMINARUP, [cs.DIRETTORE]))   # genera versione definitiva
+    doc_opts = [cs.RESP, cs.DIRETTORE]
+    if d_prat.get(cs.RUP_FIRMA_VICARIO):
+        doc_opts.append(cs.VICARIO)
+    genera_documento(d_prat, (cs.DOC_PROGETTO, doc_opts))
+    genera_documento(d_prat, (cs.DOC_NOMINARUP, doc_opts))   # genera versione definitiva
     salvapratica(d_prat)
     return pratica_common(d_prat)
 

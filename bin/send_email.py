@@ -13,6 +13,10 @@ Supporto per l'invio di messaggi e-mail con vari metodi
 
     python send_mail.py [-t attach.pdf] -g <indirizzo destinatario>
 
+NOTA: il Token viene generato a partire dal file credentials.json e richiede l'accesso autenticato
+      ad una pagina di Google (attivato automaticamente dalla procedura di generazione).
+      Per generare il token per xxx@inaf.it ocorre fare l'operazione all'interno dell'organizzazione.
+
 """
 
 import sys

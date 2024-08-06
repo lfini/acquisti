@@ -12,7 +12,7 @@ __author__ = "Luca Fini"
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
-CONFIG_REQUIRED = 4              # versione file configurazione richiesta
+CONFIG_REQUIRED = 5              # versione file configurazione richiesta
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
@@ -39,17 +39,17 @@ TEMPORARY_KEY_PREFIX = "T_"
 ACCORDO_QUADRO = "acc.quadro"
 CONSIP = "consip"
 INFER_5000 = "infer.5000"
-MEPA = 'cat.mepa'
+CAT_MEPA = 'cat.mepa'
 TRATT_MEPA_143 = 'tratt.mepa143'
 TRATT_MEPA_40 = 'tratt.mepa40'
 TRATT_UBUY_143 = 'tratt.ubuy143'
 TRATT_UBUY_40 = 'tratt.ubuy40'
 
 TAB_TEMPLATE = {          # suffissi per i template delle varie modalità di acquisto
-        ACCORDO_QUADRO: '',
-        CONSIP: '',
+        ACCORDO_QUADRO: 'aquad',
+        CONSIP: 'cnsip',
         INFER_5000: 'inf5k',
-        MEPA: '',
+        CAT_MEPA: 'cmepa',
         TRATT_MEPA_143: 'tm143k',
         TRATT_MEPA_40: 'tm40k',
         TRATT_UBUY_143: 'ub143k',
@@ -99,6 +99,7 @@ EMAIL_PROCEDURA = 'email_procedura'
 EMAIL_SERVIZIO = 'email_servizio'
 EMAIL_UFFICIO = 'email_ufficio'
 EMAIL_WEBMASTER = 'email_webmaster'
+EMAIL_VICARIO = 'email_vicario'
 FLASK_KEY = 'flask_key'
 GENDER_DIRETTORE = 'gender_direttore'
 INDIRIZZO = "indirizzo"
@@ -107,6 +108,7 @@ LDAP_HOST = "ldap_host"
 LDAP_PORT = "ldap_port"
 NOME_WEBMASTER = 'nome_webmaster'
 NOME_DIRETTORE = 'nome_direttore'
+NOME_VICARIO = 'nome_vicario'
 PART_IVA = "part_iva"
 PEC_OSS = "pec_oss"
 SEDE = 'sede'
@@ -114,14 +116,13 @@ SEDE_IT = 'sede_it'
 SEDE_UK = 'sede_uk'
 SMTP_HOST = 'smtp_host'
 TEL_OSS = 'tel_oss'
-TITOLO_DIRETTORE = 'titolo_direttore'
-TITOLO_DIRETTORE_UK = 'titolo_direttore_uk'
 WEBSITE = 'website'
 
 # opzioni per generazione documenti
 PROVV = 'provvisorio'
 RESP = 'responsabile'
 DIRETTORE = 'direttore'
+VICARIO = 'vicario'
 
 # nomi file generati
 DOC_DECISIONE = "decisione.pdf"
@@ -155,6 +156,10 @@ DATA_NEGOZIAZIONE = 'data_negoziazione'         # dati_pratica
 DATA_OFFERTA = 'data_offerta'                   # dati_pratica
 DATA_PRATICA = 'data_pratica'                   # dati_pratica
 DATA_SCADENZA = 'data_scadenza'                 # dati_pratica
+DEC_FIRMA_VICARIO = 'dec_firma_vicario'         # dati pratica
+ORD_FIRMA_VICARIO = 'ord_firma_vicario'         # dati pratica
+RDO_FIRMA_VICARIO = 'rdo_firma_vicario'         # dati pratica
+RUP_FIRMA_VICARIO = 'rup_firma_vicario'         # dati pratica
 DECIS_DA_FIRMARE = 'decis_da_firmare'           # dati_pratica
 DESCRIZIONE_ACQUISTO = 'descrizione_acquisto'   # dati_pratica
 DESCRIZIONE_ORDINE = 'descrizione_ordine'       # dati_pratica
@@ -242,7 +247,7 @@ MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a 143k€"),
                 (CONSIP, "Acquisto nella Vetrina delle convenzioni Consip"),
                 (ACCORDO_QUADRO, "Adesione ad accordo quadro"),
-                (MEPA, "Acquisto a catalogo MePA"),
+                (CAT_MEPA, "Acquisto a catalogo MePA"),
                 (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40 k€"),
                 (TRATT_UBUY_143, "Trattativa diretta UBUY sotto 143 k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),

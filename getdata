@@ -13,4 +13,4 @@ then
 	echo "Manca specifica anno"
         exit
 fi
-rsync -vrpz $REMOTE:data/$1 data/
+rsync -vrpz $REMOTE:v5/data/$1 data/

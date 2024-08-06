@@ -253,7 +253,8 @@ def makepdf(destdir, pdfname, template, remove=False,  #pylint: disable=R0912,R0
     tpath, tname = os.path.split(tname)
     if debug:
         PDFLATEX.log.debug("Template: %s", template.name)
-
+        PDFLATEX.log.debug("data keys --\n%s\n----------", data.keys())
+        PDFLATEX.log.debug("nome vicario : %s", data.get('nome_vicario'))
     atcs = []
     if attach:
         for atch in attach:
