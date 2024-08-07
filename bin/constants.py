@@ -280,6 +280,10 @@ ORDINE_DITTA = "ordine_ditta"
 ORDINE_MEPA = "ordine_mepa"
 VERBALE_GARA = "verbale_gara"
 
+# indicatori per extra_validators
+
+CIG = 'cig'
+
 # Specifica allegati
 ALL_SING = 0    # Allegato singolo
 ALL_SPEC = 1    # Allegato multiplo con specifica

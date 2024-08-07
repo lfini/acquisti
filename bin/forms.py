@@ -75,6 +75,7 @@ E_TRTD = Markup('</td></tr>')
 BRK = Markup("<br />")
 PAR = Markup('<p>')
 NBSP = Markup(" &nbsp; ")
+NBSP4 = Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
 
 class MyBooleanField(wt.BooleanField):
     "La mia versione del BooleanField"
@@ -415,10 +416,13 @@ class ProgettoAcquisto(FormWErrors):
 
 class Decisione(FormWErrors):
     "form per definizione decisione di contrarre"
-    numero_decisione = MyTextField('Numero decisione', True,
-                                   [wt.validators.InputRequired("Manca numero decisione")])
-    data_decisione = MyTextField('Data (g/m/aaaa)', True,
-                                 [wt.validators.Optional("Manca data decisione")])
+    numero_decisione = MyTextField('Numero decisione', True)
+    data_decisione = MyTextField('Data (g/m/aaaa)', True)
+    data_negoziazione = MyTextField('Data negoziazione (g/m/aaaa)', True)
+    numero_negoziazione = MyTextField('ID negoziazione', True)
+    data_scadenza = MyTextField('Data scadenza per presentazione offerta (g/m/aaaa)', True)
+    data_offerta = MyTextField('Data offerta (g/m/aaaa)', True)
+    numero_offerta = MyTextField('ID offerta', True)
     numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
     numero_cig = MyTextField('CIG', True, [wt.validators.Optional()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
@@ -434,11 +438,16 @@ class Decisione(FormWErrors):
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
                                 f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_decisione, sameline=True)+BRK
+        html += B_TRTD+render_field(self.numero_decisione, sameline=True)+NBSP4
+        html += render_field(self.data_decisione, sameline=True)+BRK
         if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000:
             html += render_field(self.numero_cig, sameline=True)+BRK
             html += render_field(self.numero_cup, sameline=True)+BRK
-        html += render_field(self.data_decisione, sameline=True)+BRK
+        html += E_TRTD+B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
+        html += render_field(self.numero_negoziazione, sameline=True)+PAR
+        html += render_field(self.data_scadenza, sameline=True)+PAR
+        html += render_field(self.data_offerta, sameline=True)+NBSP4
+        html += render_field(self.numero_offerta, sameline=True)+E_TRTD
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
@@ -446,7 +455,7 @@ class Decisione(FormWErrors):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-    def validate(self, extra_validators=None):
+    def validate(self, extra_validators=''):
         "Validazione specifica per il form"
         self.errlist = []
         if not self.numero_decisione.data:
@@ -455,7 +464,17 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca data decisione")
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
-        if extra_validators:
+        if not self.data_negoziazione.data:
+            self.errlist.append("Manca data negoziazione")
+        if not self.numero_negoziazione.data:
+            self.errlist.append("Manca numeriìo ID negoziazione")
+        if not self.data_scadenza.data:
+            self.errlist.append("Manca data scadenza per presentazione offerta")
+        if not self.data_offerta.data:
+            self.errlist.append("Manca data offerta")
+        if not self.numero_offerta.data:
+            self.errlist.append("Manca numero ID offerta")
+        if cs.CIG in extra_validators:
             if not self.numero_cig.data:
                 self.errlist.append("Manca indicazione CIG")
         return not self.errlist

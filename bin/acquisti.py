@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.29'
-__date__ = '03/08/2024'
+__version__ = '5.0.30'
+__date__ = '08/08/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1471,7 +1471,8 @@ def modificadecisione():                     #pylint: disable=R0914
         ACQ.logger.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     decis = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
-        if decis.validate(extra_validators=True):
+        val_cig = cs.CIG if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000 else ''
+        if decis.validate(extra_validators=val_cig):
             d_prat.update(clean_data(decis.data))
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
