@@ -73,6 +73,7 @@ def render_field(field, sameline=False, **kw):
 B_TRTD = Markup('<tr><td>')
 E_TRTD = Markup('</td></tr>')
 BRK = Markup("<br />")
+PAR = Markup('<p>')
 NBSP = Markup(" &nbsp; ")
 
 class MyBooleanField(wt.BooleanField):
@@ -344,6 +345,7 @@ class IndicaRUP(FormWErrors):
 
 class ProgettoAcquisto(FormWErrors):
     "Form per progetto di acquisto"
+    cig_master = MyTextField('CIG Master', True)
     data_pratica = MyTextField('Data pratica (g/m/aaaa)', True)
     descrizione_acquisto = MyTextField('Descrizione', True)
     descrizione_ordine = MyTextAreaField('Descrizione per ordine '\
@@ -373,8 +375,10 @@ class ProgettoAcquisto(FormWErrors):
         "rendering del form"
         html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
-        if self.modalita_acquisto.data is not None and self.modalita_acquisto.data != 'None':
-            html += B_TRTD+render_field(self.descrizione_acquisto, size=50)+E_TRTD
+        if self.modalita_acquisto.data is not None:
+            if self.modalita_acquisto.data in (cs.CONSIP, cs.ACCORDO_QUADRO):
+                html += B_TRTD+render_field(self.cig_master, size=10, sameline=True)+E_TRTD
+            html += B_TRTD+render_field(self.descrizione_acquisto, size=80)+E_TRTD
             if self.modalita_acquisto.data == cs.INFER_5000:
                 html += B_TRTD+render_field(self.descrizione_ordine, rows=5, cols=80)+E_TRTD
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
@@ -383,10 +387,10 @@ class ProgettoAcquisto(FormWErrors):
             html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
             html += render_field(self.email_responsabile, sameline=True)
             html += BRK+render_field(self.lista_codf)+E_TRTD
-            html += B_TRTD+render_field(self.fornitore_nome, size=50)+BRK
-            html += render_field(self.fornitore_sede, sep='', size=50)+BRK
-            html += render_field(self.fornitore_codfisc)+BRK
-            html += render_field(self.fornitore_partiva)+E_TRTD
+            html += B_TRTD+render_field(self.fornitore_nome, size=80)+PAR
+            html += render_field(self.fornitore_sede, sep='', size=80)+PAR
+            html += render_field(self.fornitore_codfisc, sameline=True)+BRK
+            html += render_field(self.fornitore_partiva, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.costo_progetto, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.note_progetto, rows=10, cols=80)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
@@ -417,7 +421,7 @@ class Decisione(FormWErrors):
                                  [wt.validators.Optional("Manca data decisione")])
     numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
     numero_cig = MyTextField('CIG', True, [wt.validators.Optional()])
-    costo_rdo = MyFormField(Costo1, 'Quadro economico', True)
+    costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
     dec_firma_vicario = MyBooleanField('Firma il Direttore Vicario', False)

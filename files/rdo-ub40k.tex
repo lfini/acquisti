@@ -23,7 +23,8 @@
 ~\\
 \textbf{Affidamento diretto della fornitura di ((( pratica.descrizione_acquisto )))}
 
-\textbf{CIG: ((( pratica.numero_cig ))) - CUP: ((( pratica.numero_cup )))}
+\textbf{CIG: ((( pratica.numero_cig )))
+((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))) ((* endif *))}
 
 \textbf{OGGETTO: Affidamento Diretto} di cui in epigrafe, CIG: ((( pratica.numero_cig )))
 
@@ -150,7 +151,9 @@ Soggetto Giuridico offerente), entro il giorno \textbf{((( pratica.fine_gara )))
 \textbf{23:59} con indicazione, pena l'esclusione, del domicilio
 eletto e \textbf{nell'oggetto} della dicitura: \textbf{AFFIDAMENTO
 DIRETTO FORNITURA DI (((pratica.descrizione_acquisto))),} \textbf{CIG:}
-\textit{numero CIG} \textbf{ - CUP:} \textit{numero CUP}}, unitamente alla
+((( pratica.numero_cig )))%
+((* if pratica.numero_cup *)) \textbf{ - CUP:} ((( pratica.numero_cup )))((* endif *)),
+unitamente alla
 seguente documentazione (allegata alla richiesta di conferma di offerta)
 da completare e salvare in formato "PDF/A", firmata digitalmente dal
 Legale Rappresentante del Soggetto Giuridico offerente o dal Procuratore

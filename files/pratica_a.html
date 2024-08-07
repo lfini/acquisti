@@ -33,7 +33,11 @@
 &nbsp;&nbsp;[<a href=/rich_autorizzazione>Richiedi autorizzazione al Direttore</a>]
 {% endif %}
 {% if 'autorizza' in info.commands and info.autorizzabile %}
+{% if pratica.rup_firma_vicario %}
+&nbsp;&nbsp;[<a href=/autorizza>Autorizzazione Direttore Vicario</a>]
+{% else %}
 &nbsp;&nbsp;[<a href=/autorizza>Autorizzazione Direttore</a>]
+{% endif %}
 {% endif %}
 {% if info.rdo_richiesta %}
 <p>

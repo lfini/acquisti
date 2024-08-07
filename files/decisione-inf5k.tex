@@ -26,7 +26,8 @@ Decisione N. ((( pratica.numero_decisione )))
 \begin{minipage}{0.9\linewidth}
 Decisione di contrarre del ((( pratica.data_decisione ))) – Affidamento diretto
 	della fornitura di ((( pratica.descrizione_acquisto )))
-CIG: ((( pratica.numero_cig ))) - CUP: ((( pratica.numero_cup )))
+CIG: ((( pratica.numero_cig )))
+((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))) ((* endif *))
 \end{minipage}
 }
 
@@ -411,7 +412,7 @@ Arcetri dello "Istituto Nazionale di Astrofisica";
 ((* include 'nomina-direttore.tex' *))
 
 ((* if pratica.dec_firma_vicario *))
-((* include 'nomina-vicxario.tex' *))
+((* include 'nomina-vicario.tex' *))
 ((* endif *))
 
 \textbf{VISTA~}	la delibera di approvazione del Bilancio di previsione
@@ -476,8 +477,8 @@ codice fiscale: ((( pratica.fornitore_codfisc ))) e partita IVA:
 Art. 5: Di autorizzare la relativa spesa, per un importo complessivo
 pari a ((( pratica.costo_totale ))) Euro comprensivo della Imposta sul
 Valore Aggiunto, a carico della "Funzione Obiettivo" ((( pratica.stringa_codf))).
-"Codice Unico Progetto" ("CUP"): ((( pratica.numero_cup )));  Capitolo:
-((( pratica.capitolo ))).
+((* if pratica.numero_cup *)) "Codice Unico Progetto" ("CUP"): ((( pratica.numero_cup ))); ((* endif *))
+Capitolo: ((( pratica.capitolo ))).
 
 Articolo 6: Di prenotare i correlativi impegni di spesa.
 

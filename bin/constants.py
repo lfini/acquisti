@@ -137,11 +137,13 @@ RESP_APPROVA = 'resp_approva'
 INDICA_RUP = 'indica_rup'
 INVIA_DOC_RUP = 'invia_doc_rup'
 DIR_AUTORIZZA = 'dir_autorizza'
+VIC_AUTORIZZA = 'vic_autorizza'
 INVIA_DECISIONE = 'invia_decisione'
 CHIUDI_PRATICA = 'chiudi_pratica'
 
 # Costanti per dict dati_pratica
 CAPITOLO = 'capitolo'                           # dati_pratica
+CIG_MASTER = 'cig_master'                       # dati_pratica
 COSTO_PROGETTO = 'costo_progetto'               # dati_pratica
 COSTO_RDO = 'costo_rdo'                         # dati_pratica
 COSTO_DETTAGLIO = 'costo_dettaglio'             # dati pratica
@@ -244,12 +246,12 @@ MENU_VALUTA = ((EURO, "EUR"),
                (SFR, "SFR"))
 
 MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
-                (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a 143k€"),
-                (CONSIP, "Acquisto nella Vetrina delle convenzioni Consip"),
+                (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a soglia europea"),
+                (CONSIP, "Acquisto in convenzione Consip"),
                 (ACCORDO_QUADRO, "Adesione ad accordo quadro"),
                 (CAT_MEPA, "Acquisto a catalogo MePA"),
                 (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40 k€"),
-                (TRATT_UBUY_143, "Trattativa diretta UBUY sotto 143 k€"),
+                (TRATT_UBUY_143, "Trattativa diretta UBUY a soglia europea"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
                )
 
@@ -289,7 +291,7 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Documento generico", ALL_NAME),
                 ALL_CV_RUP: ('A04_CV_RUP', "Curric. Vitae del RUP", ALL_SING),
                 ALL_DICH_RUP: ('A05_Dich_RUP', "Dichiaraz. ass. conflitto int. del RUP", ALL_SING),
                 ALL_PREV: ('A02_Preventivo', "Preventivo", ALL_SING),
-                ALL_CIG: ("A12_CIG_MePA", "CIG da MePA", ALL_SING),
+                ALL_CIG: ("A12_CIG", "CIG", ALL_SING),
                 ALL_RDO: ("A16_RdO_Firmata", "RdO con firma digitale RUP", ALL_SING),
                 ALL_DECIS_FIRM: ("A24_Decisione_Firmata",
                                   "Decisione di contrarre con firma digitale", ALL_SING),
@@ -346,6 +348,8 @@ TABELLA_PASSI = {
                TRATT_UBUY_40: CdP.AUD,   # modalità acquisto
                TRATT_MEPA_143: CdP.AUD,
                TRATT_UBUY_143: CdP.AUD,
+               CONSIP: CdP.DEC,
+               ACCORDO_QUADRO: CdP.DEC,
                INFER_5000: CdP.DEC}),
     CdP.AUD: ("Generazione Richiesta di Offerta",
               [DOC_RDO, []],

@@ -341,6 +341,12 @@ def test_direttore(user) -> bool:
     emailuser = user.get("email", "U").lower()
     return emailuser == emaildir
 
+def test_vicario(user) -> bool:
+    "test: l'utente è il direttore vicario"
+    emaildir = CONFIG.config[cs.EMAIL_VICARIO].lower()
+    emailuser = user.get("email", "U").lower()
+    return emailuser == emaildir
+
 def test_doc_decisione(d_prat: Pratica) -> bool:
     "test: esistenza decisione di contrarre"
     if not d_prat.basedir:
@@ -456,9 +462,9 @@ def auth_autorizz_richiedibile(d_prat: Pratica) -> str:     #pylint: disable=R09
 
 def auth_autorizzabile(d_prat: Pratica) -> str:
     "test: il direttore può autorizzare la richiesta del RUP?"
-    if test_direttore(d_prat.user):
-        return YES
-    return NO_NON_DIR
+    if d_prat.get('rup_firma_vicario'):
+        return YES if test_vicario(d_prat.user) else NO_NON_DIR
+    return YES if test_direttore(d_prat.user) else NO_NON_DIR
 
 def auth_rollback(d_prat: Pratica) -> str:
     "test: rollback attivabile"
@@ -1036,7 +1042,7 @@ def about():                                 # pylint: disable=R0915
     html.append(fmt.format('Flask', fk.__version__, '-',
                            'Vedi: <a href=http://flask.pocoo.org>Flask home</a>'))
     html.append(fmt.format('Jinja2', j2.__version__, '-',
-                           'Vedi: <a href=https://jinja.palletsprojects.com/en/3.1.x/>Jinja2 home</a>'))
+                           'Vedi: <a href=https://jinja.palletsprojects.com>Jinja2 home</a>'))
     html.append(fmt.format('WtForms', wt.__version__, '-',
                            'Vedi: <a href=https://wtforms.readthedocs.org>WtForms home</a>'))
     html.append('</table></td></tr>')
@@ -1343,13 +1349,13 @@ def rich_autorizzazione():
     body = cs.TESTO_RICHIESTA_AUTORIZZAZIONE.format(url=fk.request.root_url, **d_prat)
     ret = send_email(CONFIG.config[cs.EMAIL_DIREZIONE], body, subj)
     if ret:
-        msg = 'Richiesta di autorizzazione inviata al direttore'
+        msg = 'Richiesta di autorizzazione inviata alla direzione'
         fk.flash(msg, category="info")
         d_prat.next()
         storia(d_prat, msg)
         salvapratica(d_prat)
         return pratica_common(d_prat)
-    err = 'Invio richiesta di autorizzazione al direttore fallito'
+    err = 'Invio richiesta di autorizzazione alla direzione fallito'
     fk.flash(err, category="error")
     ACQ.logger.error(err)
     return pratica_common(d_prat)
@@ -1438,7 +1444,6 @@ def modificaordine():                     #pylint: disable=R0914
            'note': cs.OBBLIGATORIO,
            'body': ordn(d_prat)}
     return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
-
 
 @ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
 def modificadecisione():                     #pylint: disable=R0914
