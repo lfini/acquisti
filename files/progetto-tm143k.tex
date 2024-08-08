@@ -136,10 +136,13 @@ Il Richiedente
 \begin{center}
 	VISTO SI AUTORIZZA
 \end{center}
+\vspace{8mm}
+
 \begin{flushright}
 \begin{minipage}[c]{6cm}
 \begin{center}
 Il Responsabile dei fondi
+((* if pratica.data_resp_approva *)) ~[((( pratica.data_resp_approva )))] ((* endif *))
 
 ((( pratica.nome_responsabile )))
 
@@ -149,15 +152,23 @@ Il Responsabile dei fondi
 \end{minipage}
 ((* endif *))
 
-((* if direttore *))      # include firma direttore/vicario
+((* if direttore *))
+\vspace{8mm}
+
 \begin{minipage}{\linewidth}
 \begin{center}
-	VISTO SI AUTORIZZA
+	VISTO SI AUTORIZZA (((( pratica.data_dir_autorizza ))))
 \end{center}
+\vspace{8mm}
+
 ((* if pratica.rup_firma_vicario *))
+((* with data=pratica.data_dir_autorizza *))
 ((* include 'vicario.tex' *))
+((* endwith *))
 ((* else *))
+((* with data=pratica.data_dir_autorizza *))
 ((* include 'direttore.tex' *))
+((* endwith *))
 ((* endif *))
 \end{minipage}
 ((* endif *))

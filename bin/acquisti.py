@@ -113,7 +113,7 @@ NO_PRATICA_ANNULLATA = 'NO: Pratica annullata'
 NO_PRATICA_GIA_ANNULLATA = 'NO: Pratica già annullata'
 NO_PRATICA_APERTA = 'NO: Pratica aperta'
 NO_PROGETTO_GEN = 'NO: Progetto non generato'
-NO_PREV_MEPA = 'NO: manca preventivo MePA in allegato'
+NO_PREVENTIVO = 'NO: manca preventivo in allegato'
 NO_PROGETTO_INV = 'NO: Progetto già inviato'
 NO_PROGETTO_APPROV = 'NO: Progetto già approvato'
 NO_PROGETTO_NON_APPROV = 'NO: progetto non ancora approvato'
@@ -359,9 +359,10 @@ def test_doc_ordine(d_prat: Pratica) -> bool:
         return False
     return os.path.exists(os.path.join(d_prat.basedir, cs.DOC_ORDINE))
 
-def test_all_prev_mepa(d_prat: Pratica) -> bool:
+def test_all_preventivo(d_prat: Pratica) -> bool:
     "test esistenza preventivo mepa"
-    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40, cs.INFER_5000,
+    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40,
+                                       cs.INFER_5000, cs.CONSIP, cs.ACC_QUADRO,
                                        cs.TRATT_MEPA_143, cs.TRATT_UBUY_143):
         return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_PREV][0]))
     return True
@@ -528,7 +529,7 @@ def make_info(d_prat: Pratica) -> dict:
     info['admin'] = YES if test_admin(d_prat.user) else NOT
     info['responsabile'] = YES if test_responsabile(d_prat) else NOT
     info['direttore'] = YES if test_direttore(d_prat.user) else NOT
-    info['all_prev_mepa'] = YES if test_all_prev_mepa(d_prat) else NOT
+    info['all_preventivo'] = YES if test_all_preventivo(d_prat) else NOT
     info['all_cv_rup'] = YES if test_all_cv_rup(d_prat) else NOT
     info['all_dich_rup'] = YES if test_all_dich_rup(d_prat) else NOT
     info['all_cig'] = YES if test_all_cig(d_prat) else NOT
@@ -614,7 +615,7 @@ def check_access(new=False):
                   cs.NUMERO_PRATICA: '-------',
                   cs.EMAIL_RICHIEDENTE: user['email'],
                   cs.NOME_RICHIEDENTE: user['name']+' '+user['surname'],
-                  cs.DATA_PRATICA: ft.today(False),
+                  cs.DATA_PRATICA: ft.today(fulltime=False),
                   cs.TAB_PASSI: [CdP.INI],
                   cs.PRATICA_APERTA: True}
     ACQ.logger.debug('Session: %s', str(fk.session))
@@ -753,7 +754,7 @@ def _mydel(key, d_prat):
 def allegati_mancanti(d_prat: Pratica):
     "Genera lista allegati mancanti"
     ret = []
-    if d_prat.get_passo() >= CdP.INI and not test_all_prev_mepa(d_prat):
+    if d_prat.get_passo() >= CdP.INI and not test_all_preventivo(d_prat):
         ret.append(cs.ALL_PREV)
     if d_prat.get_passo() >= CdP.RUI and not test_all_cv_rup(d_prat):
         ret.append(cs.ALL_CV_RUP)
@@ -1223,7 +1224,6 @@ def inviadecisione():                    #pylint: disable=R0914
     recipient = (d_prat[cs.EMAIL_RUP], CONFIG.config[cs.EMAIL_SERVIZIO])
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
     ret = send_email(recipient, testo, subj, attach=attach)
-    d_prat[cs.DATA_DECISIONE] = ft.today()
     if ret:
         msg = f"Decisione da firmare digitalmente inviata a: {recipient}"
         fk.flash(msg, category="info")
@@ -1247,6 +1247,7 @@ def approvaprogetto():
         ACQ.logger.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
+    d_prat[cs.DATA_RESP_APPROVA] = ft.today()
     d_prat.next()
     genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESP]))
     storia(d_prat, 'Progetto approvato da resp. fondi.')
@@ -1323,6 +1324,7 @@ def autorizza():
     doc_opts = [cs.RESP, cs.DIRETTORE]
     if d_prat.get(cs.RUP_FIRMA_VICARIO):
         doc_opts.append(cs.VICARIO)
+    d_prat[cs.DATA_DIR_AUTORIZZA] = ft.today()
     genera_documento(d_prat, (cs.DOC_PROGETTO, doc_opts))
     genera_documento(d_prat, (cs.DOC_NOMINARUP, doc_opts))   # genera versione definitiva
     salvapratica(d_prat)
@@ -1467,7 +1469,7 @@ def modificadecisione():                     #pylint: disable=R0914
         year = ft.thisyear()
         ndecis = ft.find_max_decis(year)[0]+1
         d_prat[cs.NUMERO_DECISIONE] = f"{ndecis}/{year:4d}"
-        d_prat[cs.DATA_DECISIONE] = ft.today(False)
+        d_prat[cs.DATA_DECISIONE] = ft.today(fulltime=False)
         ACQ.logger.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     decis = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':

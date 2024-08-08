@@ -36,7 +36,7 @@ MORE = "T_more"
 TEMPORARY_KEY_PREFIX = "T_"
 
 # Costanti per menu modalità acquisto
-ACCORDO_QUADRO = "acc.quadro"
+ACC_QUADRO = "acc.quadro"
 CONSIP = "consip"
 INFER_5000 = "infer.5000"
 CAT_MEPA = 'cat.mepa'
@@ -46,7 +46,7 @@ TRATT_UBUY_143 = 'tratt.ubuy143'
 TRATT_UBUY_40 = 'tratt.ubuy40'
 
 TAB_TEMPLATE = {          # suffissi per i template delle varie modalità di acquisto
-        ACCORDO_QUADRO: 'aquad',
+        ACC_QUADRO: 'aquad',
         CONSIP: 'cnsip',
         INFER_5000: 'inf5k',
         CAT_MEPA: 'cmepa',
@@ -158,6 +158,9 @@ DATA_NEGOZIAZIONE = 'data_negoziazione'         # dati_pratica
 DATA_OFFERTA = 'data_offerta'                   # dati_pratica
 DATA_PRATICA = 'data_pratica'                   # dati_pratica
 DATA_SCADENZA = 'data_scadenza'                 # dati_pratica
+DATA_RESP_APPROVA = 'data_resp_approva'         # dati_pratica
+DATA_DIR_AUTORIZZA = 'data_dir_autorizza'       # dati_pratica
+DATA_RUP_APPROV_DIR = 'data_rup_approv_dir'     # dati_pratica
 DEC_FIRMA_VICARIO = 'dec_firma_vicario'         # dati pratica
 ORD_FIRMA_VICARIO = 'ord_firma_vicario'         # dati pratica
 RDO_FIRMA_VICARIO = 'rdo_firma_vicario'         # dati pratica
@@ -248,7 +251,7 @@ MENU_VALUTA = ((EURO, "EUR"),
 MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a soglia europea"),
                 (CONSIP, "Acquisto in convenzione Consip"),
-                (ACCORDO_QUADRO, "Adesione ad accordo quadro"),
+                (ACC_QUADRO, "Adesione ad accordo quadro"),
                 (CAT_MEPA, "Acquisto a catalogo MePA"),
                 (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40 k€"),
                 (TRATT_UBUY_143, "Trattativa diretta UBUY a soglia europea"),
@@ -353,7 +356,7 @@ TABELLA_PASSI = {
                TRATT_MEPA_143: CdP.AUD,
                TRATT_UBUY_143: CdP.AUD,
                CONSIP: CdP.DEC,
-               ACCORDO_QUADRO: CdP.DEC,
+               ACC_QUADRO: CdP.DEC,
                INFER_5000: CdP.DEC}),
     CdP.AUD: ("Generazione Richiesta di Offerta",
               [DOC_RDO, []],

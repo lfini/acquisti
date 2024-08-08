@@ -511,7 +511,7 @@ def html_params(params, escape=True):
 def today(fulltime=True):
     "Riporta data odierna"
     if fulltime:
-        return time.strftime('%d/%m/%Y %H:%M')
+        return time.strftime('%d/%m/%Y %H:%M:%S')
     return time.strftime('%d/%m/%Y')
 
 def date_to_time(date):

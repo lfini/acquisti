@@ -377,7 +377,7 @@ class ProgettoAcquisto(FormWErrors):
         html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None:
-            if self.modalita_acquisto.data in (cs.CONSIP, cs.ACCORDO_QUADRO):
+            if self.modalita_acquisto.data in (cs.CONSIP, cs.ACC_QUADRO):
                 html += B_TRTD+render_field(self.cig_master, size=10, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.descrizione_acquisto, size=80)+E_TRTD
             if self.modalita_acquisto.data == cs.INFER_5000:
@@ -423,6 +423,8 @@ class Decisione(FormWErrors):
     data_scadenza = MyTextField('Data scadenza per presentazione offerta (g/m/aaaa)', True)
     data_offerta = MyTextField('Data offerta (g/m/aaaa)', True)
     numero_offerta = MyTextField('ID offerta', True)
+    data_protocollo_doc = MyTextField('Data protocollo documentazione (g/m/aaaa)', True)
+    numero_protocollo_doc = MyTextField('Numero protocollo documentazione', True)
     numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
     numero_cig = MyTextField('CIG', True, [wt.validators.Optional()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
@@ -448,6 +450,9 @@ class Decisione(FormWErrors):
         html += render_field(self.data_scadenza, sameline=True)+PAR
         html += render_field(self.data_offerta, sameline=True)+NBSP4
         html += render_field(self.numero_offerta, sameline=True)+E_TRTD
+        if d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP):
+            html += E_TRTD+B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4
+            html += render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')

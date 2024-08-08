@@ -51,8 +51,12 @@ Astrofisico di Arcetri, l’incarico di Responsabile Unico di progetto (RUP), in
 di affidamento in oggetto.
 
 ((* if pratica.rup_firma_vicario *))
+((* with data=pratica.data_dir_autorizza *))
 ((* include 'vicario.tex' *))
+((* endwith *))
 ((* else *))
+((* with data=pratica.data_dir_autorizza *))
 ((* include 'direttore.tex' *))
+((* endwith *))
 ((* endif *))
 \end{document}
