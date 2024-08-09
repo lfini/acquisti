@@ -280,8 +280,8 @@ l'allegato I.2 al medesimo Decreto "Attività del RUP";
 \textbf{VISTO~} l'esito della preliminare
 esplorazione di mercato che ha condotto alla individuazione come migliore
 Operatore Economico in grado di assolvere all'esecuzione dell'appalto
-in oggetto ((( pratica.nome_ditta ))) con sede in ((( pratica.indirizzo_ditta )))
-codice fiscale ((( pratica.codfisc_ditta ))) e partita IVA ((( pratica. partiva_ditta ))),
+in oggetto ((( pratica.fornitore_nome ))) con sede in ((( pratica.fornitore_indirizzo )))
+codice fiscale ((( pratica.fornitore_codfisc ))) e partita IVA ((( pratica.fornitore_partiva ))),
 in quanto:
 
 \begin{itemize}
@@ -321,9 +321,9 @@ per la gestione delle gare dematerializzate denominato
  da parte del suddetto O.E., confermativa o migliorativa della precedente
  acquisita in sede di esplorazione informale di mercato;
 
-\textbf{PRESO ATTO~} che in data ((( pratica.data_gara ))) veniva
+\textbf{PRESO ATTO~} che in data ((( pratica.data_negoziazione ))) veniva
  avviata sulla menzionata piattaforma di e-procurement la procedura -
- id gara ((( pratica.id_gara ))), con termine di
+ id gara ((( pratica.numero_negoziazione ))), con termine di
 scadenza per la presentazione dell'offerta ((( pratica.data_scadenza))) ore 23:59;
 
 
@@ -428,10 +428,10 @@ Art. 1: Le premesse di cui al presente atto sono parte integrante e
 sostanziale dello stesso e ne costituiscono le motivazioni ai sensi
 dell'Art. 3 della Legge n. 241/90 e s.m.i.
 
-Art. 2: che il/la Responsabile Unico/a di Progetto, in base all'Art. 15 del
+Art. 2: che il Responsabile Unico di Progetto, in base all'Art. 15 del
 D. Lgs 36/2023 e Allegato I.2 del suddetto decreto è ((( pratica.nome_rup ))),
 che possiede le competenze necessarie a svolgere tale ruolo
-e che, dal punto di vista tecnico scientifico, è affiancato/a da
+e che, dal punto di vista tecnico scientifico, è affiancato da
 ((( pratica.nome_richiedente ))).
 
 Art. 3: Di aggiornare e approvare il quadro economico come di seguito riportato:
@@ -467,7 +467,8 @@ Toscana nei termini previsto dall'articolo 120 del Decreto Legislativo
 2 luglio 2010 n. 104 e successive modificazioni e integrazioni;
 
 Articolo 9: Di dare atto che, rispetto alla procedura di affidamento in
-oggetto, sia nei confronti del RUP che del Direttore dell'Osservatorio:
+oggetto, sia nei confronti del RUP che del Direttore
+dell'Osservatorio((* if pratica.dec_firma_vicario *)), che nei confronti del Direttore Vicario ((* endif *)):
 
 \begin{itemize}
 

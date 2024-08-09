@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.30'
-__date__ = '08/08/2024'
+__version__ = '5.0.31'
+__date__ = '09/08/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -2222,6 +2222,7 @@ def production():
                   CONFIG.config[cs.EMAIL_WEBMASTER],
                   f'Notifica errore ACQUISTI v. {__version__}')
     ACQ.logger.removeHandler(fk.logging.default_handler)
+    fms.debug_enable()
     initialize_me()
 
 if __name__ == '__main__':

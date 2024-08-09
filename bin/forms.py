@@ -49,8 +49,17 @@ def popup(url, text, size=(700, 500)):
     return f'<a href="{url}"  onclick="window.open(\'{url}\', \'newwindow\', \'width={size[0]}, '\
            f'height={size[1]}, scrollbars=yes\'); return false;">{text}</a>'
 
-def render_field(field, sameline=False, **kw):
-    "Rendering di un campo"
+def debug_view(expr: bool):
+    'Determina se i campi opzionali dei form debbano essere visualizzati (per debug)'
+    if DEBUG.enable:
+        return 'D' if expr else 'H'
+    return 'N' if expr else 'H'
+
+
+def render_field(field, mode='N', sameline=False, **kw):
+    "Rendering di un campo. mode=Normal,Debug,Hidden"
+    if mode == 'H':
+        return ''
     if field.help_spec:
         help_url = Markup(f'/files/{field.help_spec}')
         hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
@@ -65,10 +74,10 @@ def render_field(field, sameline=False, **kw):
     else:
         lab = Markup(f'{field.a_label}{hlink}{sep}')
     if isinstance(field, MyFormField):
-        ret = Markup(field.form.renderme(**kw))
-    else:
-        ret = Markup(field(**kw))
-    return lab+ret
+        return lab+Markup(field.form.renderme(**kw))
+    if mode == 'D':
+        return Markup(f'<font color=gray>{lab}: .....<font>')
+    return lab+Markup(field(**kw))
 
 B_TRTD = Markup('<tr><td>')
 E_TRTD = Markup('</td></tr>')
@@ -173,10 +182,10 @@ class MyFieldList(wt.FieldList):
         self.is_required = required
         self.a_label = label
 
-    def renderme(self, **kw):
+    def renderme(self, mode='N', **kw):
         "rendering del form"
         for item in self:
-            return render_field(item, **kw)
+            return render_field(item, mode=mode, **kw)
 
 class FormWErrors(wt.Form):
     "Form modificato per gestione errori"
@@ -377,13 +386,13 @@ class ProgettoAcquisto(FormWErrors):
         html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None:
-            if self.modalita_acquisto.data in (cs.CONSIP, cs.ACC_QUADRO):
-                html += B_TRTD+render_field(self.cig_master, size=10, sameline=True)+E_TRTD
+            mode = debug_view(self.modalita_acquisto.data in (cs.CONSIP, cs.ACC_QUADRO))
+            html += B_TRTD+render_field(self.cig_master, mode=mode, size=10, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.descrizione_acquisto, size=80)+E_TRTD
-            if self.modalita_acquisto.data == cs.INFER_5000:
-                html += B_TRTD+render_field(self.descrizione_ordine, rows=5, cols=80)+E_TRTD
+            mode = debug_view(self.modalita_acquisto.data == cs.INFER_5000)
+            html += B_TRTD+render_field(self.descrizione_ordine, mode=mode, rows=5, cols=80)+E_TRTD
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
-            pop =popup(fk.url_for('vedicodf'),
+            pop = popup(fk.url_for('vedicodf'),
                        'Vedi lista Codici fondi e responsabili', size=(1100, 900))
             html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
             html += render_field(self.email_responsabile, sameline=True)
@@ -442,17 +451,17 @@ class Decisione(FormWErrors):
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione, sameline=True)+NBSP4
         html += render_field(self.data_decisione, sameline=True)+BRK
-        if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000:
-            html += render_field(self.numero_cig, sameline=True)+BRK
-            html += render_field(self.numero_cup, sameline=True)+BRK
+        mode = debug_view(d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000)
+        html += render_field(self.numero_cig, mode=mode, sameline=True)+BRK
+        html += render_field(self.numero_cup, mode=mode, sameline=True)+BRK
         html += E_TRTD+B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
         html += render_field(self.numero_negoziazione, sameline=True)+PAR
         html += render_field(self.data_scadenza, sameline=True)+PAR
         html += render_field(self.data_offerta, sameline=True)+NBSP4
         html += render_field(self.numero_offerta, sameline=True)+E_TRTD
-        if d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP):
-            html += E_TRTD+B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4
-            html += render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
+        mode = debug_view(d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP))
+        html += E_TRTD+B_TRTD+render_field(self.data_protocollo_doc, mode=mode, sameline=True)+NBSP4
+        html += render_field(self.numero_protocollo_doc, mode=mode, sameline=True)+E_TRTD
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
@@ -566,35 +575,6 @@ class TrovaPratica(FormWErrors):
 
 B_TD = Markup("<td>")
 E_TD = Markup("</td>")
-
-class Ditta(FormWErrors):
-    "form per singola ditta"
-    nome_ditta = MyTextField('', True)
-    sede_ditta = MyTextField('', True)
-    codfisc_ditta = MyTextField('', True)
-    partiva_ditta = MyTextField('', True)
-    vincitore = wt.BooleanField()
-    T_cancella = wt.BooleanField()
-
-    def __call__(self, **_unused):
-        "Rendering del form"
-        html = B_TD+render_field(self.nome_ditta)+E_TD
-        html += B_TD+render_field(self.sede_ditta)+E_TD
-        html += B_TD+Markup('Cod.Fisc.: ')+render_field(self.codfisc_ditta)+E_TD
-        html += B_TD+Markup('Part.IVA: ')+render_field(self.partiva_ditta)+E_TD
-        if hasattr(self, "offerta"):
-            html += B_TD+self.offerta()+E_TD
-        html += B_TD+self.vincitore()+E_TD
-        html += B_TD+self.T_cancella()+E_TD
-        return html
-
-class DittaExt(Ditta):
-    "Form per ditta con offerta"
-    offerta = wt.BooleanField()
-
-def new_lista_ditte(label, m_entries=5):
-    "Instanzia una lista ditte con dato numero di campi"
-    return MyFieldList(wt.FormField(Ditta), label, True, min_entries=m_entries)
 
 class RdO(FormWErrors):
     "form per specifiche per la generazione di RdO"
