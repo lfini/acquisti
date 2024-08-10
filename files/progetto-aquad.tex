@@ -3,7 +3,7 @@
 ((* include 'header.tex' *))
 
 ((* if provvisorio *))
-\watermark{\put(150,-300){\rotatebox{45}{\Huge ((( provvisorio ))) }}}
+\watermark{\put(150,-300){\rotatebox{45}{\Huge P~R~O~V~V~I~S~O~R~I~O }}}
 ((* endif *))
 
 \begin{document}
@@ -23,7 +23,7 @@
 \textbf{Soggetto richiedente: ((( pratica.nome_richiedente )))} \\
 
 In qualità di:          %
-((* if resp_fondi *)) Responsabile dei fondi (Ob.~Fu ((( pratica.stringa_codf ))))
+((* if rich_resp *)) Responsabile dei fondi (Ob.~Fu ((( pratica.stringa_codf ))))
 ((* else *)) dipendente
 ((* endif *))
 

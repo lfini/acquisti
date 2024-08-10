@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.31'
-__date__ = '09/08/2024'
+__version__ = '5.0.32'
+__date__ = '10/08/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -865,17 +865,11 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     template = os.path.join(cs.FILEDIR, nome_tmpl)
     if filenum:
         nome_pdf = f'{noext}_{filenum}.pdf'
-    ndata = {}
-    if cs.PROVV in opts:
-        ndata[cs.PROVV] = 'P R O V V I S O R I O'
-    if cs.RESP in opts:
-        ndata[cs.RESP] = 'responsabile'
-    ndata[cs.NOME_DIRETTORE] = CONFIG.config[cs.NOME_DIRETTORE]
-    if cs.DIRETTORE in opts:
-        ndata[cs.DIRETTORE] = 1
-        if cs.VICARIO in opts:
-            ndata[cs.NOME_VICARIO] = CONFIG.config[cs.NOME_VICARIO]
+    ndata = {x: 1 for x in opts}
+    if cs.VICARIO in opts:
+        ndata[cs.NOME_VICARIO] = CONFIG.config[cs.NOME_VICARIO]
     ndata[cs.SEDE] = CONFIG.config[cs.SEDE]
+    ndata[cs.RICH_IS_RESP] = d_prat[cs.EMAIL_RICHIEDENTE] == d_prat[cs.EMAIL_RESPONSABILE]
     ndata["headerpath"] = os.path.join(cs.FILEDIR, "header.png")
     ndata["footerpath"] = os.path.join(cs.FILEDIR, "footer.png")
     ndata["dir_is_m"] = CONFIG.config['gender_direttore'].lower() == 'm'
@@ -1249,7 +1243,7 @@ def approvaprogetto():
         return pratica_common(d_prat)
     d_prat[cs.DATA_RESP_APPROVA] = ft.today()
     d_prat.next()
-    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESP]))
+    genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESPONSABILE]))
     storia(d_prat, 'Progetto approvato da resp. fondi.')
     salvapratica(d_prat)
     subj = 'Notifica approvazione progetto di acquisto. Pratica: '+d_prat[cs.NUMERO_PRATICA]
@@ -1321,7 +1315,7 @@ def autorizza():
     send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     d_prat.next()
     storia(d_prat, "Autorizzazione concessa dal direttore")
-    doc_opts = [cs.RESP, cs.DIRETTORE]
+    doc_opts = [cs.RESPONSABILE, cs.DIRETTORE]
     if d_prat.get(cs.RUP_FIRMA_VICARIO):
         doc_opts.append(cs.VICARIO)
     d_prat[cs.DATA_DIR_AUTORIZZA] = ft.today()

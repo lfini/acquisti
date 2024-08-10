@@ -119,10 +119,11 @@ TEL_OSS = 'tel_oss'
 WEBSITE = 'website'
 
 # opzioni per generazione documenti
-PROVV = 'provvisorio'
-RESP = 'responsabile'
+PROVVISORIO = 'provvisorio'
+RESPONSABILE = 'responsabile'
 DIRETTORE = 'direttore'
 VICARIO = 'vicario'
+RICH_IS_RESP = 'rich_resp'
 
 # nomi file generati
 DOC_DECISIONE = "decisione.pdf"
@@ -328,9 +329,9 @@ class CdP(IntEnum):
 ############### Tabella generale passi operativi   ############################
 TABELLA_PASSI = {
     CdP.INI: ("Iniziale",                            # Descrizione stato
-              [DOC_PROGETTO, [PROVV]],               # File da generare per procedere (con opzioni)
+              [DOC_PROGETTO, [PROVVISORIO]],         # File da generare per procedere (con opzioni)
               ['modificaprogetto', 'inviaprogetto'], # Comandi abilitati
-              [ALL_PREV],                       # Allegati necessari per procedere
+              [ALL_PREV],                            # Allegati necessari per procedere
               CdP.PIR),                              # passo successivo
     CdP.PIR: ("Progetto inviato al resp. dei fondi",
               [],
@@ -338,7 +339,7 @@ TABELLA_PASSI = {
               [],
               CdP.PAR),
     CdP.PAR: ("Progetto approvato dal resp. dei fondi",
-              [DOC_NOMINARUP, [PROVV]],
+              [DOC_NOMINARUP, [PROVVISORIO]],
               ['indicarup'],
               [],
               CdP.RUI),
@@ -364,12 +365,12 @@ TABELLA_PASSI = {
               [ALL_CIG],
               CdP.ROG),
     CdP.ROG: ("Genera decisione, allega RdO firmata",
-              [DOC_DECISIONE, [PROVV]],
+              [DOC_DECISIONE, [PROVVISORIO]],
               ['modificadecisione', 'inviadecisione'],
               [ALL_RDO],
               CdP.DCI),
     CdP.DEC: ("Genera decisione",
-              [DOC_DECISIONE, [PROVV]],
+              [DOC_DECISIONE, [PROVVISORIO]],
               ['modificadecisione', 'inviadecisione'],
               [ALL_CIG],
               CdP.DCI),
