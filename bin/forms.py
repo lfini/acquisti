@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.5"
-__date__ = "06/08/2024"
+__version__ = "2.6"
+__date__ = "20/08/2024"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -51,10 +51,9 @@ def popup(url, text, size=(700, 500)):
 
 def debug_view(expr: bool):
     'Determina se i campi opzionali dei form debbano essere visualizzati (per debug)'
-    if DEBUG.enable:
-        return 'D' if expr else 'H'
-    return 'N' if expr else 'H'
-
+    if expr:
+        return 'N'
+    return 'D' if DEBUG.enable else 'H'
 
 def render_field(field, mode='N', sameline=False, **kw):
     "Rendering di un campo. mode=Normal,Debug,Hidden"
