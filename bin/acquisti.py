@@ -250,7 +250,7 @@ Pratica:
         if doc:
             fname = doc[0]
             if not ft.findfiles(self.basedir, fname):
-                ACQ.logger.debug(f'Incremento non applicato - file mancante: {fname}')
+                ACQ.logger.debug('Incremento non applicato - file mancante: %s', fname)
                 return f'Documento mancante: {fname}', cpasso
         if alleg:
             for alg in alleg:
@@ -387,6 +387,10 @@ def test_all_decis_firmata(d_prat: Pratica) -> bool:
     "test: esistenza decisione firmata"
     return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_DECIS_FIRM][0]))
 
+def test_all_doc_stipula(d_prat: Pratica) -> bool:
+    "test: esistenza obbligazione giuridicamente perfezionata"
+    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_STIPULA][0]))
+
 def test_all_obblig_perf(d_prat: Pratica) -> bool:
     "test: esistenza obbligazione giuridicamente perfezionata"
     return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_OBBLIG][0]))
@@ -416,7 +420,7 @@ def test_rdo_richiesta(d_prat: Pratica) -> str:
 def test_ordine_richiesto(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede generazione dell'ordine"
     return d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.TRATT_UBUY_40,
-                                       cs.CONSIP, cs.ACC_QUADRO, cs.TRATT_UBUY_143)
+                                       cs.TRATT_UBUY_143)
 
 def auth_allegati_cancellabili(d_prat: Pratica) -> str:
     "test: allegati cancellabili"
@@ -769,6 +773,8 @@ def allegati_mancanti(d_prat: Pratica):
         ret.append(cs.ALL_DECIS_FIRM)
     if d_prat.get_passo() >= CdP.OGP and not test_all_obblig_perf(d_prat):
         ret.append(cs.ALL_OBBLIG)
+    if d_prat.get_passo() >= CdP.ALS and not test_all_doc_stipula(d_prat):
+        ret.append(cs.ALL_STIPULA)
     return ret
 
 def avvisi(d_prat: Pratica, _fase, _level=0):
