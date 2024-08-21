@@ -81,7 +81,7 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.33'
+__version__ = '5.0.34'
 __date__ = '21/08/2024'
 
 __start__ = time.asctime(time.localtime())
@@ -250,8 +250,8 @@ Pratica:
         if doc:
             fname = doc[0]
             if not ft.findfiles(self.basedir, fname):
-                ACQ.logger.debug('Incremento non applicato: file mancante')
-                return 'Documento mancante', cpasso
+                ACQ.logger.debug(f'Incremento non applicato - file mancante: {fname}')
+                return f'Documento mancante: {fname}', cpasso
         if alleg:
             for alg in alleg:
                 if not ft.findfiles(self.basedir, cs.TAB_ALLEGATI[alg][0]):
@@ -416,7 +416,7 @@ def test_rdo_richiesta(d_prat: Pratica) -> str:
 def test_ordine_richiesto(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede generazione dell'ordine"
     return d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.TRATT_UBUY_40,
-                                       cs.TRATT_UBUY_143)
+                                       cs.CONSIP, cs.ACC_QUADRO, cs.TRATT_UBUY_143)
 
 def auth_allegati_cancellabili(d_prat: Pratica) -> str:
     "test: allegati cancellabili"
