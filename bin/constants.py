@@ -382,6 +382,8 @@ TABELLA_PASSI = {
                TRATT_UBUY_40: CdP.ORD,   # modalità acquisto
                TRATT_MEPA_143: CdP.OGP,
                TRATT_UBUY_143: CdP.ORD,
+               CONSIP: CdP.ORD,
+               ACC_QUADRO: CdP.ORD,
                INFER_5000: CdP.ORD}),
     CdP.ORD: ("Genera ordine",
               [DOC_ORDINE, []],

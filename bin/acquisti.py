@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.32'
-__date__ = '10/08/2024'
+__version__ = '5.0.33'
+__date__ = '21/08/2024'
 
 __start__ = time.asctime(time.localtime())
 

@@ -450,7 +450,7 @@ class Decisione(FormWErrors):
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione, sameline=True)+NBSP4
         html += render_field(self.data_decisione, sameline=True)+BRK
-        mode = debug_view(d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000)
+        mode = debug_view(d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP))
         html += render_field(self.numero_cig, mode=mode, sameline=True)+BRK
         html += render_field(self.numero_cup, mode=mode, sameline=True)+BRK
         html += E_TRTD+B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
