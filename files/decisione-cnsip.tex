@@ -24,9 +24,12 @@ Decisione N. ((( pratica.numero_decisione )))
 \begin{center}
 \framebox[\linewidth]{%
 \begin{minipage}{0.9\linewidth}
-Decisione di contrarre del ((( pratica.data_decisione ))) – Affidamento diretto
-	della fornitura di ((( pratica.descrizione_acquisto )))
-CIG: ((( pratica.numero_cig )))
+Decisione di contrarre del ((( pratica.data_decisione ))) - Adesione a convenzione per la
+	fornitura di ((( pratica.descrizione_acquisto ))) - ((( pratica.convenzione )))
+        Lotto ((( pratica.lotto ))).
+
+CIG Master: ((( pratica.cig_master )) \\
+CIG Derivato: ((( pratica.numero_cig )))
 ((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))) ((* endif *))
 \end{minipage}
 }
@@ -270,121 +273,39 @@ concorsi di progettazione;
 \end{enumerate}
 \end{enumerate}
 
+\textbf{CONSIDERATA~} la necessità di provvedere alla fornitura oggetto per
+INAF - Osservatorio Astrofisico di Arcetri;
+
 \textbf{VISTO~} l'articolo 15 del Decreto Legislativo 31
 marzo 2023, numero 36, "Responsabile unico del progetto (RUP)" e
 l'allegato I.2 al medesimo Decreto "Attività del RUP";
 
-\textbf{CONSIDERATO~} che in ordine all'affidamento in oggetto
-non si è riscontrata la sussistenza di convenzioni o accordo quadro
-stipulati da Consip tutt'ora in vigore o comunque economicamente
-preferibili all'autonomo ricorso al mercato;
+i\textbf{CONSIDERATO~} Consip S.p.A., in qualità di stazione appaltante e centrale di 
+committenza,  ha siglato un Accordo Quadro all’esito di procedura aperta svolta in ambito
+ comunitario suddivisa in n. numero Lotti geografici e indetta con Bando di gara pubblicato
+ nella Gazzetta Ufficiale della Repubblica Italiana n. numero del gg/mm/aaaa e nella
+ Gazzetta Ufficiale dell’Unione Europea n. numero del gg/mm/aaaa  con l'operatore Economico
+ ((( pratica.fornitore_nome ))) con sede in ((( pratica.fornitore_sede )))
+P. IVA ((( pratica.fornitore_partiva )));
 
-\textbf{CONSIDERATO~} altresì che, in ordine
-all'affidamento in oggetto, sulla piattaforma del Mercato Elettronico
-della Pubblica Amministrazione (MePA) non è presente alcun fornitore
-capace di rispondere in maniera puntuale alle specificità dell'oggetto
-dell'affidamento;
+\textbf{CONSIDERATO~} che per quanto concerne la regione Toscana il lotto di riferimento 
+è il numero numero lotto - CIG (Master): ((( pratica.cig_master )));
 
-\textbf{RILEVATA~} infine l'assenza anche sulla piattaforma e-procurement per la
-gestione delle gare dematerializzate denominato
-"UBUY"\footnote{http://inaf.ubuy.cineca.it/PortaleAppalti/it/homepage.wp} in uso a
-INAF~–~Istituto Nazionale di Astrofisica, di un Operatore Economico in
-grado di soddisfare le richieste legate all'oggetto dell'affidamento;
+\textbf{RITENUTO~} di aderire alla Convenzione Consip "((( pratica.convenzione ))),
+ mediante Ordine diretto di acquisto alla società denominazione 
+((( pratica.fornitore_nome ))) con sede legale in (((pratica.fornitore_sede ))),
+P. IVA ((( pratica.fornitore.partiva )))  , aggiudicataria del Lotto ((( pratica.lotto )));
 
-\textbf{VISTO~} l'esito della preliminare
-esplorazione di mercato che ha condotto alla individuazione come migliore
-Operatore Economico in grado di assolvere all'esecuzione dell'appalto
-in oggetto ((( pratica.fornitore_nome ))) con sede in ((( pratica.fornitore_indirizzo )))
-codice fiscale ((( pratica.fornitore_codfisc ))) e partita IVA ((( pratica.fornitore_partiva ))),
-in quanto:
+\textbf{VISTO~} il parere del Ministero delle Infrastrutture e Trasporti Cod. id.  
+1888~-~data ricezione 06/04/2023, a mente del quale: "La stazione appaltante che 
+aderisce ad una convenzione Consip non è tenuta ad effettuare la verifica dei
+ requisiti dell’operatore economico, in quanto questa è già stata prontamente
+ effettuata da Consip al momento della stipula della convenzione stessa";
 
-\begin{itemize}
-\item  le prestazioni dell'oggetto fornito dall'Operatore Economico
-appaiono le più idonee alla realizzazione del Progetto;
+\textbf{PRESO ATTO~} che la spesa per l'acquisto di suddetta fornitura è  di 
+Euro valore, al netto di IVA; 
 
-\item 
-l'offerta da esso presentata si è rilevata plausibile e conforme
-ai valori di mercato;
 
-\item tale O.E. vanta una solida e riconosciuta
-competenza nel settore di riferimento;
-
-\end{itemize}
-
-\textbf{RITENUTA~}  l'insussistenza, in relazione
-all'affidamento in oggetto, dei presupposti giustificanti
-l'applicazione dell'art. 48, comma 2, Decreto Legislativo 31 marzo
-2023 n. 36  in considerazione del valore presunto dell'affidamento; 
-
-\textbf{CONSIDERATO~} che da preliminare e informale indagine
-di mercato l'importo stimato del progettato affidamento si attesterà
-certamente al di sotto della soglia di cui all'articolo 50 comma 1
-lett. b) del Decreto Legislativo 31 marzo 2023, numero 36;
-
-\textbf{RITENUTO~} di potere procedere, anche nell'ottica di
-ottimizzare i tempi di realizzazione del suddetto progetto, mediante
-affidamento diretto;
-
-\textbf{CONSIDERATO~}  inoltre che da indagine prodromica
-all'affidamento diretto, il valore presunto dello stesso sarà
-sicuramente inferiore a 5.000,00 Euro;
-
-\textbf{VISTO~} il Comunicato del Presidente ANAC
-del 10 Gennaio 2024 con il quale "\textit{l'Autorità al fine di favorire
-le Amministrazioni nell'adeguarsi ai nuovi sistemi che prevedono
-l'utilizzo delle piattaforme elettroniche e garantire così un migliore
-passaggio verso l'amministrazione digitale, sentito il Ministero
-delle Infrastrutture e dei Trasporti, ritiene in ogni caso necessario
-chiarire che allo scopo di consentire lo svolgimento delle ordinarie
-attività di approvvigionamento in coerenza con gli obiettivi della
-digitalizzazione, l'utilizzo dell'interfaccia web messa a disposizione
-dalla piattaforma contratti pubblici - PCP dell'Autorità, raggiungibile
-al link}
-
-https://www.anticorruzione.it/-/piattaforma-contratti-pubblici,
-
-\textit{sarà disponibile anche per gli affidamenti diretti di importo inferiore
-a 5.000 euro fino al 30 settembre 2024}"
-
-\textbf{VISTO~} il Comunicato del Presidente ANAC del 28 giugno 2024
-con il quale "è prorogata fino al 31 dicembre 2024 la possibilità di utiulizzare
-l'interfaccia web messa a disposizione dalla Piattaforma PCP dell'autorità";
-
-\textbf{RITENUTA~} l'opportunità di avviare detta
-procedura di affidamento in conformità a quanto disposto nel Comunicato
-del Presidente ANAC del 10 Gennaio 2024;
-
-\textbf{RILEVATO~} che in data ((( pratica.data_doc )))
-l'O.E., confermando l'offerta economica
-già presentata in sede di indagine informale di mercato, inoltrava
-la richiesta documentazione amministrativa, acquisita con numero di protocollo
-((( pratica.numero_protocollo_doc ))) in data ((( pratica.data_protocollo_doc )));
-
-\textbf{VISTA~} l'offerta dell'Operatore
-Economico, per complessivi Euro ((( pratica.costo_netto ))), al netto di IVA;
-
-\textbf{CONSIDERATO~} che il Responsabile Unico del
-Progetto, consultatosi preventivamente con il 
- Richiedente, ((( pratica.nome_richiedente ))), ha giudicato l'offerta congrua
- e valida;
-
-\textbf{ACQUISITE~}   le dichiarazioni sostitutive
-di atto di notorietà richieste dalla vigente normativa in materia di
-appalti pubblici relativamente ad affidamenti di importo inferiore a
-euro 40.000,00;
-
-\textbf{VISTE~}	le risultanze a seguito delle verifiche avviate a
-carico dell'Operatore Economico mediante acquisizione di "moduli" e
-"dichiarazioni", debitamente compilati e sottoscritti dallo stesso, come
-di seguito elencati e specificati: 
-
-\begin{itemize}
-\item[$-$] "Richiesta di offerta", sottoscritta per presa visione e accettazione;
-
-\item[$-$] "Dichiarazioni amministrative";
-
-\item[$-$] "DGUE - Documento di Gara Unico Europeo"; 
-\end{itemize}
 
 \textbf{CONSIDERATO~} che, ai sensi dell'articolo 1 del
 Decreto Legge 24 aprile 2017, numero 50, convertito, con modificazioni,
@@ -427,6 +348,10 @@ D.L. n. 187/2010 convertito nella Legge n. 217 del 17.12.2010, che
 introducono l'obbligo di tracciabilità dei flussi finanziari relativi
 alle commesse pubbliche;
 
+\textbf{PRESO ATTO~} delle novità in materia di imposta di bollo introdotte dal 
+"Nuovo Codice degli Appalti Pubblici";
+
+
 \textbf{VISTA~}	la comunicazione dell'Agenzia delle Entrate del 28
 giugno 2023,  Prot. n. 240013/2023,  avente ad oggetto	"\textbf{Individuazione
 delle modalità telematiche di versamento dell'imposta di bollo, di cui
@@ -458,9 +383,7 @@ dell'Art. 3 della Legge n. 241/90 e s.m.i.
 
 Art. 2: che il Responsabile Unico di Progetto, in base all'Art. 15 del
 D. Lgs 36/2023 e Allegato I.2 del suddetto decreto è ((( pratica.nome_rup ))),
-che possiede le competenze necessarie a svolgere tale ruolo
-e che, dal punto di vista tecnico scientifico, è affiancato da
-((( pratica.nome_richiedente ))).
+che possiede le competenze necessarie a svolgere tale ruolo.
 
 Art. 3: Di aggiornare e approvare il quadro economico come di seguito riportato:
 
@@ -469,7 +392,8 @@ Art. 3: Di aggiornare e approvare il quadro economico come di seguito riportato:
 A gravare su Ob.~Fu. numero ((( pratica.stringa_codf ))) – Responsabile dei
 Fondi: ((( pratica.nome_responsabile ))).
 
-Art. 4: Di autorizzare l'affidamento diretto della fornitura di ((( pratica.descrizione_acquisto ))) a
+Art. 4: Di autorizzare l'affidamento diretto in adesione a Convenzione Consip per  la fornitura di
+ ((( pratica.descrizione_acquisto ))) a
 ((( pratica.fornitore_nome ))) con sede in  ((( pratica.fornitore_sede )))
 codice fiscale: ((( pratica.fornitore_codfisc ))) e partita IVA:
 ((( pratica.fornitore_partiva ))), per complessivi Euro ((( pratica.costo_netto))).

@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.34'
-__date__ = '21/08/2024'
+__version__ = '5.0.35'
+__date__ = '22/08/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -419,8 +419,8 @@ def test_rdo_richiesta(d_prat: Pratica) -> str:
 
 def test_ordine_richiesto(d_prat: Pratica) -> str:
     "True se la modalità di acquisto richiede generazione dell'ordine"
-    return d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.TRATT_UBUY_40,
-                                       cs.TRATT_UBUY_143)
+    return d_prat.get(cs.MOD_ACQUISTO, '') in (cs.INFER_5000, cs.TRATT_UBUY_40,
+                                               cs.TRATT_UBUY_143)
 
 def auth_allegati_cancellabili(d_prat: Pratica) -> str:
     "test: allegati cancellabili"
@@ -874,6 +874,8 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     ndata = {x: 1 for x in opts}
     if cs.VICARIO in opts:
         ndata[cs.NOME_VICARIO] = CONFIG.config[cs.NOME_VICARIO]
+    if d_prat.get(cs.EMAIL_RESPONSABILE, 'A') == d_prat.get(cs.EMAIL_RICHIEDENTE, 'B'):
+        ndata['rich_is_rup'] = 1
     ndata[cs.SEDE] = CONFIG.config[cs.SEDE]
     ndata[cs.RICH_IS_RESP] = d_prat[cs.EMAIL_RICHIEDENTE] == d_prat[cs.EMAIL_RESPONSABILE]
     ndata["headerpath"] = os.path.join(cs.FILEDIR, "header.png")

@@ -339,10 +339,11 @@ legale rappresentante;
 \textbf{VISTA~} l'offerta di tale Operatore Economico, per complessivi Euro ((( pratica.costo_netto ))),
 al netto di IVA;
 
-\textbf{CONSIDERATO~} che il Responsabile Unico del
-Progetto, consultatosi preventivamente con il 
- Richiedente, ((( pratica.nome_richiedente ))), ha giudicato l'offerta congrua
- e valida;
+\textbf{CONSIDERATO~} che il Responsabile Unico del Progetto, %
+((* if rich_is_rup *)) che è anche Richiedente, ((* else *)) %
+consultatosi preventivamente con il Richiedente, ((( pratica.nome_richiedente ))), %
+((* endif *)) %
+ha giudicato l'offerta congrua e valida;
 
 \textbf{ACQUISITE~}   le dichiarazioni sostitutive
 di atto di notorietà richieste dalla vigente normativa in materia di

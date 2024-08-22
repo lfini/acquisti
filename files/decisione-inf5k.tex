@@ -24,8 +24,8 @@ Decisione N. ((( pratica.numero_decisione )))
 \begin{center}
 \framebox[\linewidth]{%
 \begin{minipage}{0.9\linewidth}
-Decisione di contrarre del ((( pratica.data_decisione ))) – Affidamento diretto
-	della fornitura di ((( pratica.descrizione_acquisto )))
+Decisione di contrarre del ((( pratica.data_decisione ))) - Affidamento diretto della
+	fornitura di ((( pratica.descrizione_acquisto )))
 CIG: ((( pratica.numero_cig )))
 ((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))) ((* endif *))
 \end{minipage}
@@ -295,7 +295,7 @@ grado di soddisfare le richieste legate all'oggetto dell'affidamento;
 esplorazione di mercato che ha condotto alla individuazione come migliore
 Operatore Economico in grado di assolvere all'esecuzione dell'appalto
 in oggetto ((( pratica.fornitore_nome ))) con sede in ((( pratica.fornitore_indirizzo )))
-codice fiscale ((( pratica.fornitore_codfisc ))) e partita IVA ((( pratica. fornitore_partiva ))),
+codice fiscale ((( pratica.fornitore_codfisc ))) e partita IVA ((( pratica.fornitore_partiva ))),
 in quanto:
 
 \begin{itemize}
@@ -339,7 +339,7 @@ chiarire che allo scopo di consentire lo svolgimento delle ordinarie
 attività di approvvigionamento in coerenza con gli obiettivi della
 digitalizzazione, l'utilizzo dell'interfaccia web messa a disposizione
 dalla piattaforma contratti pubblici - PCP dell'Autorità, raggiungibile
-al link} 
+al link}
 
 https://www.anticorruzione.it/-/piattaforma-contratti-pubblici,
 
@@ -363,10 +363,11 @@ la richiesta documentazione amministrativa, acquisita con numero di protocollo
 \textbf{VISTA~} l'offerta dell'Operatore
 Economico, per complessivi Euro ((( pratica.costo_netto ))), al netto di IVA;
 
-\textbf{CONSIDERATO~} che il Responsabile Unico del
-Progetto, consultatosi preventivamente con il 
- Richiedente, ((( pratica.nome_richiedente ))), ha giudicato l'offerta congrua
- e valida;
+\textbf{CONSIDERATO~} che il Responsabile Unico del Progetto, %
+((* if rich_is_rup *)) che è anche Richiedente, ((* else *)) %
+consultatosi preventivamente con il Richiedente, ((( pratica.nome_richiedente ))), %
+((* endif *)) %
+ha giudicato l'offerta congrua e valida;
 
 \textbf{ACQUISITE~}   le dichiarazioni sostitutive
 di atto di notorietà richieste dalla vigente normativa in materia di
@@ -467,7 +468,8 @@ Art. 3: Di aggiornare e approvare il quadro economico come di seguito riportato:
 A gravare su Ob.~Fu. numero ((( pratica.stringa_codf ))) – Responsabile dei
 Fondi: ((( pratica.nome_responsabile ))).
 
-Art. 4: Di autorizzare l'affidamento diretto della fornitura di ((( pratica.descrizione_acquisto ))) a
+Art. 4: Di autorizzare l'affidamento diretto della fornitura di
+ ((( pratica.descrizione_acquisto ))) a
 ((( pratica.fornitore_nome ))) con sede in  ((( pratica.fornitore_sede )))
 codice fiscale: ((( pratica.fornitore_codfisc ))) e partita IVA:
 ((( pratica.fornitore_partiva ))), per complessivi Euro ((( pratica.costo_netto))).

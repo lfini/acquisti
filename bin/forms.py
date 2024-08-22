@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.6"
-__date__ = "20/08/2024"
+__version__ = "2.7"
+__date__ = "22/08/2024"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -79,9 +79,9 @@ def render_field(field, mode='N', sameline=False, **kw):
     return lab+Markup(field(**kw))
 
 B_TRTD = Markup('<tr><td>')
-E_TRTD = Markup('</td></tr>')
-BRK = Markup("<br />")
-PAR = Markup('<p>')
+E_TRTD = Markup('</td></tr>\n')
+BRK = Markup("<br />\n")
+PAR = Markup('<p>\n')
 NBSP = Markup(" &nbsp; ")
 NBSP4 = Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
 
@@ -370,6 +370,12 @@ class ProgettoAcquisto(FormWErrors):
     criterio_assegnazione = MyRadioField("Criterio di assegnazione", True,
                                          choices=cs.MENU_CRIT_ASS,
                                          widget=radio_widget)
+    guf_eu_num = MyTextField('Numero', True)
+    guf_eu_data = MyTextField('Data pubblicazione su G.Uff EU', True)
+    guf_it_num = MyTextField('Numero', True)
+    guf_it_data = MyTextField('Data pubblicazione su G.Uff Ita.', True)
+    convenzione = MyTextField('Convenzione', True)
+    lotto = MyTextField('Lotto', True)
     giustificazione = MyTextAreaField('Giustificazione procedura', True)
     fornitore_nome = MyTextField('Denominazione fornitore', True)
     fornitore_sede = MyTextField('Indirizzo fornitore', True)
@@ -396,6 +402,14 @@ class ProgettoAcquisto(FormWErrors):
             html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
             html += render_field(self.email_responsabile, sameline=True)
             html += BRK+render_field(self.lista_codf)+E_TRTD
+            if self.modalita_acquisto.data == cs.CONSIP:
+                html += B_TRTD+Markup('<h4>Dati relativi alla convenzione Consip</h4>\n')+\
+                        render_field(self.convenzione, size=20, sameline=True) +\
+                        NBSP+render_field(self.lotto, size=10, sameline=True)+PAR
+                html += render_field(self.guf_it_data, size=10, sameline=True) +\
+                        NBSP+render_field(self.guf_it_num, size=10, sameline=True)+BRK +\
+                        render_field(self.guf_eu_data, size=10, sameline=True) +\
+                        NBSP+render_field(self.guf_eu_num, size=10, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.fornitore_nome, size=80)+PAR
             html += render_field(self.fornitore_sede, sep='', size=80)+PAR
             html += render_field(self.fornitore_codfisc, sameline=True)+BRK
@@ -426,7 +440,7 @@ class Decisione(FormWErrors):
     "form per definizione decisione di contrarre"
     numero_decisione = MyTextField('Numero decisione', True)
     data_decisione = MyTextField('Data (g/m/aaaa)', True)
-    data_negoziazione = MyTextField('Data negoziazione (g/m/aaaa)', True)
+    data_negoziazione = MyTextField('Data di pubblicazione (g/m/aaaa)', True)
     numero_negoziazione = MyTextField('ID negoziazione', True)
     data_scadenza = MyTextField('Data scadenza per presentazione offerta (g/m/aaaa)', True)
     data_offerta = MyTextField('Data offerta (g/m/aaaa)', True)
