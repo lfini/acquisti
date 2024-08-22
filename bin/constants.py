@@ -267,6 +267,7 @@ ALL_DICH_RUP = 'Dich. RUP'
 ALL_GENERICO = "All. Generico"
 ALL_LISTA_DETT = "Lista dett."
 ALL_OBBLIG = "Obblig. Perf."
+ALL_STIPULA = "Doc. Stipula"
 ALL_PREV = "preventivo"
 ALL_RDO = "RdO Firmata"
 
@@ -305,6 +306,8 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Documento generico", ALL_NAME),
                                   "Decisione di contrarre con firma digitale", ALL_SING),
                 ALL_LISTA_DETT: ("A30_Lista_Dettagliata",
                                  "Lista dettagliata da allegare all'ordine", ALL_SING),
+                ALL_STIPULA: ("A28_Documento_Stipula",
+                                  "Documento di stipula", ALL_SING),
                 ALL_OBBLIG: ("A30_Obbligaz_Giurid_Perfezionata",
                                   "Obbligazione giuridicamente perfezionata", ALL_SING),
                }
@@ -321,6 +324,7 @@ class CdP(IntEnum):
     DEC = 70
     DCI = 80
     ORD = 85
+    ALS = 87
     OGP = 90
     END = 100
     FIN = 101
@@ -382,13 +386,18 @@ TABELLA_PASSI = {
                TRATT_UBUY_40: CdP.ORD,   # modalità acquisto
                TRATT_MEPA_143: CdP.OGP,
                TRATT_UBUY_143: CdP.ORD,
-               CONSIP: CdP.ORD,
-               ACC_QUADRO: CdP.ORD,
+               CONSIP: CdP.ALS,
+               ACC_QUADRO: CdP.ALS,
                INFER_5000: CdP.ORD}),
     CdP.ORD: ("Genera ordine",
               [DOC_ORDINE, []],
               ['modificaordine', 'procedi'],
               [],
+              CdP.OGP),
+    CdP.ALS: ("Allega documento di stipula",
+              [],
+              ['procedi'],
+              [ALL_STIPULA],
               CdP.OGP),
     CdP.OGP: ("Allega Obbligazione giuridicamente perfezionata",
               [],
