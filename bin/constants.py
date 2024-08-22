@@ -194,7 +194,7 @@ IVAFREE = "iva_free"                            # dati_pratica[costo]
 LINGUA_ORDINE = 'lingua_ordine'                 # dati_pratica
 LISTA_CODF = 'lista_codf'                       # dati_pratica
 LISTA_DITTE = 'lista_ditte'                     # dati_pratica
-Lotto = 'lotto'                                 # dati_pratica
+LOTTO = 'lotto'                                 # dati_pratica
 MOD_ACQUISTO = 'modalita_acquisto'              # dati_pratica
 MODO_TRASP = 'modo_trasp'
 MOTIVAZIONE_ACQUISTO = 'motivazione_acquisto'   # dati_pratica
@@ -257,7 +257,7 @@ MENU_VALUTA = ((EURO, "EUR"),
 
 MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a soglia europea"),
-                (CONSIP, "Acquisto in convenzione Consip"),
+                (CONSIP, "Adesione a convenzione Consip"),
                 (ACC_QUADRO, "Adesione ad accordo quadro"),
                 (CAT_MEPA, "Acquisto a catalogo MePA"),
                 (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40 k€"),
