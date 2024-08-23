@@ -376,6 +376,7 @@ class ProgettoAcquisto(FormWErrors):
     guf_it_data = MyTextField('Data pubblicazione su G.Uff Ita.', True)
     convenzione = MyTextField('Convenzione', True)
     lotto = MyTextField('Lotto', True)
+    tot_lotti = MyTextField('Numero Lotti', True)
     giustificazione = MyTextAreaField('Giustificazione procedura', True)
     fornitore_nome = MyTextField('Denominazione fornitore', True)
     fornitore_sede = MyTextField('Indirizzo fornitore', True)
@@ -405,6 +406,7 @@ class ProgettoAcquisto(FormWErrors):
             if self.modalita_acquisto.data == cs.CONSIP:
                 html += B_TRTD+Markup('<h4>Dati relativi alla convenzione Consip</h4>\n')+\
                         render_field(self.convenzione, size=20, sameline=True) +\
+                        NBSP+render_field(self.tot_lotti, size=10, sameline=True)+\
                         NBSP+render_field(self.lotto, size=10, sameline=True)+PAR
                 html += render_field(self.guf_it_data, size=10, sameline=True) +\
                         NBSP+render_field(self.guf_it_num, size=10, sameline=True)+BRK +\

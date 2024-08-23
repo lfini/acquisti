@@ -28,7 +28,7 @@ Decisione di contrarre del ((( pratica.data_decisione ))) - Adesione a convenzio
 	fornitura di ((( pratica.descrizione_acquisto ))) - ((( pratica.convenzione )))
         Lotto ((( pratica.lotto ))).
 
-CIG Master: ((( pratica.cig_master )) \\
+CIG Master: ((( pratica.cig_master ))) \\
 CIG Derivato: ((( pratica.numero_cig )))
 ((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))) ((* endif *))
 \end{minipage}
@@ -282,19 +282,21 @@ l'allegato I.2 al medesimo Decreto "Attività del RUP";
 
 \textbf{CONSIDERATO~} Consip S.p.A., in qualità di stazione appaltante e centrale di 
 committenza,  ha siglato un Accordo Quadro all’esito di procedura aperta svolta in ambito
- comunitario suddivisa in n. numero Lotti geografici e indetta con Bando di gara pubblicato
- nella Gazzetta Ufficiale della Repubblica Italiana n. numero del gg/mm/aaaa e nella
- Gazzetta Ufficiale dell’Unione Europea n. numero del gg/mm/aaaa  con l'operatore Economico
+ comunitario suddivisa in n. (((pratica.tot_lotti))) Lotti geografici e indetta con Bando
+di gara pubblicato nella Gazzetta Ufficiale della Repubblica Italiana n. 
+(((pratica.guf_it_num))) del (((pratica.guf_it_data))) e nella
+ Gazzetta Ufficiale dell’Unione Europea n. (((pratica.guf_eu_num)))
+del (((pratica.guf_eu_data)))  con l'operatore Economico
  ((( pratica.fornitore_nome ))) con sede in ((( pratica.fornitore_sede )))
 P. IVA ((( pratica.fornitore_partiva )));
 
 \textbf{CONSIDERATO~} che per quanto concerne la regione Toscana il lotto di riferimento 
-è il numero numero lotto - CIG (Master): ((( pratica.cig_master )));
+è il numero ((( pratica.lotto ))) - CIG (Master): ((( pratica.cig_master )));
 
 \textbf{RITENUTO~} di aderire alla Convenzione Consip "((( pratica.convenzione ))),
- mediante Ordine diretto di acquisto alla società denominazione 
+ mediante Ordine diretto di acquisto alla società
 ((( pratica.fornitore_nome ))) con sede legale in (((pratica.fornitore_sede ))),
-P. IVA ((( pratica.fornitore.partiva )))  , aggiudicataria del Lotto ((( pratica.lotto )));
+P. IVA ((( pratica.fornitore_partiva ))), aggiudicataria del Lotto ((( pratica.lotto )));
 
 \textbf{VISTO~} il parere del Ministero delle Infrastrutture e Trasporti Cod. id.  
 1888~-~data ricezione 06/04/2023, a mente del quale: "La stazione appaltante che 
@@ -303,7 +305,7 @@ aderisce ad una convenzione Consip non è tenuta ad effettuare la verifica dei
  effettuata da Consip al momento della stipula della convenzione stessa";
 
 \textbf{PRESO ATTO~} che la spesa per l'acquisto di suddetta fornitura è  di 
-Euro valore, al netto di IVA; 
+Euro (((pratica.costo_netto))), al netto di IVA; 
 
 \textbf{CONSIDERATO~} che, ai sensi dell'articolo 1 del
 Decreto Legge 24 aprile 2017, numero 50, convertito, con modificazioni,
@@ -381,7 +383,9 @@ dell'Art. 3 della Legge n. 241/90 e s.m.i.
 
 Art. 2: che il Responsabile Unico di Progetto, in base all'Art. 15 del
 D. Lgs 36/2023 e Allegato I.2 del suddetto decreto è ((( pratica.nome_rup ))),
-che possiede le competenze necessarie a svolgere tale ruolo.
+che possiede le competenze necessarie a svolgere tale ruolo((*if not rich_is_rup*)))
+e che, dal punto di vista tecnico scientifico, è affiancato da
+(((pratica.nome_richiedente)))((*endif*)).
 
 Art. 3: Di aggiornare e approvare il quadro economico come di seguito riportato:
 
