@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.35'
-__date__ = '22/08/2024'
+__version__ = '5.0.36'
+__date__ = '23/08/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -311,11 +311,15 @@ def update_lists():
 
 def test_admin(user) -> bool:
     "test: l'utente è amministratore"
-    return 'A' in user.get('flags')
+    if user:
+        return 'A' in user.get('flags')
+    return False
 
 def test_developer(user) -> bool:
     "test: l'utente è developer"
-    return 'D' in user.get('flags')
+    if user:
+        return 'D' in user.get('flags')
+    return False
 
 def test_richiedente(d_prat: Pratica) -> bool:
     "test: l'utente è il richiedente"
@@ -1733,6 +1737,7 @@ def rollback():                       #pylint: disable=R0914
         msg = "Annullato ultimo passo pratica"
         storia(d_prat, msg)
         d_prat.back()
+        storia(d_prat, f'Passo corrente: {d_prat.get_passo("text")}')
         salvapratica(d_prat)
         fk.flash(msg, category="info")
         ACQ.logger.info(msg)
