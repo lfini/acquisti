@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.36'
-__date__ = '23/08/2024'
+__version__ = '5.0.37'
+__date__ = '17/09/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -380,7 +380,7 @@ def test_all_cig(d_prat: Pratica) -> bool:
     return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_CIG][0]))
 
 def test_all_rdo(d_prat: Pratica) -> bool:
-    "test esistenza CIG in allegato"
+    "test esistenza RDO in allegato"
     return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_RDO][0]))
 
 def test_all_dich_rup(d_prat: Pratica) -> bool:
@@ -768,8 +768,8 @@ def allegati_mancanti(d_prat: Pratica):
         ret.append(cs.ALL_CV_RUP)
     if d_prat.get_passo() >= CdP.RUI and not test_all_dich_rup(d_prat):
         ret.append(cs.ALL_DICH_RUP)
-    if d_prat.get_passo() >= CdP.AUD and not test_all_cig(d_prat):
-        ret.append(cs.ALL_CIG)
+#   if d_prat.get_passo() >= CdP.AUD and not test_all_cig(d_prat):
+#       ret.append(cs.ALL_CIG)
     if d_prat.get_passo() >= CdP.ROG and \
        test_rdo_richiesta(d_prat) and not test_all_rdo(d_prat):
         ret.append(cs.ALL_RDO)
@@ -783,10 +783,6 @@ def allegati_mancanti(d_prat: Pratica):
 
 def avvisi(d_prat: Pratica, _fase, _level=0):
     "Genera messaggi di avviso per pagina pratica. level=0: tutti; level=1: errori"
-#   if level < 1:
-#       if d_prat[MOD_ACQUISTO] in (MEPA, CONSIP):
-#           fk.flash("La Bozza d'ordine MEPA deve essere trasmessa "
-#                    "al Punto Ordinante", category="info")
     if not d_prat.get(cs.FIRMA_APPROV_RESP):
         fk.flash("Occorre richiedere l'approvazione del responsabile dei fondi", category="info")
 
@@ -1431,7 +1427,7 @@ def modificaordine():                     #pylint: disable=R0914
         d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
     ordn = fms.Ordine(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
-        if ordn.validate(extra_validators=True):
+        if ordn.validate():
             d_prat.update(clean_data(ordn.data))
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
@@ -1479,8 +1475,7 @@ def modificadecisione():                     #pylint: disable=R0914
         ACQ.logger.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     decis = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
-        val_cig = cs.CIG if d_prat[cs.MOD_ACQUISTO] == cs.INFER_5000 else ''
-        if decis.validate(extra_validators=val_cig):
+        if decis.validate():
             d_prat.update(clean_data(decis.data))
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
