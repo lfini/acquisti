@@ -81,7 +81,7 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.37'
+__version__ = '5.0.38'
 __date__ = '17/09/2024'
 
 __start__ = time.asctime(time.localtime())
@@ -363,41 +363,11 @@ def test_doc_ordine(d_prat: Pratica) -> bool:
         return False
     return os.path.exists(os.path.join(d_prat.basedir, cs.DOC_ORDINE))
 
-def test_all_preventivo(d_prat: Pratica) -> bool:
-    "test esistenza preventivo mepa"
-    if d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_UBUY_40,
-                                       cs.INFER_5000, cs.CONSIP, cs.ACC_QUADRO,
-                                       cs.TRATT_MEPA_143, cs.TRATT_UBUY_143):
-        return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_PREV][0]))
+def test_allegato(d_prat: Pratica, cod_allegato):
+    "Test esistenza dell'allegato richiesto al dato passo"
+    if cod_allegato in d_prat.get_passo(what='alleg'):
+        return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cod_allegato][0]))
     return True
-
-def test_all_cv_rup(d_prat: Pratica) -> bool:
-    "test esistenza CV RUP"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_CV_RUP][0]))
-
-def test_all_cig(d_prat: Pratica) -> bool:
-    "test esistenza CIG in allegato"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_CIG][0]))
-
-def test_all_rdo(d_prat: Pratica) -> bool:
-    "test esistenza RDO in allegato"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_RDO][0]))
-
-def test_all_dich_rup(d_prat: Pratica) -> bool:
-    "test esistenza dichiarazione RUP"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_DICH_RUP][0]))
-
-def test_all_decis_firmata(d_prat: Pratica) -> bool:
-    "test: esistenza decisione firmata"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_DECIS_FIRM][0]))
-
-def test_all_doc_stipula(d_prat: Pratica) -> bool:
-    "test: esistenza obbligazione giuridicamente perfezionata"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_STIPULA][0]))
-
-def test_all_obblig_perf(d_prat: Pratica) -> bool:
-    "test: esistenza obbligazione giuridicamente perfezionata"
-    return bool(ft.findfiles(d_prat.basedir, cs.TAB_ALLEGATI[cs.ALL_OBBLIG][0]))
 
 def test_doc_progetto(d_prat: Pratica) -> bool:
     "test: esistenza documento progetto"
@@ -537,10 +507,10 @@ def make_info(d_prat: Pratica) -> dict:
     info['admin'] = YES if test_admin(d_prat.user) else NOT
     info['responsabile'] = YES if test_responsabile(d_prat) else NOT
     info['direttore'] = YES if test_direttore(d_prat.user) else NOT
-    info['all_preventivo'] = YES if test_all_preventivo(d_prat) else NOT
-    info['all_cv_rup'] = YES if test_all_cv_rup(d_prat) else NOT
-    info['all_dich_rup'] = YES if test_all_dich_rup(d_prat) else NOT
-    info['all_cig'] = YES if test_all_cig(d_prat) else NOT
+    info['all_preventivo'] = YES if test_allegato(d_prat, cs.ALL_PREV) else NOT
+    info['all_cv_rup'] = YES if test_allegato(d_prat, cs.ALL_CV_RUP) else NOT
+    info['all_dich_rup'] = YES if test_allegato(d_prat, cs.ALL_DICH_RUP) else NOT
+    info['all_cig'] = YES if test_allegato(d_prat, cs.ALL_CIG) else NOT
     info['allegati_cancellabili'] = auth_allegati_cancellabili(d_prat)
     info['autorizz_richiedibile'] = auth_autorizz_richiedibile(d_prat)
     info['autorizzabile'] = auth_autorizzabile(d_prat)
@@ -760,26 +730,9 @@ def _mydel(key, d_prat):
         pass
 
 def allegati_mancanti(d_prat: Pratica):
-    "Genera lista allegati mancanti"
-    ret = []
-    if d_prat.get_passo() >= CdP.INI and not test_all_preventivo(d_prat):
-        ret.append(cs.ALL_PREV)
-    if d_prat.get_passo() >= CdP.RUI and not test_all_cv_rup(d_prat):
-        ret.append(cs.ALL_CV_RUP)
-    if d_prat.get_passo() >= CdP.RUI and not test_all_dich_rup(d_prat):
-        ret.append(cs.ALL_DICH_RUP)
-#   if d_prat.get_passo() >= CdP.AUD and not test_all_cig(d_prat):
-#       ret.append(cs.ALL_CIG)
-    if d_prat.get_passo() >= CdP.ROG and \
-       test_rdo_richiesta(d_prat) and not test_all_rdo(d_prat):
-        ret.append(cs.ALL_RDO)
-    if d_prat.get_passo() >= CdP.DCI and not test_all_decis_firmata(d_prat):
-        ret.append(cs.ALL_DECIS_FIRM)
-    if d_prat.get_passo() >= CdP.OGP and not test_all_obblig_perf(d_prat):
-        ret.append(cs.ALL_OBBLIG)
-    if d_prat.get_passo() >= CdP.ALS and not test_all_doc_stipula(d_prat):
-        ret.append(cs.ALL_STIPULA)
-    return ret
+    "Genera lista allegati mancanti (nuovo: da tabella passi)"
+    alleg = d_prat.get_passo(what='alleg')
+    return [a for a in alleg if not test_allegato(d_prat, a)]
 
 def avvisi(d_prat: Pratica, _fase, _level=0):
     "Genera messaggi di avviso per pagina pratica. level=0: tutti; level=1: errori"

@@ -72,10 +72,10 @@ def render_field(field, mode='N', sameline=False, **kw):
         lab = Markup(f'<u>{field.a_label:s}</u>{hlink}{sep}')
     else:
         lab = Markup(f'{field.a_label}{hlink}{sep}')
-    if isinstance(field, MyFormField):
-        return lab+Markup(field.form.renderme(**kw))
     if mode == 'D':
         return Markup(f'<font color=gray>{lab}: .....<font>')
+    if isinstance(field, MyFormField):
+        return lab+Markup(field.form.renderme(**kw))
     return lab+Markup(field(**kw))
 
 B_TRTD = Markup('<tr><td>')
@@ -466,7 +466,7 @@ class Decisione(FormWErrors):
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione, sameline=True)+NBSP4
         html += render_field(self.data_decisione, sameline=True)+BRK
-        mode = debug_view(d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP))
+        mode = debug_view(True)
         html += render_field(self.numero_cig, mode=mode, sameline=True)+BRK
         html += render_field(self.numero_cup, mode=mode, sameline=True)+BRK
         html += E_TRTD+B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
