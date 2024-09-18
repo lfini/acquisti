@@ -72,10 +72,10 @@ def render_field(field, mode='N', sameline=False, **kw):
         lab = Markup(f'<u>{field.a_label:s}</u>{hlink}{sep}')
     else:
         lab = Markup(f'{field.a_label}{hlink}{sep}')
-    if isinstance(field, MyFormField):
-        return lab+Markup(field.form.renderme(**kw))
     if mode == 'D':
         return Markup(f'<font color=gray>{lab}: .....<font>')
+    if isinstance(field, MyFormField):
+        return lab+Markup(field.form.renderme(**kw))
     return lab+Markup(field(**kw))
 
 B_TRTD = Markup('<tr><td>')
@@ -466,7 +466,7 @@ class Decisione(FormWErrors):
         html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
         html += B_TRTD+render_field(self.numero_decisione, sameline=True)+NBSP4
         html += render_field(self.data_decisione, sameline=True)+BRK
-        mode = debug_view(d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP))
+        mode = debug_view(True)
         html += render_field(self.numero_cig, mode=mode, sameline=True)+BRK
         html += render_field(self.numero_cup, mode=mode, sameline=True)+BRK
         html += E_TRTD+B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
@@ -484,7 +484,7 @@ class Decisione(FormWErrors):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-    def validate(self, extra_validators=''):
+    def validate(self, extra_validators=None):
         "Validazione specifica per il form"
         self.errlist = []
         if not self.numero_decisione.data:
@@ -503,9 +503,8 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca data offerta")
         if not self.numero_offerta.data:
             self.errlist.append("Manca numero ID offerta")
-        if cs.CIG in extra_validators:
-            if not self.numero_cig.data:
-                self.errlist.append("Manca indicazione CIG")
+        if not self.numero_cig.data:
+            self.errlist.append("Manca indicazione CIG")
         return not self.errlist
 
 class Ordine(FormWErrors):
@@ -594,7 +593,7 @@ E_TD = Markup("</td>")
 class RdO(FormWErrors):
     "form per specifiche per la generazione di RdO"
     numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
-    numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
+#   numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
     fine_gara = MyTextField('Data scadenza presentazione offerta (g/m/aaaa)', True)
     T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
@@ -603,7 +602,7 @@ class RdO(FormWErrors):
     def __call__(self, **kw):
         "Rendering del form"
         html = B_TRTD+render_field(self.numero_cup)+BRK
-        html += render_field(self.numero_cig)+BRK
+#       html += render_field(self.numero_cig)+BRK
         html += B_TRTD+render_field(self.fine_gara)+E_TRTD
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
@@ -612,8 +611,8 @@ class RdO(FormWErrors):
     def validate(self, extra_validators=None):
         "Validazione"
         tt0 = ft.date_to_time(self.fine_gara.data)
-        if not self.numero_cig.data:
-            self.errlist.append("Manca indicazione numero CIG")
+#       if not self.numero_cig.data:
+#           self.errlist.append("Manca indicazione numero CIG")
         if tt0 is None:
             self.errlist.append("Errore data fine_gara (usa formato: g/m/a)")
         return not self.errlist
