@@ -26,10 +26,11 @@ Pratica N. ((( pratica.numero_pratica )))
 ~\\
 \textbf{Affidamento diretto della fornitura di ((( pratica.descrizione_acquisto )))}
 
-\textbf{CIG: ((( pratica.numero_cig )))
+\textbf{
+((* if pratica.numero_cig *)) CIG: ((( pratica.numero_cig ))) ((* endif *))
 ((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))) ((* endif *))}
 
-\textbf{OGGETTO: Affidamento Diretto} di cui in epigrafe, CIG: ((( pratica.numero_cig )))
+\textbf{OGGETTO: Affidamento Diretto} di cui in epigrafe.)
 
 \textbf{STAZIONE APPALTANTE: Istituto Nazionale di Astrofisica (INAF) - Osservatorio Astrofisico di Arcetri}
 
@@ -150,11 +151,11 @@ avvalendosi dello specifico canale di trasmissione sulla piattaforma di
 \textit{e-procurement "MePA"}\footnote{https://www.acquistinretepa.it},
 entro il giorno \textbf{((( pratica.fine_gara )))} alle ore
 \textbf{23:59} con indicazione, pena l'esclusione, del domicilio
-eletto e \textbf{nell'oggetto} della dicitura: \textbf{AFFIDAMENTO
-DIRETTO FORNITURA DI (((pratica.descrizione_acquisto))),} \textbf{CIG:}
-((( pratica.numero_cig )))%
-((* if pratica.numero_cup *)) \textbf{ - CUP:} ((( pratica.numero_cup ))),((* endif *))
-unitamente alla seguente documentazione (allegata alla richiesta di conferma di offerta)
+eletto e \textbf{nell'oggetto} della dicitura: "\textbf{AFFIDAMENTO
+DIRETTO FORNITURA DI (((pratica.descrizione_acquisto)))
+((* if pratica.numero_cig *)) - CIG: ((( pratica.numero_cig ))) ((* endif *))
+((* if pratica.numero_cup *)) - CUP: ((( pratica.numero_cup ))),((* endif *)) }"
+, unitamente alla seguente documentazione (allegata alla richiesta di conferma di offerta)
 da completare e salvare in formato "PDF/A", firmata digitalmente dal
 Legale Rappresentante del Soggetto Giuridico offerente o dal Procuratore
 dello stesso (se diverso - \ul{in quest'ultimo caso dovr\`a essere
