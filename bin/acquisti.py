@@ -81,8 +81,8 @@ import table as tb
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.38'
-__date__ = '17/09/2024'
+__version__ = '5.0.39'
+__date__ = '04/10/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -131,6 +131,8 @@ NO_RUP_NON_NOMINATO = 'NO: RUP non nominato'
 NO_RUP_GIA_NOMINATO = 'NO: RUP già nominato'
 NO_RUP_DICH = 'NO: mancano dichiarazioni del RUP'
 NO_TBD = 'NO: operazione da implementare'
+
+ILLEGAL_OP = 'Operazione non consentita'
 
 INVIO_NON_AUTORIZZ = 'Invio non autorizzato: %s. Utente: %s pratica %s'
 
@@ -603,6 +605,15 @@ def check_access(new=False):
 #   ACQ.logger.debug('Pratica: %s', str(d_prat))
     return Pratica(d_prat, user=user, basedir=basedir)
 
+def status_not_ok(d_prat: Pratica, stati=()):
+    "Verifica che l'operazione sia consentita nello stato corrente"
+    passcode = d_prat.get_passo()
+    text = cs.TABELLA_PASSI[passcode][0]
+    ACQ.logger.info('Stato interno: %d - %s', passcode, text)
+    if stati:
+        return passcode not in stati
+    return False
+
 def menu_allegati(d_prat: Pratica, all_mancanti):
     'genera menù per allegati'
     def sel_menu(t_alleg):
@@ -691,6 +702,9 @@ def modifica_pratica(what):               # pylint: disable=R0912,R0915
     "parte comune alle pagine di modifica pratica"
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     if what[0].lower() == 'c':      # Chiudi pratica
         err = auth_pratica_chiudibile(d_prat)
         if err.startswith(NOT):
@@ -1041,6 +1055,9 @@ def procedi():
     ACQ.logger.info('URL: /procedi (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS, CdP.OGP)):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     ret = d_prat.next()
     if ret:
         fk.flash(ret, category="error")
@@ -1054,6 +1071,9 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     ACQ.logger.info('URL: /modificaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.INI, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         if d_prat.get(cs.NUMERO_PRATICA, '-').startswith('-'):
@@ -1125,6 +1145,9 @@ def inviaprogetto():
     ACQ.logger.info('URL: /inviaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.INI, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_progetto_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1157,6 +1180,9 @@ def inviadecisione():                    #pylint: disable=R0914
     ACQ.logger.info('URL: /inviadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.ROG, CdP.DEC)):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_decisione_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1196,6 +1222,9 @@ def approvaprogetto():
     ACQ.logger.info('URL: /approvaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.PIR, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_progetto_approvabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1222,6 +1251,9 @@ def indicarup():
     ACQ.logger.info('URL: /indicarup (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.PAR, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_rup_indicabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1266,6 +1298,9 @@ def autorizza():
     ACQ.logger.info('URL: /autorizza (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.IRD, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_autorizzabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1291,6 +1326,9 @@ def rich_autorizzazione():
     ACQ.logger.info('URL: /rich_autorizzazione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.RUI, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_autorizz_richiedibile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1323,6 +1361,9 @@ def modificardo():
     ACQ.logger.info('URL: /modificardo (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.AUD, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_rdo_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1367,6 +1408,9 @@ def modificaordine():                     #pylint: disable=R0914
     ACQ.logger.info('URL: /modificaordine (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.ORD, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
@@ -1408,6 +1452,9 @@ def modificadecisione():                     #pylint: disable=R0914
     ACQ.logger.info('URL: /modificadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.ROG, CdP.DEC)):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
@@ -1462,6 +1509,9 @@ def upload():               # pylint: disable=R0914,R0911,R0912
     except Exception as exc:               # pylint: disable=W0703
         fk.flash(f"Errore caricamento file: {exc}", category="error")
         return pratica_common(d_prat)
+    if status_not_ok(d_prat):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     tipo_allegato = get_tipo_allegato()
     ACQ.logger.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
     origname, ext = os.path.splitext(fle.filename)
@@ -1495,6 +1545,9 @@ def cancella(name):
     ACQ.logger.info('URL: /cancella/%s (%s)', name, fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_allegati_cancellabili(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1652,6 +1705,9 @@ def rollback():                       #pylint: disable=R0914
     ACQ.logger.info('URL: /rollback (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     err = auth_rollback(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
@@ -1715,6 +1771,9 @@ def annullapratica():
     ACQ.logger.info('URL: /annullapratica (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
