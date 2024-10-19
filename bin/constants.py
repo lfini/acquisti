@@ -256,12 +256,12 @@ MENU_VALUTA = ((EURO, "EUR"),
                (SFR, "SFR"))
 
 MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
-                (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ a soglia europea"),
+                (TRATT_MEPA_143, "Trattativa diretta MePA da 40k€ e sotto 140k€"),
                 (CONSIP, "Adesione a convenzione Consip"),
                 (ACC_QUADRO, "Adesione ad accordo quadro"),
                 (CAT_MEPA, "Acquisto a catalogo MePA"),
-                (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40 k€"),
-                (TRATT_UBUY_143, "Trattativa diretta UBUY a soglia europea"),
+                (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40k€"),
+                (TRATT_UBUY_143, "Trattativa diretta UBUY da 40k€ e sotto 140k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
                )
 
