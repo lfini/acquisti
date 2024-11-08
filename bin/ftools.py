@@ -3,6 +3,7 @@ Tools per la procedura acquisti.py
 
 Uso da linea di comando:
     python ftools.py access     - test username/password
+    python ftools.py filt       - test filtri per poratiche
     python ftools.py ndecis     - Visualizza ultimo num. decisione di contrarre
     python ftools.py nprat      - Visualizza ultimo num. pratica
     python ftools.py plist      - Visualizza elenco pratiche
@@ -18,23 +19,6 @@ Uso da linea di comando:
     python ftools.py values - Mostra tutti i valori del campo dato
     python ftools.py where  - Elenco pratiche con valore di campo dato
 """
-
-# VERSION 4.0    4/1/2018  Versione python 3
-# VERSION 4.1    5/10/2018 Modificato termine "cram" in "codf"
-# VERSION 4.2    14/2/2019 Correzioni alla generazione dei costi
-# VERSION 4.3    1/3/2019 Ancora correzioni alla generazione dei costi
-# VERSION 4.4    1/3/2019 Migliorato parsing di data-ora
-# VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
-# VERSION 4.6    30/11/2020 aggiunto metodo __len__ a DocList
-# VERSION 4.7    05/12/2020 Integrazioni per usere GMail come server di posta
-# VERSION 4.8    10/05/2021 Modifiche per inserimento logo in testa ai documenti
-#                           Attivazione di GMail come server di posta (anche per errori)
-# VERSION 4.8.1  12/07/2021 Aggiunta MyException per risolvere problema su stringa_valore
-# VERSION 4.8.2  18/11/2021 Aggiunta funzione _last_resort_log() e modificata funzione
-#                           di autenticazione
-# VERSION 4.8.3  29/11/2021 Corretto errore in autenticazione
-# VERSION 4.9    11/11/2023 passato con pylint
-# VERSION 5.0    8/4/2024 Nuova versione.
 
 import sys
 import os
@@ -64,11 +48,32 @@ from constants import CdP
 import table as tb
 import send_email as sm
 
-# pylint: disable=C0302, W0703
+# VERSION 4.0    4/1/2018  Versione python 3
+# VERSION 4.1    5/10/2018 Modificato termine "cram" in "codf"
+# VERSION 4.2    14/2/2019 Correzioni alla generazione dei costi
+# VERSION 4.3    1/3/2019 Ancora correzioni alla generazione dei costi
+# VERSION 4.4    1/3/2019 Migliorato parsing di data-ora
+# VERSION 4.5    3/11/2020 aggiunto display errori in render_item_as_form()
+# VERSION 4.6    30/11/2020 aggiunto metodo __len__ a DocList
+# VERSION 4.7    05/12/2020 Integrazioni per usere GMail come server di posta
+# VERSION 4.8    10/05/2021 Modifiche per inserimento logo in testa ai documenti
+#                           Attivazione di GMail come server di posta (anche per errori)
+# VERSION 4.8.1  12/07/2021 Aggiunta MyException per risolvere problema su stringa_valore
+# VERSION 4.8.2  18/11/2021 Aggiunta funzione _last_resort_log() e modificata funzione
+#                           di autenticazione
+# VERSION 4.8.3  29/11/2021 Corretto errore in autenticazione
+# VERSION 4.9    11/11/2023 passato con pylint
+# VERSION 5.0    8/4/2024 Nuova versione.
+# VERSION 5.1    8/4/2024 Nuova versione in produzione
+# VERSION 5.2    8/4/2024 Corretto selezione pratiche (funzione trova_pratiche())
+
+
 
 __author__ = 'Luca Fini'
-__version__ = '5.0'
-__date__ = '6/3/2024'
+__version__ = '5.2'
+__date__ = '07/11/2024'
+
+# pylint: disable=C0302, W0718
 
 if hasattr(pam, 'authenticate'):      # Arrangia per diverse versioni del modulo pam
     PAM_AUTH = pam.authenticate
@@ -604,7 +609,7 @@ def get_user(userid):
     if usr:
         ret = usr[0]
         ret['email'] = ret['email'].strip()
-        return usr[0]
+        return ret
     return {}
 
 def _fullname(email):
@@ -1018,11 +1023,11 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #
         str_ruolo = 'come responsabile dei fondi'
         if filtro[-1] == '0':            # pratica da approvare
             filtro = lambda x: x.get(cs.EMAIL_RESPONSABILE) == user_email and \
-                              x.get(cs.TAB_PASSI[-1], 0) < CdP.PAR
+                              x.get(cs.TAB_PASSI, [0])[-1] < CdP.PAR
             title = PRAT_DAP+str_ruolo
         else:                            # pratica approvata
             filtro = lambda x: x.get(cs.EMAIL_RESPONSABILE) == user_email and \
-                              x.get(cs.TAB_PASSI[-1], 0) >= CdP.PAR
+                              x.get(cs.TAB_PASSI, [0])[-1] >= CdP.PAR
             title = PRAT_APP+str_ruolo
         return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
                 title)
@@ -1038,13 +1043,13 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #
             title = PRAT_CHI+str_ruolo
         return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
                 title)
-    if oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate come Direttore
-        str_ruolo = 'come Direttore'
+    if oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate dal Direttore
+        str_ruolo = 'dal Direttore'
         if filtro[-1] == '1':
-            filtro = lambda x: x.get(cs.TAB_PASSI[-1], 0) > CdP.DCI
+            filtro = lambda x: x.get(cs.TAB_PASSI, [0])[-1] >= CdP.AUD
             title = PRAT_APP+str_ruolo
         else:
-            filtro = lambda x: x.get(cs.TAB_PASSI[-1], 0) <= CdP.DCI
+            filtro = lambda x: x.get(cs.TAB_PASSI, [0])[-1] < CdP.AUD
             title = PRAT_DAP+str_ruolo
         return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
                 title)
@@ -1168,7 +1173,7 @@ def filtra():
         args = ([x.strip() for x in filtro[3:].split(',')]+['', '', '', ''])[:5]
         prats, title = trova_pratiche_2(anno, *args)
     else:
-        email = input('Email del ruolo (se necessario)')
+        email = input('Email del ruolo (se necessario) ')
         prats, title = trova_pratiche_1(anno, filtro, email)
     print()
     print('Ricerca:', title)

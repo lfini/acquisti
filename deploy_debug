@@ -1,5 +1,9 @@
 #!/bin/bash
 # Copia i files relativi alle pagine acquisti, ecc. sul server
+#
+#   VERSIONE DEBUG
+#
+#
 # (vedi: REMOTE sotto)
 
 # Nota: Le prime due cifre del numero di versione vengono utilizzate per
@@ -15,8 +19,8 @@ REMOTE=acquisti@sisifo
 
 VERSION=`python3 ./bin/acquisti.py -v`
 
-bin_target=$REMOTE:v5/bin-$VERSION
-files_target=$REMOTE:v5/files-$VERSION
+bin_target=$REMOTE:v5d/bin-$VERSION
+files_target=$REMOTE:v5d/files-$VERSION
 
 rm -f bin/*.pyc           # clean bin directory
 rm -rf bin/__pycache__     # clean bin directory

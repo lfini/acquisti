@@ -1,7 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-  Test MODE usage:
-     python table.py      Perform full test
+table.py        - gestione tabella
+
+Uso per test:
+
+     python table.py [-f] [-h]
+     python table.py file1 file2 
+
+dove:
+
+     -h:     mostra pagina di aiuto
+     .f:     esegui test generico completo
+
+se lanciata con due argomenti, confronta ed aggiuorna due tabelle
 """
 # VERSION 2.0       4/1/2018    Versione python 3
 
@@ -16,12 +27,9 @@ import time
 import base64
 import random
 
-if sys.version_info.major < 3:
-    raise Exception("Python 3 required")
-
 __author__ = 'Luca Fini'
-__version__ = '2.1'
-__date__ = '20/11/2020'
+__version__ = '2.2'
+__date__ = '05/10/2024'
 
 class TableException(Exception):
     "Exception raised by this module"
@@ -55,6 +63,7 @@ def _clean(item):
         return item.strip()
     return item
 
+#pylint: disable=C3001
 class Table:                             # pylint: disable=R0902
     """
 Table class:
@@ -132,7 +141,7 @@ Table class:
         try:
             index = [x[0] for x in self.rows].index(pos)
         except:                       # pylint: disable=W0702
-            index = (-1)
+            index = -1
         return index
 
     def _field(self, field):
@@ -152,7 +161,7 @@ Table class:
 
     def _insert_list(self, row, pos):
         if len(row) != len(self.header)-1:
-            raise Exception('Table row format mismatch')
+            raise TableException('Table row format mismatch')
         clrow = [_clean(r) for r in row]
         indx = self._index(pos)
         if indx >= 0:
@@ -187,7 +196,7 @@ Table class:
             try:
                 row[rix] = func(row[rix])
             except:
-                raise Exception(f'Cannot convert row: {row[0]}') from None
+                raise TableException(f'Cannot convert row: {row[0]}') from None
 
     def needs_update(self):
         "Returns true if file has been written since it has been read"
@@ -256,8 +265,11 @@ Table class:
         def _noindex(row):
             return row[1:]
 
+        def _ident(row):
+            return row
+
         if index:
-            adj = lambda x: x
+            adj = _ident
         else:
             adj = _noindex
         filed = CsvFile()
@@ -278,7 +290,7 @@ Table class:
         elif isinstance(row, dict):
             self._insert_dict(row, pos)
         else:
-            raise Exception(f"Illegal type for row ({row})")
+            raise TableException(f"Illegal type for row ({row})")
 
     def get_row(self, npos, as_dict=False, index=False, default=None):
         "Return row with index npos"
@@ -303,9 +315,9 @@ Table class:
     def add_column(self, pos, label, value='', column=None):
         "Add a column to a table"
         if label in self.header:
-            raise Exception('Duplicate column label: '+label)
+            raise TableException('Duplicate column label: '+label)
         if pos < 1 or pos > len(self.header):
-            raise Exception(f'Illegal column index: {pos} [len(header):{len(self.header)}]')
+            raise TableException(f'Illegal column index: {pos} [len(header):{len(self.header)}]')
         self.header.insert(pos, label)
         colid = 0
         for row in self.rows:
@@ -320,7 +332,7 @@ Table class:
         "Remove a column"
         indx = self._field(field)
         if indx < 1 or indx >= len(self.header):
-            raise Exception(f'Illegal column index: {indx}')
+            raise TableException(f'Illegal column index: {indx}')
         del self.header[indx]
         for row in self.rows:
             del row[indx]
@@ -378,6 +390,7 @@ Table class:
                 if self.lkinfo[0] != lkinfo[0]:
                     raise LockException(self.filename, lkinfo[2])
                 _junlock(self.filename)
+
     def save(self, fname=""):
         "Salva tabella in file json"
         jdata = {'header': self.header, 'rows': self.rows, 'opts':self.opts}
@@ -477,7 +490,7 @@ def usage():
     print(f"table.py.  {__author__} - Version: {__version__}, {__date__}")
     print(__doc__)
 
-def main():                        # pylint: disable=R0914,R0915
+def fulltest():                        # pylint: disable=R0914,R0915
     "Codice di test"
     table_file = 'test_table.json'
     lock_file = table_file+'.lock'
@@ -566,6 +579,82 @@ def main():                        # pylint: disable=R0914,R0915
     assert adict == thesame, "Errore jsave_b64/jload_b64"
 
     print("All tests: OK")
+
+def compare(ftab1, ftab2):
+    'Confronta tabelle da due file assgnati'
+    tab1 = Table(ftab1)
+    tab2 = Table(ftab2)
+    print('1:', tab1.header)
+    print('2:', tab2.header)
+    if tab1.header != tab2.header:
+        print('Le tabelle hanno colonne differenti:')
+        sys.exit()
+    else:
+        print(' *** Le colonne corrispondono ***')
+    codf1 = set(x[1] for x in tab1.rows)
+    codf2 = set(x[1] for x in tab2.rows)
+    only1 = sorted(list(codf1 - codf1.intersection(codf2)))
+    only2 = sorted(list(codf2 - codf1.intersection(codf2)))
+    print('1 - Codici presenti SOLO in', ftab1, '***')
+    for codf in only1:
+        print(' -', codf)
+    print('2 - Codici presenti SOLO in', ftab2, '***')
+    for codf in only2:
+        print(' -', codf)
+    print()
+    ans = input('Trasferimento codici: 1 (da 1 a 2), 2 (da 2 a 1)? ')
+    if ans == '1':
+        movecodf(only1, tab1, tab2)
+    elif ans == '2':
+        movecodf(only2, tab2, tab1)
+
+def movecodf(candidati, taba, tabb):
+    'sposta codici da lista candidati da taba a tabb'
+    while True:
+        if not candidati:
+            break
+        print()
+        for idx, codf in enumerate(candidati):
+            print(' ', idx+1, '-', codf)
+        ans = input('Indice codf da spostare: (0: fine)? ')
+        try:
+            idx = int(ans)
+        except ValueError:
+            break
+        if 0 < idx <= len(candidati):
+            codf = candidati[idx-1]
+            row = taba.where('Codice', codf)
+            if len(row) == 1:
+                tabb.insert_row(row[0])
+                print('Codice:', codf, 'Trasverito')
+                del candidati[idx-1]
+            else:
+                print('La ricerca ha prodotto:', row)
+                print('Spostamento non possibile')
+        else:
+            break
+        ans = input('Nome file per tabella aggiornata? ').strip()
+        if ans:
+            tabb.save(ans)
+            print()
+            print('Tabella salvata in:', ans)
+
+ARGERR = 'Errore argomenti. Usa -h per aiuto'
+
+def main():
+    'Interactive use'
+    if '-h' in sys.argv:
+        print(__doc__)
+        sys.exit()
+    if '-f' in sys.argv:
+        fulltest()
+        sys.exit()
+
+    if len(sys.argv) != 3:
+        print(ARGERR)
+        sys.exit()
+
+    compare(sys.argv[1], sys.argv[2])
 
 if __name__ == '__main__':
     main()

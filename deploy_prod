@@ -1,0 +1,33 @@
+#!/bin/bash
+# Copia i files relativi alle pagine acquisti, ecc. sul server
+# 
+# VERSIONE IN PRODUZIONE
+#
+# (vedi: REMOTE sotto)
+
+# Nota: Le prime due cifre del numero di versione vengono utilizzate per
+#       installare versioni diverse in parallelo (attivabili con la procedura
+#       switch). Se il numero di versione differisce solo per la terza
+#       cifra, i files vengono copiati sopra quelli gia' esistenti sul server
+
+# Il numero di versione sta nel file ./bin/acquisti.py.
+
+# Per attivare una delle versioni esistenti si usa la procedura: switch
+
+REMOTE=acquisti@sisifo
+
+VERSION=`python3 ./bin/acquisti.py -v`
+
+bin_target=$REMOTE:v5/bin-$VERSION
+files_target=$REMOTE:v5/files-$VERSION
+
+rm -f bin/*.pyc           # clean bin directory
+rm -rf bin/__pycache__     # clean bin directory
+
+rsync -vrpz --delete switch $REMOTE:
+rsync -vrpz --exclude tmp --exclude .git --exclude .pylintrc --delete bin/ $bin_target
+rsync -vrpz --exclude .git --delete files/ $files_target
+
+echo
+echo "Deployed version " $VERSION
+echo

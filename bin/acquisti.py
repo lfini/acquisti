@@ -79,10 +79,11 @@ import table as tb
 # Versione 4.10.1  11/2023:  Corretto bug alla linea 1525
 
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
+# Versione 5.1   10/2024:  Modifiche e correzioni dopo la messa in produzione della versione 5
 
 __author__ = 'Luca Fini'
-__version__ = '5.0.39'
-__date__ = '04/10/2024'
+__version__ = '5.1.0'
+__date__ = '07/11/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1594,7 +1595,7 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
                           'Utente: %s', user['userid'])
             fk.session.clear()
             return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
-    elif oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate come Direttore
+    elif oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate dal Direttore
         if not (test_direttore(user) or test_admin(user)):
             ACQ.logger.error('Operazione non autorizzata '\
                           'Utente: %s', user['userid'])
@@ -1805,7 +1806,7 @@ accept-charset="utf-8" novalidate>
 @ACQ.route('/files/<name>')
 def files(name):
     "download file"
-    ACQ.logger.info('URL: /files/%s (%s)', name, fk.request.method)
+#   ACQ.logger.info('URL: /files/%s (%s)', name, fk.request.method)
     return  ACQ.send_static_file(name)
 
 @ACQ.route('/devel', methods=('GET', 'POST'))
