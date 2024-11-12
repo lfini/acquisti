@@ -1023,7 +1023,7 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #
         str_ruolo = 'come responsabile dei fondi'
         if filtro[-1] == '0':            # pratica da approvare
             filtro = lambda x: x.get(cs.EMAIL_RESPONSABILE) == user_email and \
-                              x.get(cs.TAB_PASSI, [0])[-1] < CdP.PAR
+                              x.get(cs.TAB_PASSI, [0])[-1] == CdP.PIR
             title = PRAT_DAP+str_ruolo
         else:                            # pratica approvata
             filtro = lambda x: x.get(cs.EMAIL_RESPONSABILE) == user_email and \
@@ -1049,7 +1049,7 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #
             filtro = lambda x: x.get(cs.TAB_PASSI, [0])[-1] >= CdP.AUD
             title = PRAT_APP+str_ruolo
         else:
-            filtro = lambda x: x.get(cs.TAB_PASSI, [0])[-1] < CdP.AUD
+            filtro = lambda x: x.get(cs.TAB_PASSI, [0])[-1] == CdP.IRD
             title = PRAT_DAP+str_ruolo
         return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
                 title)

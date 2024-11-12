@@ -82,8 +82,8 @@ import table as tb
 # Versione 5.1   10/2024:  Modifiche e correzioni dopo la messa in produzione della versione 5
 
 __author__ = 'Luca Fini'
-__version__ = '5.1.0'
-__date__ = '07/11/2024'
+__version__ = '5.1.1'
+__date__ = '12/11/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -963,6 +963,7 @@ def user_info():
     'trova record utente'
     if userid := fk.session.get('userid'):
         return ft.get_user(userid)
+    ACQ.logger.error('user_info() called with userid: %s', userid)
     return {}
 
 @ACQ.route("/")
@@ -970,6 +971,8 @@ def start():
     "pagina: iniziale"
     ACQ.logger.info('URL: / (%s)', fk.request.method)
     user = user_info()
+    if not user:
+        return login()
     fk.session[cs.BASEDIR] = ''
     rooturl = ft.host(fk.request.url_root)
     status = {'url0': rooturl, 'footer': 'Procedura '+long_version()}
