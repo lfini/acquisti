@@ -80,10 +80,11 @@ import table as tb
 
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 # Versione 5.1   10/2024:  Modifiche e correzioni dopo la messa in produzione della versione 5
+# Versione 5.2   12/2024:  Bugfix: ritorno a procedura principale da housekeeping
 
 __author__ = 'Luca Fini'
-__version__ = '5.1.1'
-__date__ = '12/11/2024'
+__version__ = '5.2'
+__date__ = '10/12/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1877,7 +1878,7 @@ def housekeeping():
     user = user_info()
     status = {'footer': f"Procedura housekeeping.py. Vers. {__version__} - " \
                         f"L. Fini, {__date__}",
-              'host': ft.host(fk.request.url_root)}
+              'url_root': fk.request.url_root}
 
     if test_admin(user):
         return fk.render_template('start_housekeeping.html',
@@ -2123,7 +2124,8 @@ def environ():
     html.append("</ul>")
     env = '\n'.join(html)
     html = ["<ul>"]
-    html.append(f"<li><b>args</b>: {fk.request.args}")
+    args = [x for x in fk.request.args]
+    html.append(f"<li><b>args</b>: {args}")
     html.append(f"<li><b>base_url</b>: {fk.request.base_url}")
     html.append(f"<li><b>date</b>: {fk.request.date}")
     html.append(f"<li><b>endpoint</b>: {fk.request.endpoint}")

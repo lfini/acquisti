@@ -6,7 +6,7 @@
 <script src="/files/overlay.js"></script>
 </head>
 <body>
-<!-- template: start_housekeeping.html v. 5.0 -->
+<!-- template: start_housekeeping.html v. 5.1 -->
 {% from "_common.html" import start_page, end_page %}
 {{ start_page(sede.sede_it,"Gestione tabelle") }}
 <tr><td>
@@ -17,7 +17,7 @@
 <h4><li> <a href=/codf>Gestione tabella Codici fondi</a></h4>
 <h4><li> <a href=/utenti>Gestione tabella Utenti (acquisti)</a></h4>
 <p>
-<li> <a href={{ status.host }}:5000>Torna a procedura acquisti</a>
+<li> <a href={{ status.url_root }}>Torna a procedura acquisti</a>
 </ul>
 </td></tr>
 {{ end_page() }}
