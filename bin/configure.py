@@ -16,9 +16,9 @@ import ftools
 import constants as cs
 from table import jload, jsave
 
-__version__ = "1.6"
+__version__ = "1.7"
 
-MY_VERSION = 5
+MY_VERSION = 6
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -40,6 +40,9 @@ NOTA: specificare "-" se si utilizza GMail API per  l'invio di messaggi.
 """
 
 LATEX_PATH_DESC = """Path del programma pdflatex [es: /usr/local/bin/pdflatex]
+"""
+
+TEST_MODE_DESC = """Flag per modo test: P per versione di produzione T per versione di test
 """
 
 CUU_DESC = """Codice Unico dell'ufficio (CUU)
@@ -163,6 +166,7 @@ PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
                       (cs.EMAIL_SERVIZIO, EMAIL_SERVIZIO_DESC),
                       (cs.LATEX_PATH, LATEX_PATH_DESC),
+                      (cs.TEST_MODE, TEST_MODE_DESC),
                      ])
 
 TECH = OrderedDict([(cs.SMTP_HOST, SMTP_HOST_DESC),
@@ -269,6 +273,7 @@ def main():
         new_config.update(new_params)
         new_config.update(new_tech)
         new_config[cs.FLASK_KEY] = ftools.randstr(30)
+        new_config[cs.TEST_MODE] = new_config[cs.TEST_MODE].upper()
 
         print()
         print()

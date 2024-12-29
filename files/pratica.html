@@ -11,7 +11,7 @@
 {% macro getval(value) %}
 Pratica N. {{ value }}
 {% endmacro %}
-{{ start_page(sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
+{{ start_page(test_mode,sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
 <tr><td>
 {% if info.debug %}
    <h4> <font color=red>Modo debug</font>: invia tutti messaggi email a webmaster </h4>

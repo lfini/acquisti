@@ -80,11 +80,12 @@ import table as tb
 
 # Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
 # Versione 5.1   10/2024:  Modifiche e correzioni dopo la messa in produzione della versione 5
-# Versione 5.2   12/2024:  Bugfix: ritorno a procedura principale da housekeeping
+# Versione 5.2   12/2024:  Bugfix: ritorno a procedura principale da housekeeping.
+#                          Attivato flag per versione di test in configurazione
 
 __author__ = 'Luca Fini'
 __version__ = '5.2'
-__date__ = '10/12/2024'
+__date__ = '29/12/2024'
 
 __start__ = time.asctime(time.localtime())
 
@@ -696,9 +697,8 @@ def pratica_common(d_prat: Pratica):
     info['allegati_mancanti'] = ', '.join(all_mancanti)
     info['stato_pratica'] = d_prat.get_passo('t')
     info['commands'] = d_prat.get_passo('cmd')
-    return fk.render_template('pratica.html', info=info,
-                              pratica=d_prat, upload=upl,
-                              sede=CONFIG.config[cs.SEDE])
+    return fk.render_template('pratica.html', info=info, test_mode=CONFIG.config.get(cs.TEST_MODE),
+                              pratica=d_prat, upload=upl, sede=CONFIG.config[cs.SEDE])
 
 def modifica_pratica(what):               # pylint: disable=R0912,R0915
     "parte comune alle pagine di modifica pratica"
@@ -770,7 +770,8 @@ def render_progetto(form, d_prat: Pratica):
            'after': '</form>',
            'note': cs.OBBLIGATORIO,
            'body': form()}
-    return fk.render_template("form_layout.html", sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template("form_layout.html", sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 def get_tipo_allegato():
     "Determina il tipo di allegato"
@@ -931,7 +932,9 @@ def login():
             return fk.redirect(fk.url_for('start'))
         ACQ.logger.error('Accesso negato: userid: "%s" (%s)', uid, why)
         fk.flash(f'Accesso negato: {why}', category="error")
-    return fk.render_template('login.html', form=form, sede=CONFIG.config[cs.SEDE],
+    return fk.render_template('login.html', form=form,
+                              sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE),
                               title='Procedura per acquisti')
 
 def update_costo(d_prat: Pratica, spec):
@@ -983,11 +986,13 @@ def start():
         status['developer'] = 1
     if test_direttore(user):
         status['direttore'] = 1
+    if test_vicario(user):
+        status['vicario'] = 1
     anno = ft.thisyear()
     doclist, _ = ft.trova_pratiche_1(anno, 'NOR', user['email'])
     status['no_rup'] = len(doclist)
     return fk.render_template('start_acquisti.html', sede=CONFIG.config[cs.SEDE],
-                              user=user, status=status)
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), user=user, status=status)
 
 @ACQ.route("/about")
 def about():                                 # pylint: disable=R0915
@@ -1045,7 +1050,8 @@ def about():                                 # pylint: disable=R0915
         html.append('</table></td></tr>')
 
     body = '\n'.join(html)
-    return fk.render_template('about.html', sede=CONFIG.config[cs.SEDE], data=body)
+    return fk.render_template('about.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=body)
 
 @ACQ.route("/clearsession")
 def clearsession():
@@ -1201,17 +1207,20 @@ def inviadecisione():                    #pylint: disable=R0914
     numdec = d_prat.get(cs.NUMERO_DECISIONE).split('/')[0]
     doc_opts = [cs.DIRETTORE]
     if d_prat.get(cs.DEC_FIRMA_VICARIO):
+        chifirma = "Dir. Vicario"
         doc_opts.append(cs.VICARIO)
+    else:
+        chifirma = "Direttore"
     doc_pdf = genera_documento(d_prat, (cs.DOC_DECISIONE, doc_opts), filenum=numdec)
     d_prat[cs.DECIS_DA_FIRMARE] = doc_pdf
     testo = cs.TESTO_INVIA_DECISIONE.format(**d_prat)+ \
             cs.DETTAGLIO_PRATICA.format(**d_prat)
-    subj = 'Decisione di contrarre da inviare al direttore per firma'
+    subj = f'Decisione di contrarre da inviare al {chifirma} per firma'
     recipient = (d_prat[cs.EMAIL_RUP], CONFIG.config[cs.EMAIL_SERVIZIO])
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
     ret = send_email(recipient, testo, subj, attach=attach)
     if ret:
-        msg = f"Decisione da firmare digitalmente inviata a: {recipient}"
+        msg = f"Decisione da firmare digitalmente dal {chifirma} inviata a: {recipient}"
         fk.flash(msg, category="info")
         storia(d_prat, msg)
         d_prat.next()
@@ -1295,7 +1304,8 @@ def indicarup():
            'after': '</form>',
            'note': 'Questa è una nota',
            'body': body}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 @ACQ.route('/autorizza', methods=('GET', ))
 def autorizza():
@@ -1405,7 +1415,8 @@ def modificardo():
            'after': "</form>",
            'note': cs.OBBLIGATORIO,
            'body': rdo(**d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 @ACQ.route('/modificaordine', methods=('GET', 'POST', ))
 def modificaordine():                     #pylint: disable=R0914
@@ -1449,7 +1460,8 @@ def modificaordine():                     #pylint: disable=R0914
            'after': "</form>",
            'note': cs.OBBLIGATORIO,
            'body': ordn(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 @ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
 def modificadecisione():                     #pylint: disable=R0914
@@ -1501,7 +1513,8 @@ def modificadecisione():                     #pylint: disable=R0914
            'after': "</form>",
            'note': cs.OBBLIGATORIO,
            'body': decis(d_prat)}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 @ACQ.route('/upload', methods=('POST', ))
 def upload():               # pylint: disable=R0914,R0911,R0912
@@ -1598,13 +1611,15 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
             ACQ.logger.error('Operazione non autorizzata. '\
                           'Utente: %s', user['userid'])
             fk.session.clear()
-            return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
+            return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE),
+                                      sede=CONFIG.config[cs.SEDE])
     elif oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate dal Direttore
         if not (test_direttore(user) or test_admin(user)):
             ACQ.logger.error('Operazione non autorizzata '\
                           'Utente: %s', user['userid'])
             fk.session.clear()
-            return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
+            return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE),
+                                      sede=CONFIG.config[cs.SEDE])
     try:
         doclist, title = ft.trova_pratiche_1(anno, filtro, user['email'], ascendente)
     except Exception:                      # pylint: disable=W0703
@@ -1616,7 +1631,9 @@ def lista_pratiche(filtro, anno, ascendente):            #pylint: disable=R0915,
     theyear = int(anno)
     years = [int(y) for y in doclist.years]
     return fk.render_template('lista_pratiche_per_anno.html', filtro=filtro,
-                              sede=CONFIG.config[cs.SEDE], years=years, year=theyear,
+                              test_mode=CONFIG.config.get(cs.TEST_MODE),
+                              sede=CONFIG.config[cs.SEDE],
+                              years=years, year=theyear,
                               dlist=doclist.records, title=title)
 
 @ACQ.route('/trovapratica', methods=('POST', 'GET'))
@@ -1631,7 +1648,8 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
     if not (test_admin(user) or test_direttore(user)):
         ACQ.logger.error('Ricerca pratiche non autorizzata. Utente: %s', user['userid'])
         fk.session.clear()
-        return fk.render_template('noaccess.html', sede=CONFIG.config[cs.SEDE])
+        return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE),
+                                  sede=CONFIG.config[cs.SEDE])
     prf = fms.TrovaPratica(fk.request.form)
     years = ft.get_years(cs.DATADIR)
     years.sort(reverse=True)
@@ -1670,7 +1688,8 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
         title = 'Trova Pratiche'
         subtitle = 'Risultato per ricerca: '+expr+'<br>'+ \
                    f'N. pratiche selezionate: {len(lista)}'
-        return fk.render_template('lista_pratiche_per_anno.html', filtro='', pre=[],
+        return fk.render_template('lista_pratiche_per_anno.html', filtro='',
+                                  test_mode=CONFIG.config.get(cs.TEST_MODE), pre=[],
                                   post=[], year=anno, dlist=lista.records, title=title,
                                   sede=CONFIG.config[cs.SEDE], subtitle=subtitle)
     ddp = {'title': 'Trova pratiche',
@@ -1679,7 +1698,8 @@ def trovapratica():               # pylint: disable=R0912,R0914,R0915
                      'accept-charset="utf-8" novalidate>',
            'after': '</form>',
            'body': prf()}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 @ACQ.route('/pratica0/<num>/<year>', methods=('GET', ))
 def pratica0(num, year):
@@ -1756,7 +1776,7 @@ def rollback():                       #pylint: disable=R0914
            'remove_doc': doc_to_remove,
            'remove_all': ', '.join(all_to_remove)}
     return fk.render_template('rollback.html', sede=CONFIG.config[cs.SEDE],
-                              pratica=d_prat, data=ddp)
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), pratica=d_prat, data=ddp)
 
 @ACQ.route('/chiudipratica')
 def chiudipratica():
@@ -1805,7 +1825,8 @@ accept-charset="utf-8" novalidate>
            'after': '</form>',
            'note': 'Questa è una nota',
            'body': body}
-    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE], data=ddp)
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
 @ACQ.route('/files/<name>')
 def files(name):
@@ -1882,11 +1903,11 @@ def housekeeping():
 
     if test_admin(user):
         return fk.render_template('start_housekeeping.html',
-                                  user=user,
+                                  user=user, test_mode=CONFIG.config.get(cs.TEST_MODE),
                                   sede=CONFIG.config[cs.SEDE],
                                   status=status).encode('utf8')
     fk.session.clear()
-    return fk.render_template('noaccess.html')
+    return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE))
 
 @ACQ.route("/sortcodf/<field>")
 def sortcodf(field):
@@ -1894,7 +1915,8 @@ def sortcodf(field):
     ACQ.logger.info('URL: /sortcodf/%s (%s)', field, fk.request.method)
     user = user_info()
     if not test_admin(user):
-        return fk.render_template('noaccess.html').encode('utf8')
+        return fk.render_template('noaccess.html',
+                                  test_mode=CONFIG.config.get(cs.TEST_MODE)).encode('utf8')
     ncodf = ft.FTable((cs.DATADIR, 'codf.json'), sortable=('Codice', 'email_Responsabile'))
     msgs = fk.get_flashed_messages()
     return ncodf.render("Lista Codici Fu.Ob.",
@@ -1923,7 +1945,8 @@ def addcodf():
     ACQ.logger.info('URL: /addcodf (%s)', fk.request.method)
     user = user_info()
     if not test_admin(user):
-        return fk.render_template('noaccess.html').encode('utf8')
+        return fk.render_template('noaccess.html',
+                                  test_mode=CONFIG.config.get(cs.TEST_MODE)).encode('utf8')
     cfr = fms.CodfForm(formdata=fk.request.form)
     ulist = ft.FTable((cs.DATADIR, 'userlist.json')).as_dict('email', True)
     resp_menu = [(x, _nome_resp(ulist, x, False)) for  x in ulist]
@@ -1955,7 +1978,8 @@ def editcodf(nrec):
     nrec = int(nrec)
     user = user_info()
     if not test_admin(user):
-        return fk.render_template('noaccess.html').encode('utf8')
+        return fk.render_template('noaccess.html',
+                                  test_mode=CONFIG.config.get(cs.TEST_MODE)).encode('utf8')
     ncodf = ft.FTable((cs.DATADIR, 'codf.json'))
     row = ncodf.get_row(nrec, as_dict=True)
     ulist = ft.FTable((cs.DATADIR, 'userlist.json')).as_dict('email')
@@ -2009,7 +2033,7 @@ def downloadutenti():
 
 def download(_unused):
     "Download"
-    return fk.render_template('tbd.html', goto='/')
+    return fk.render_template('tbd.html', test_mode=CONFIG.config.get(cs.TEST_MODE), goto='/')
 
 @ACQ.route("/utenti")
 def utenti():
@@ -2030,7 +2054,8 @@ def utenti():
                             messages=msgs,
                             footer=f"Procedura housekeeping.py. Vers. {__version__} "\
                                    f"- L. Fini, {__date__}")
-    return fk.render_template('noaccess.html').encode('utf8')
+    return fk.render_template('noaccess.html',
+                              test_mode=CONFIG.config.get(cs.TEST_MODE)).encode('utf8')
 
 
 @ACQ.route('/adduser', methods=('GET', 'POST'))
@@ -2060,7 +2085,8 @@ def adduser():
                                          fk.url_for('adduser'),
                                          errors=cfr.errlist,
                                          ignore=('pw', 'flags'))
-    return fk.render_template('noaccess.html').encode('utf8')
+    return fk.render_template('noaccess.html',
+                              test_mode=CONFIG.config.get(cs.TEST_MODE)).encode('utf8')
 
 @ACQ.route('/edituser/<nrec>', methods=('GET', 'POST'))
 def edituser(nrec):
@@ -2106,7 +2132,8 @@ def edituser(nrec):
                                          fk.url_for('edituser', nrec=str(nrec)),
                                          nrow=nrec, errors=cfr.errlist,
                                          ignore=('pw', 'flags'))
-    return fk.render_template('noaccess.html').encode('utf8')
+    return fk.render_template('noaccess.html',
+                              test_mode=CONFIG.config.get(cs.TEST_MODE)).encode('utf8')
 
 @ACQ.route('/environ', methods=('GET',))
 def environ():
@@ -2115,7 +2142,7 @@ def environ():
     user = user_info()
     if not test_developer(user):
         fk.session.clear()
-        return fk.render_template('noaccess.html')
+        return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE))
     html = ["<ul>"]
     keys = list(os.environ.keys())
     keys.sort()
@@ -2124,7 +2151,7 @@ def environ():
     html.append("</ul>")
     env = '\n'.join(html)
     html = ["<ul>"]
-    args = [x for x in fk.request.args]
+    args = list(fk.request.args)
     html.append(f"<li><b>args</b>: {args}")
     html.append(f"<li><b>base_url</b>: {fk.request.base_url}")
     html.append(f"<li><b>date</b>: {fk.request.date}")
@@ -2140,7 +2167,8 @@ def environ():
     html.append(f"<li><b>url_root</b>: {fk.request.url_root}")
     html.append(f"<li><b>user_agent</b>: {fk.request.user_agent}")
     req = '\n'.join(html)
-    return fk.render_template('environ.html', sede=CONFIG.config[cs.SEDE], request=req, environ=env)
+    return fk.render_template('environ.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), request=req, environ=env)
 
 @ACQ.route('/testmail', methods=('GET',))
 def testmail():
@@ -2149,7 +2177,7 @@ def testmail():
     user = user_info()
     if not test_developer(user):
         fk.session.clear()
-        return fk.render_template('noaccess.html')
+        return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE))
     thetime = time.asctime()
     if smtp := CONFIG.config.get(cs.SMTP_HOST) == '-':
         host = 'GMail API'
@@ -2162,7 +2190,7 @@ def testmail():
     ret = send_email(recipient, body, subj)
     succ = 'SI' if ret else 'NO'
     return fk.render_template('testmail.html', time=thetime, sender=sender,
-                              recipients=recipient,
+                              recipients=recipient, test_mode=CONFIG.config.get(cs.TEST_MODE),
                               server=host, state=succ).encode('utf8')
 
 @ACQ.route('/force_excp', methods=('GET',))
@@ -2172,7 +2200,7 @@ def force_excp():                       #pylint: disable=R1710
     user = user_info()
     if not test_developer(user):
         fk.session.clear()
-        return fk.render_template('noaccess.html')
+        return fk.render_template('noaccess.html', test_mode=CONFIG.config.get(cs.TEST_MODE))
     1/0                                 # pylint: disable=W0104
 
 #############################################################################

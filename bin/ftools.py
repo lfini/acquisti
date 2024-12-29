@@ -2,22 +2,19 @@
 Tools per la procedura acquisti.py
 
 Uso da linea di comando:
-    python ftools.py access     - test username/password
-    python ftools.py filt       - test filtri per poratiche
+    python ftools.py access     - Test accesso con username/password
+    python ftools.py all        - Elenca tutti i campi definiti in tutte le pratiche
+    python ftools.py filt       - Test filtri per pratiche
     python ftools.py ndecis     - Visualizza ultimo num. decisione di contrarre
     python ftools.py nprat      - Visualizza ultimo num. pratica
+    python ftools.py pass       - Genera file per password
     python ftools.py plist      - Visualizza elenco pratiche
     python ftools.py prat nprat - Visualizza File dati di una pratica
+    python ftools.py show       - Mostra file per password
     python ftools.py ulist      - Visualizza lista utenti
     python ftools.py user uid   - Mostra/crea/modifica utente
-
-                              Comandi per supporto sviluppo e debug:
-    python ftools.py all    - Elenca tutti i campi definiti in tutte le pratiche
-    python ftools.py filt   - Estrai pratiche in base ad un filtro
-    python ftools.py pass   - Genera file per password
-    python ftools.py show   - Mostra file per password
-    python ftools.py values - Mostra tutti i valori del campo dato
-    python ftools.py where  - Elenco pratiche con valore di campo dato
+    python ftools.py values     - Mostra tutti i valori del campo dato
+    python ftools.py where      - Elenco pratiche con valore di campo dato
 """
 
 import sys
@@ -66,12 +63,12 @@ import send_email as sm
 # VERSION 5.0    8/4/2024 Nuova versione.
 # VERSION 5.1    8/4/2024 Nuova versione in produzione
 # VERSION 5.2    8/4/2024 Corretto selezione pratiche (funzione trova_pratiche())
-
-
+# VERSION 5.3    10/12/2024 Corretta diagnostica in authenticate()
+#                           Aggiunti filtri per direttore vicario
 
 __author__ = 'Luca Fini'
-__version__ = '5.2'
-__date__ = '07/11/2024'
+__version__ = '5.3'
+__date__ = '29/12/2024'
 
 # pylint: disable=C0302, W0718
 
@@ -671,6 +668,8 @@ def _crypt(username, passw):
 def authenticate(userid, password, ldap_host, ldap_port):            # pylint: disable=R0911
     "Autenticazione utente. ldap: indirizzo IP server LDAP, o vuoto"
     user = get_user(userid)
+    if not user:
+        return False, NON_ABILITATO%userid
     if (pswd := user.get('pw')) != '-':
         if _crypt(password, userid) == pswd:
             return True, "Accesso autorizzato (CRYPT)"
@@ -679,10 +678,11 @@ def authenticate(userid, password, ldap_host, ldap_port):            # pylint: d
         return True, "Accesso autorizzato (PAM)"
     if ldap_host:
         ret = ldap_authenticate(userid, password, ldap_host, ldap_port)
-        if ret <= 0:
+        if ret < 0:
             return False, "Errore di connessione al server LDAP"
-        return True, "Accesso autorizzato (LDAP)"
-    return False, NON_ABILITATO%userid
+        if ret > 0:
+            return True, "Accesso autorizzato (LDAP)"
+    return False, 'Errore ID/Password'
 
 def makeuser(userid):                         # pylint: disable=R0912,R0915
     "Crea record di utente"
@@ -696,11 +696,11 @@ def makeuser(userid):                         # pylint: disable=R0912,R0915
         user = user[0]
         print()
         print("Dati per l'utente:", userid)
-        print(" -                    Nome: "+user[2])
-        print(" -                 Cognome: "+user[1])
-        print(" -                   Email: "+user[3])
-        print(" - Password ('-': usa PAM): "+user[5])
-        print(" -               Privilegi: "+user[4])
+        print(" -                         Nome: "+user[2])
+        print(" -                      Cognome: "+user[1])
+        print(" -                        Email: "+user[3])
+        print(" - Password ('-': usa PAM/LDAP): "+user[5])
+        print(" -                    Privilegi: "+user[4])
         print()
         print("Legenda privilegi: A, amministrazione; D, developer; L, modifica LDAP")
         print()
@@ -989,12 +989,13 @@ FILTRI = { 'ALL_A/ALL_C': "pratica aperta/chiusa",
            'RUP_A/RUP_C': "pratica aperta/chiusa come RUP",
            'RES_0/RES_1': "pratica da approvare/approvata come responsabile dei fondi",
            'DIR_0/DIR_1': "pratica da approvare/approvata come direttore",
+           'VIC_0/VIC_1': "pratica da approvare/approvata come vicario",
            'NOR': "pratica in attesa indicazione RUP",
            'GEN': "seguono stringhe per: stato, richiedente, responsabile, RUP, descrizione"
          }
 
 #pylint: disable=C3001
-def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #pylint: disable=R0912
+def trova_pratiche_1(anno, filtro, user_email, ascendente=True):   #pylint: disable=R0912,R0911,R0915
     'genera lista pratiche in base ai filtri definiti'
     sort_f =  _int if ascendente else lambda x: -_int(x)
     oper = filtro[:3]
@@ -1041,6 +1042,18 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):               #
             filtro = lambda x: x.get(cs.EMAIL_RUP) == user_email and \
                               not x.get(cs.PRATICA_APERTA)
             title = PRAT_CHI+str_ruolo
+        return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
+                title)
+    if oper == 'VIC':   # Lista pratiche da autorizzare/autorizzate dal Direttore vicario
+        str_ruolo = 'dal Direttore vicario'
+        if filtro[-1] == '1':
+            filtro = lambda x: x.get(cs.RUP_FIRMA_VICARIO) and \
+                               x.get(cs.TAB_PASSI, [0])[-1] > CdP.IRD
+            title = PRAT_APP+str_ruolo
+        else:
+            filtro = lambda x: x.get(cs.RUP_FIRMA_VICARIO) and \
+                               x.get(cs.TAB_PASSI, [0])[-1] == CdP.IRD
+            title = PRAT_DAP+str_ruolo
         return (DocList(cs.DATADIR, cs.PRAT_JFILE, anno, content_filter=filtro, sort=sort_f),
                 title)
     if oper == 'DIR':   # Lista pratiche da autorizzare/autorizzate dal Direttore

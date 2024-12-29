@@ -11,7 +11,7 @@
 {% macro getval(value) %}
 Pratica N. {{ value }}
 {% endmacro %}
-{{ start_page(sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
+{{ start_page(test_mode,sede.sede_it,getval(pratica.numero_pratica),pratica.descrizione_acquisto) }}
 <tr><td>
 Hai chiesto di annullare l'ultimo passo effettuato:
 

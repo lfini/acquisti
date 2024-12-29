@@ -9,7 +9,7 @@
 <!-- template: start_acquisti.html  Vers. 5.0 -->
 
 {% from "_common.html" import start_page, end_page %}
-{{ start_page(sede.sede_it,"Gestione acquisti") }}
+{{ start_page(test_mode,sede.sede_it,"Gestione acquisti") }}
 <tr><td>
 <b>Utente:<i> {{ user.name }} {{ user.surname }}</i> </b> &nbsp;&nbsp;&nbsp; &rightarrow; <a href=/clearsession>Logout</a>
 </td></tr>
@@ -23,12 +23,18 @@
 {% if status.direttore or status.admin %}
 <li><b> <a href=/pratiche/DIR_0/0/0>Elenco pratiche da approvare dal Direttore</a></b>
 {% endif %}
+{% if status.vicario or status.admin %}
+<li><b> <a href=/pratiche/VIC_0/0/0>Elenco pratiche da approvare dal Direttore vicario</a></b>
+{% endif %}
 <p>
 <li> <a href=/pratiche/RIC_C/0/0>Rivedi pratiche chiuse, come richiedente</a>
 <li> <a href=/pratiche/RES_1/0/0>Rivedi pratiche approvate, come resp. fondi</a>
 <li> <a href=/pratiche/RUP_C/0/0>Rivedi pratiche chiuse, come RUP</a>
 {% if status.direttore or status.admin %}
 <li> <a href=/pratiche/DIR_1/0/0>Rivedi pratiche approvate dal Direttore</a>
+{% endif %}
+{% if status.vicario or status.admin %}
+<li> <a href=/pratiche/VIC_1/0/0>Rivedi pratiche approvate dal Direttore vicario</a>
 {% endif %}
 </td></tr>
 

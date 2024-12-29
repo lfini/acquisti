@@ -12,7 +12,7 @@ __author__ = "Luca Fini"
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
-CONFIG_REQUIRED = 5              # versione file configurazione richiesta
+CONFIG_REQUIRED = 6              # versione file configurazione richiesta
 
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
@@ -116,6 +116,7 @@ SEDE_IT = 'sede_it'
 SEDE_UK = 'sede_uk'
 SMTP_HOST = 'smtp_host'
 TEL_OSS = 'tel_oss'
+TEST_MODE = 'test_mode'
 WEBSITE = 'website'
 
 # opzioni per generazione documenti

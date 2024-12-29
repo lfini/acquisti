@@ -1,9 +1,14 @@
 <!-- File: _common.html v. 5.0 -->
-{% macro start_page(sede,title,subtitle,help,barmenu,note) %}
+{% macro start_page(test_mode,sede,title,subtitle,help,barmenu,note) %}
 <!-- begin start_page -->
 <table border=1 cellpadding=10>
+{% if test_mode == "T" %}
+<tr><td bgcolor=#ffcdd2> <center>
+<b><font color=#11417c>-- VERSIONE DI TEST --</font></b><br>
+{% else %}
 <tr><td bgcolor=#7fff88> <center>
 <font size=-1> {{ sede|safe }}</font><br>
+{% endif %}
 <font size=+2> <b> {{ title|safe }}  </b></font>
 {% if help %}
 <a href=/files/{{ help }} onclick="window.open('/files/{{ help }}','newwindow','width=600, height=400, scrollbar=yes'); return false;"><sup><img src=/files/qm.png></sup></a>
