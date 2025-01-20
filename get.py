@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 '''
-getdata.py - importa da sisifo un intero anno di dati o una singola pratica
+get.py - importa da sisifo un intero anno di dati o una singola pratica
 
 
 Uso:
-    python getdata.py anno [pratica]
+    python get.py anno [pratica]
 
 '''
 

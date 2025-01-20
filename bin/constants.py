@@ -14,6 +14,9 @@ CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
 CONFIG_REQUIRED = 6              # versione file configurazione richiesta
 
+DECIS_FILE = 'decisioni.lst'           # nome file per lista decisioni
+DECIS_FMT = '{ndecis} {date} {nprat}'  # formato linee lista decisioni
+
 UPLOAD_TYPES = ('.pdf', '.rtf', '.p7m')
 PDF_TYPES = ('.pdf',)
 

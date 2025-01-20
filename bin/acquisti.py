@@ -78,14 +78,16 @@ import table as tb
 # Versione 4.10  11/2023:    introdotto logging delle URL. Passato con pylint
 # Versione 4.10.1  11/2023:  Corretto bug alla linea 1525
 
-# Versione 5.0   3/2024:  Preparazione nuova versione 2024 con modifiche sostanziali
+# Versione 5.0   3/2024:   Preparazione nuova versione 2024 con modifiche sostanziali
 # Versione 5.1   10/2024:  Modifiche e correzioni dopo la messa in produzione della versione 5
 # Versione 5.2   12/2024:  Bugfix: ritorno a procedura principale da housekeeping.
 #                          Attivato flag per versione di test in configurazione
+# Versione 5.3   1/2025:   Introdotta lista decisioni per anno e verifiche sulla duplicazione
+#                          dei numeri di decisione
 
 __author__ = 'Luca Fini'
-__version__ = '5.2'
-__date__ = '29/12/2024'
+__version__ = '5.3'
+__date__ = '20/1/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1489,6 +1491,7 @@ def modificadecisione():                     #pylint: disable=R0914
         ndecis = ft.find_max_decis(year)[0]+1
         d_prat[cs.NUMERO_DECISIONE] = f"{ndecis}/{year:4d}"
         d_prat[cs.DATA_DECISIONE] = ft.today(fulltime=False)
+        ft.savedecis(d_prat, year)
         ACQ.logger.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     decis = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
@@ -1499,6 +1502,11 @@ def modificadecisione():                     #pylint: disable=R0914
             genera_documento(d_prat, doc)
             storia(d_prat, 'Generata/modificata decisione a contrarre N. '
                            f'{d_prat[cs.NUMERO_DECISIONE]}')
+            ndecis = int(d_prat[cs.NUMERO_DECISIONE].split('/')[0])
+            if ft.check_dupl_decis(ndecis):
+                fk.flash("Il numero di decisione " \
+                         f"{d_prat[cs.NUMERO_DECISIONE]} risulta duplicato",
+                         category="info")
             salvapratica(d_prat)
             return pratica_common(d_prat)
         errors = decis.get_errors()

@@ -4,7 +4,9 @@ Tools per la procedura acquisti.py
 Uso da linea di comando:
     python ftools.py access     - Test accesso con username/password
     python ftools.py all        - Elenca tutti i campi definiti in tutte le pratiche
+    python ftools.py ddecis     - Trova num.decisione duplicati
     python ftools.py filt       - Test filtri per pratiche
+    python ftools.py ldecis     - Genera files decisioni.lst (liste decisioni)
     python ftools.py ndecis     - Visualizza ultimo num. decisione di contrarre
     python ftools.py nprat      - Visualizza ultimo num. pratica
     python ftools.py pass       - Genera file per password
@@ -35,6 +37,7 @@ from logging.handlers import RotatingFileHandler
 from logging import StreamHandler
 from functools import reduce
 from getpass import getpass
+from collections import defaultdict
 
 import ldap3
 from Crypto.Cipher import AES
@@ -65,10 +68,11 @@ import send_email as sm
 # VERSION 5.2    8/4/2024 Corretto selezione pratiche (funzione trova_pratiche())
 # VERSION 5.3    10/12/2024 Corretta diagnostica in authenticate()
 #                           Aggiunti filtri per direttore vicario
+# VERSION 5.4    20/01/2025 Modificato determinazione ultima decisione
 
 __author__ = 'Luca Fini'
-__version__ = '5.3'
-__date__ = '29/12/2024'
+__version__ = '5.4'
+__date__ = '20/01/2025'
 
 # pylint: disable=C0302, W0718
 
@@ -473,10 +477,50 @@ def _find_max_field(what, year=None):
                         prat = nprat
     return maxfld, prat
 
+def find_all_decis(year=None):
+    "legge lista decisioni"
+    if not year:
+        year = thisyear()
+    yys = f'{year}'
+    dpath = os.path.join(cs.DATADIR, yys, cs.DECIS_FILE)
+    dlist = []
+    with open(dpath, encoding='utf8') as f_in:
+        for line in f_in:
+            splt = line.split()
+            dlist.append((int(splt[0]), splt[1], splt[2]))
+    return dlist
+
 def find_max_decis(year=None):
     "Cerca il massimo valore del numero decisione di contrarre"
-    return _find_max_field("numero_decisione", year)
+    dlist = find_all_decis(year)
+    dlist.sort(key=lambda x: x[0])
+    if dlist:
+        return dlist[-1]
+    return 0, "", ""
 
+def find_dup_decis(year=None):
+    'trova duplicati in lista decisioni'
+    dlist = find_all_decis(year)
+    ddict = defaultdict(list)
+    for ndecis, date, nprat in dlist:
+        ddict[ndecis].append((ndecis, date, nprat))
+    dupl = [ddict[x] for x in ddict if len(ddict[x]) > 1]
+    dupl = [x for y in dupl for x in y]
+    return dupl
+
+def check_dupl_decis(ndecis, year=None):
+    'verifica se numero di decisione risulta duplicato'
+    dlist = [x[0] for x in find_dup_decis(year)]
+    return ndecis in dlist
+
+def savedecis(prat, year):
+    "salva nuovo numero di decisione"
+    yys = str(year)
+    dpath = os.path.join(cs.DATADIR, yys, cs.DECIS_FILE)
+    ndec = int(prat[cs.NUMERO_DECISIONE].split('/')[0])
+    with open(dpath, "a", encoding="utf8") as f_out:
+        print(cs.DECIS_FMT.format(ndecis=ndec, date=prat[cs.DATA_DECISIONE],
+                                  nprat=prat[cs.NUMERO_PRATICA]), file=f_out)
 
 def clean_locks(datadir):
     "Rimuove lock file 'zombi'"
@@ -898,12 +942,41 @@ def input_anno():
         year = thisyear()
     return year
 
+def makelistdecis():
+    "Genera files per lista decisioni"
+    years = get_years(cs.DATADIR)
+    ydict = defaultdict(list)
+    for year in years:
+        for prat in PratIterator(year):
+            ndecis, date, nprat = (prat.get(cs.NUMERO_DECISIONE),
+                                   prat.get(cs.DATA_DECISIONE),
+                                   prat.get(cs.NUMERO_PRATICA))
+            if ndecis:
+                num, anno = ndecis.split('/')
+                ydict[anno].append((int(num), date, nprat))
+    for year, ylist in ydict.items():
+        ylist.sort(key=lambda x: x[0])
+        yfile = os.path.join(cs.DATADIR, year, cs.DECIS_FILE)
+        with open(yfile, 'w', encoding='utf8') as f_out:
+            for val in ylist:
+                print(cs.DECIS_FMT.format(ndecis=val[0], date=val[1],
+                                          nprat=val[2]), file=f_out)
+        print("Creato file:", yfile)
+
+def duplistdecis():
+    'trova duplicati in lista decisioni'
+    year = input_anno()
+    dupl = find_dup_decis(year)
+    print("Duplicati in lista decisioni")
+    for dup in dupl:
+        print(" ", dup)
+
 def showmaxdecis():
     "Trova massimo numero di decisione di contrarre"
     year = input_anno()
-    ndet, prat = find_max_decis(year)
+    ndet, date, prat = find_max_decis(year)
     print()
-    print(f"Ultima edecisione di contrarre anno {year}: {ndet} (pratica: {prat})")
+    print(f"Ultima edecisione di contrarre: {ndet}/{year} data: {date} (pratica: {prat})")
 
 def showmaxprat():
     "Trova massimo numero di pratica"
@@ -927,16 +1000,11 @@ def allfields(year=None):
                 fields[key] = 1
     return fields
 
-def allfieldvals(fields, year=None):
-    "Mostra tutti le combinazioni di valori nei campi dati"
-    uniq = set()
-    for prat in PratIterator(year):
-        values = [str(prat.get(f)) for f in fields]
-        sval = ", ".join(values)
-        uniq.add(sval)
-    ret = list(uniq)
-    ret.sort()
-    return ret
+def allfieldvals(field, year=None):
+    "lista dei valori di un campo dato per l'anno"
+    values = [(p.get(cs.NUMERO_PRATICA, ''), p.get(field, '')) for p in PratIterator(year)]
+    values.sort(key=lambda x: x[0])
+    return values
 
 def showallfields():
     "mostra tutti i campi nei file pratica"
@@ -961,16 +1029,13 @@ def showusers():
 def showvalues():
     "Elenca tutti i valori nei campi delle pratiche"
     year = input_anno()
-    fields = []
-    while True:
-        field = input("Campo (Vuoto per terminare)? ").strip()
-        if not field:
-            break
-        fields.append(field)
-    vals = allfieldvals(fields, year)
-    print(f"Elenco combinazioni valori nei campi: {', '.join(fields)} per l'anno {year}")
+    field = input("Campo? ").strip()
+    if not field:
+        return
+    vals = allfieldvals(field, year)
+    print(f"  N.prat, {field}")
     for val in vals:
-        print(" -", val)
+        print("  ", val)
 
 def _int(item):
     "funzione ausiliaria per sort pratiche"
@@ -1217,6 +1282,10 @@ def main():                                           # pylint: disable=R0912
         showallfields()
     elif verb == 'fi':
         filtra()
+    elif verb == 'dd':
+        duplistdecis()
+    elif verb == 'ld':
+        makelistdecis()
     elif verb == 'nd':
         showmaxdecis()
     elif verb == 'np':
