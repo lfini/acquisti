@@ -70,6 +70,7 @@ import send_email as sm
 #                           Aggiunti filtri per direttore vicario
 # VERSION 5.4    20/01/2025 Modificato determinazione ultima decisione
 # VERSION 5.4.1  21/01/2025 Corretto bug nel calcolo numero di pratica
+#                           Corretto filtro di selezione pratica in attesa RUP
 
 __author__ = 'Luca Fini'
 __version__ = '5.4.1'
@@ -1134,7 +1135,7 @@ def trova_pratiche_1(anno, filtro, user_email, ascendente=True):   #pylint: disa
                 title)
     if oper == 'NOR':    # Lista pratiche in attesa di indicazione del RUP
         title = PRAT_NOR
-        filtro = lambda x: not x.get(cs.EMAIL_RUP, '')
+        filtro = lambda x: not x.get(cs.EMAIL_RUP, '') and x.get(cs.PRATICA_APERTA)
     else:
         raise RuntimeError(f'Operazione non valida in lista pratiche ({oper})')
 
