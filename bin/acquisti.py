@@ -84,10 +84,11 @@ import table as tb
 #                          Attivato flag per versione di test in configurazione
 # Versione 5.3   1/2025:   Introdotta lista decisioni per anno e verifiche sulla duplicazione
 #                          dei numeri di decisione
+# Versione 5.3.1 1/2025:   Corretto ftools.py per bug in calcolo ultima pratica dell'anno
 
 __author__ = 'Luca Fini'
-__version__ = '5.3'
-__date__ = '20/1/2025'
+__version__ = '5.3.1'
+__date__ = '21/1/2025'
 
 __start__ = time.asctime(time.localtime())
 

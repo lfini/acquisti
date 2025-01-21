@@ -69,10 +69,11 @@ import send_email as sm
 # VERSION 5.3    10/12/2024 Corretta diagnostica in authenticate()
 #                           Aggiunti filtri per direttore vicario
 # VERSION 5.4    20/01/2025 Modificato determinazione ultima decisione
+# VERSION 5.4.1  21/01/2025 Corretto bug nel calcolo numero di pratica
 
 __author__ = 'Luca Fini'
-__version__ = '5.4'
-__date__ = '20/01/2025'
+__version__ = '5.4.1'
+__date__ = '21/01/2025'
 
 # pylint: disable=C0302, W0718
 
@@ -434,7 +435,7 @@ def find_max_prat(year=None):
     if not os.path.exists(dpath):
         return 0
     try:
-        plist = os.listdir(dpath)
+        plist = [x for x in os.listdir(dpath) if x.startswith(yys)]
     except Exception:
         return 0
     if not plist:
