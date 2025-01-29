@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.7"
-__date__ = "22/08/2024"
+__version__ = "2.8"
+__date__ = "27/01/2025"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -49,16 +49,8 @@ def popup(url, text, size=(700, 500)):
     return f'<a href="{url}"  onclick="window.open(\'{url}\', \'newwindow\', \'width={size[0]}, '\
            f'height={size[1]}, scrollbars=yes\'); return false;">{text}</a>'
 
-def debug_view(expr: bool):
-    'Determina se i campi opzionali dei form debbano essere visualizzati (per debug)'
-    if expr:
-        return 'N'
-    return 'D' if DEBUG.enable else 'H'
-
-def render_field(field, mode='N', sameline=False, **kw):
-    "Rendering di un campo. mode=Normal,Debug,Hidden"
-    if mode == 'H':
-        return ''
+def render_field(field, sameline=False, **kw):
+    "Rendering di un campo"
     if field.help_spec:
         help_url = Markup(f'/files/{field.help_spec}')
         hlink = popup(help_url, '<sup><img src=/files/qm-12.png></sup>', size=(640, 480))
@@ -72,8 +64,6 @@ def render_field(field, mode='N', sameline=False, **kw):
         lab = Markup(f'<u>{field.a_label:s}</u>{hlink}{sep}')
     else:
         lab = Markup(f'{field.a_label}{hlink}{sep}')
-    if mode == 'D':
-        return Markup(f'<font color=gray>{lab}: .....<font>')
     if isinstance(field, MyFormField):
         return lab+Markup(field.form.renderme(**kw))
     return lab+Markup(field(**kw))
@@ -181,10 +171,10 @@ class MyFieldList(wt.FieldList):
         self.is_required = required
         self.a_label = label
 
-    def renderme(self, mode='N', **kw):
+    def renderme(self, **kw):
         "rendering del form"
         for item in self:
-            return render_field(item, mode=mode, **kw)
+            return render_field(item, **kw)
 
 class FormWErrors(wt.Form):
     "Form modificato per gestione errori"
@@ -392,11 +382,11 @@ class ProgettoAcquisto(FormWErrors):
         html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD
         html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None:
-            mode = debug_view(self.modalita_acquisto.data in (cs.CONSIP, cs.ACC_QUADRO))
-            html += B_TRTD+render_field(self.cig_master, mode=mode, size=10, sameline=True)+E_TRTD
+            if self.modalita_acquisto.data in (cs.CONSIP, cs.ACC_QUADRO):
+                html += B_TRTD+render_field(self.cig_master, size=10, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.descrizione_acquisto, size=80)+E_TRTD
-            mode = debug_view(self.modalita_acquisto.data == cs.INFER_5000)
-            html += B_TRTD+render_field(self.descrizione_ordine, mode=mode, rows=5, cols=80)+E_TRTD
+            if self.modalita_acquisto.data == cs.INFER_5000:
+                html += B_TRTD+render_field(self.descrizione_ordine, rows=5, cols=80)+E_TRTD
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
             pop = popup(fk.url_for('vedicodf'),
                        'Vedi lista Codici fondi e responsabili', size=(1100, 900))
@@ -463,20 +453,22 @@ class Decisione(FormWErrors):
         html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
                                 f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.numero_decisione, sameline=True)+NBSP4
-        html += render_field(self.data_decisione, sameline=True)+BRK
-        mode = debug_view(True)
-        html += render_field(self.numero_cig, mode=mode, sameline=True)+BRK
-        html += render_field(self.numero_cup, mode=mode, sameline=True)+BRK
-        html += E_TRTD+B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
-        html += render_field(self.numero_negoziazione, sameline=True)+PAR
-        html += render_field(self.data_scadenza, sameline=True)+PAR
-        html += render_field(self.data_offerta, sameline=True)+NBSP4
-        html += render_field(self.numero_offerta, sameline=True)+E_TRTD
-        mode = debug_view(d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO, cs.CONSIP))
-        html += E_TRTD+B_TRTD+render_field(self.data_protocollo_doc, mode=mode, sameline=True)+NBSP4
-        html += render_field(self.numero_protocollo_doc, mode=mode, sameline=True)+E_TRTD
+        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD+B_TRTD
+        if self.numero_decisione.data:
+            html += render_field(self.numero_decisione, sameline=True)+NBSP4
+            html += render_field(self.data_decisione, sameline=True)+BRK
+        html += render_field(self.numero_cig, sameline=True)+BRK
+        html += render_field(self.numero_cup, sameline=True)+BRK+E_TRTD
+        if d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40, cs.TRATT_MEPA_143,
+                                       cs.TRATT_UBUY_40, cs.TRATT_UBUY_143):
+            html += B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
+            html += render_field(self.numero_negoziazione, sameline=True)+NBSP4
+            html += render_field(self.data_scadenza, sameline=True)+PAR
+            html += render_field(self.data_offerta, sameline=True)+NBSP4
+            html += render_field(self.numero_offerta, sameline=True)+E_TRTD
+        if d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO):
+            html += B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4
+            html += render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
         html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
@@ -484,25 +476,32 @@ class Decisione(FormWErrors):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-    def validate(self, extra_validators=None):
+    def validate(self, d_prat):              #pylint: disable=W0237
         "Validazione specifica per il form"
         self.errlist = []
-        if not self.numero_decisione.data:
-            self.errlist.append("Manca numero decisione")
-        if not self.data_decisione.data:
-            self.errlist.append("Manca data decisione")
+#       if not self.numero_decisione.data:
+#           self.errlist.append("Manca numero decisione")
+#       if not self.data_decisione.data:
+#           self.errlist.append("Manca data decisione")
         if not self.capitolo.data:
             self.errlist.append("Manca indicazione capitolo")
-        if not self.data_negoziazione.data:
+        has_negoz = d_prat.get(cs.MOD_ACQUISTO) in (cs.TRATT_MEPA_40, cs.TRATT_MEPA_143,
+                                                    cs.TRATT_UBUY_40, cs.TRATT_UBUY_143)
+        if has_negoz and not self.data_negoziazione.data:
             self.errlist.append("Manca data negoziazione")
-        if not self.numero_negoziazione.data:
-            self.errlist.append("Manca numeriìo ID negoziazione")
-        if not self.data_scadenza.data:
+        if has_negoz and not self.numero_negoziazione.data:
+            self.errlist.append("Manca numero ID negoziazione")
+        if has_negoz and not self.data_scadenza.data:
             self.errlist.append("Manca data scadenza per presentazione offerta")
-        if not self.data_offerta.data:
+        if has_negoz and not self.data_offerta.data:
             self.errlist.append("Manca data offerta")
-        if not self.numero_offerta.data:
+        if has_negoz and not self.numero_offerta.data:
             self.errlist.append("Manca numero ID offerta")
+        has_protdoc = d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO)
+        if has_protdoc and not self.data_protocollo_doc:
+            self.errlist.append("Manca data protocollo documentazione")
+        if has_protdoc and not self.numero_protocollo_doc:
+            self.errlist.append("Manca numero protocollo documentazione")
         if not self.numero_cig.data:
             self.errlist.append("Manca indicazione CIG")
         return not self.errlist

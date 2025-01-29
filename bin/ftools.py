@@ -2,21 +2,25 @@
 Tools per la procedura acquisti.py
 
 Uso da linea di comando:
-    python ftools.py access     - Test accesso con username/password
-    python ftools.py all        - Elenca tutti i campi definiti in tutte le pratiche
-    python ftools.py ddecis     - Trova num.decisione duplicati
-    python ftools.py filt       - Test filtri per pratiche
-    python ftools.py ldecis     - Genera files decisioni.lst (liste decisioni)
-    python ftools.py ndecis     - Visualizza ultimo num. decisione di contrarre
-    python ftools.py nprat      - Visualizza ultimo num. pratica
-    python ftools.py pass       - Genera file per password
-    python ftools.py plist      - Visualizza elenco pratiche
-    python ftools.py prat nprat - Visualizza File dati di una pratica
-    python ftools.py show       - Mostra file per password
-    python ftools.py ulist      - Visualizza lista utenti
-    python ftools.py user uid   - Mostra/crea/modifica utente
-    python ftools.py values     - Mostra tutti i valori del campo dato
-    python ftools.py where      - Elenco pratiche con valore di campo dato
+    python ftools.py access      - Test accesso con username/password
+    python ftools.py all         - Elenca tutti i campi definiti in tutte le pratiche
+    python ftools.py ddecis      - Trova num.decisione duplicati
+    python ftools.py filt        - Test filtri per pratiche
+    python ftools.py fulltest    - Esegue numerosi test (tutti quelli che è possibile fare
+                                   automaticamente
+    python ftools.py ldecis      - Genera files decisioni.lst (liste decisioni)
+    python ftools.py ndecis      - Visualizza ultimo num. decisione di contrarre
+    python ftools.py nprat       - Visualizza ultimo num. pratica
+    python ftools.py pass        - Genera file per password
+    python ftools.py plist       - Visualizza elenco pratiche
+    python ftools.py prat nprat  - Visualizza File dati di una pratica
+    python ftools.py show        - Mostra file per password
+    python ftools.py steal nprat - "Ruba" pratica (sostituisce webmaster a richiedente,
+                                   responsabile e RUP
+    python ftools.py ulist       - Visualizza lista utenti
+    python ftools.py user uid    - Mostra/crea/modifica utente
+    python ftools.py values      - Mostra tutti i valori del campo dato
+    python ftools.py where       - Elenco pratiche con valore di campo dato
 """
 
 import sys
@@ -71,10 +75,12 @@ import send_email as sm
 # VERSION 5.4    20/01/2025 Modificato determinazione ultima decisione
 # VERSION 5.4.1  21/01/2025 Corretto bug nel calcolo numero di pratica
 #                           Corretto filtro di selezione pratica in attesa RUP
+# VERSION 5.5    23/01/2025 Aggiunto test estensivo
+# VERSION 5.6    23/01/2025 Aggiunta funzione "steal"
 
 __author__ = 'Luca Fini'
-__version__ = '5.4.1'
-__date__ = '21/01/2025'
+__version__ = '5.5'
+__date__ = '23/01/2025'
 
 # pylint: disable=C0302, W0718
 
@@ -84,6 +90,11 @@ else:
     PAM_AUTH = pam.pam().authenticate
 
 USER_DN = 'uid=%s,ou=people,dc=inaf,dc=it'
+
+STEAL_WARN = """
+Attenzione: stai cambiando richiedente, responsable e RUP della
+            pratica N. {}.
+"""
 
 class GlobLists:         # pylint: disable=R0903
     "Liste usate dalla procedura. Definite in fase di inizializzazione"
@@ -912,6 +923,30 @@ def show64file(filename):
     print()
     print(obj64)
 
+def steal(num):
+    "ruba pratica"
+    anno = input_anno()
+    num = int(num)
+    prat = get_pratica(anno, num)
+    print(STEAL_WARN.format(prat[cs.NUMERO_PRATICA]))
+    conf = input("Sei sicuro? ")
+    if conf.lower().strip() not in 'ys':
+        return
+    if cs.NOME_RICHIEDENTE in prat:
+        prat[cs.NOME_RICHIEDENTE] = CONFIG[cs.NOME_WEBMASTER]
+    if cs.NOME_RESPONSABILE in prat:
+        prat[cs.NOME_RESPONSABILE] = CONFIG[cs.NOME_WEBMASTER]
+    if cs.NOME_RUP in prat:
+        prat[cs.NOME_RUP] = CONFIG[cs.NOME_WEBMASTER]
+    if cs.EMAIL_RICHIEDENTE in prat:
+        prat[cs.EMAIL_RICHIEDENTE] = CONFIG[cs.EMAIL_WEBMASTER]
+    if cs.EMAIL_RESPONSABILE in prat:
+        prat[cs.EMAIL_RESPONSABILE] = CONFIG[cs.EMAIL_WEBMASTER]
+    if cs.EMAIL_RUP in prat:
+        prat[cs.EMAIL_RUP] = CONFIG[cs.EMAIL_WEBMASTER]
+    basedir = namebasedir(anno, num)
+    tb.jsave((basedir, cs.PRAT_JFILE), prat)
+
 def protect(fpath):
     "set proper mode bits on given filepath"
     os.chmod(fpath, stat.S_IRUSR+stat.S_IWUSR)
@@ -1267,6 +1302,38 @@ def filtra():
                   f'- Resp: {prat.get(cs.EMAIL_RESPONSABILE, "?")}',
                   f'- RUP: {prat.get(cs.EMAIL_RUP, "?")}')
 
+def fulltest():
+    """
+Esegui tutti i test che possono essere fatti in automatico e che non
+modificano i dati
+"""
+    year = input_anno()
+    uls = FTable((cs.DATADIR, 'userlist.json'))
+    uls.sort("surname")
+    unum = random.randint(0, len(uls))
+    user = uls.get_row(unum)
+    print(f'** Utente N. {unum} su {len(uls)}:', user)
+    elenco = DocList(cs.DATADIR, 'pratica.json', year=year)
+    print(f'** Recupero lista pratiche: trovate {len(elenco)} pratiche')
+    if elenco.errors:
+        print('** NOTA: trovati errori nella generazione della lista pratiche')
+        for err in elenco.errors:
+            print("   ", err)
+    nprat = find_max_prat(year)
+    print('** Ultimo numero pratica:', nprat)
+    pnum = random.randint(1, len(elenco)+1)
+    basedir = namebasedir(year, pnum)
+    d_prat = tb.jload((basedir, cs.PRAT_JFILE))
+    print('**         Pratica: N. =', d_prat[cs.NUMERO_PRATICA])
+    print('           Richiedente =', d_prat[cs.NOME_RICHIEDENTE])
+    print('                  Data =', d_prat[cs.DATA_PRATICA])
+    passo = d_prat[cs.TAB_PASSI][-1]
+    print('                 Stato =', cs.TABELLA_PASSI[passo][0])
+    ndet, date, prat = find_max_decis(year)
+    print('** Ultima decisione N. =', ndet, f' (data: {date}, pratica: {prat})')
+
+
+
 def main():                                           # pylint: disable=R0912
     "Procedura per uso da linea di comando e test"
     if len(sys.argv) <= 1:
@@ -1284,6 +1351,8 @@ def main():                                           # pylint: disable=R0912
         showallfields()
     elif verb == 'fi':
         filtra()
+    elif verb == 'fu':
+        fulltest()
     elif verb == 'dd':
         duplistdecis()
     elif verb == 'ld':
@@ -1300,6 +1369,8 @@ def main():                                           # pylint: disable=R0912
         showdata(sys.argv[2])
     elif verb == 'sh':
         show64file('pwfile.json')
+    elif verb == 'st':
+        steal(sys.argv[2])
     elif verb == 'ul':
         showusers()
     elif verb == 'us':

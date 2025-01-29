@@ -55,7 +55,11 @@
   [<a href=/vedifile/decisione.pdf>Vedi</a>]
 {% endif %}
 {% if 'modificadecisione' in info.commands and info.decis_modificabile %}
-&nbsp;&nbsp;[<a href=/modificadecisione>Crea/Modifica</a>]
+{% if info.pdf_decisione %}
+&nbsp;&nbsp;[<a href=/modificadecisione>Modifica</a>]
+{% else %}
+&nbsp;&nbsp;[<a href=/modificadecisione>Crea</a>]
+{% endif %}
 {% endif %}
 {% if 'inviadecisione' in info.commands and info.decis_inviabile %}
 &nbsp;&nbsp;[<a href=/inviadecisione>Invia decisione per firma digitale</a>]

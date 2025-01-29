@@ -85,10 +85,12 @@ import table as tb
 # Versione 5.3   1/2025:   Introdotta lista decisioni per anno e verifiche sulla duplicazione
 #                          dei numeri di decisione
 # Versione 5.3.1 1/2025:   Corretto ftools.py per bug in calcolo ultima pratica dell'anno
+# Versione 5.3.2 1/2025:   Messo log invio mail
+# Versione 5.4   1/2025:   Corretti errori nel form per Decisione
 
 __author__ = 'Luca Fini'
-__version__ = '5.3.1'
-__date__ = '21/1/2025'
+__version__ = '5.4'
+__date__ = '27/1/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -581,6 +583,7 @@ def send_email(eaddr, text, subj, attach=None):
     except Exception as excp:    #pylint: disable=W0718
         ACQ.logger.error('Invio messaggio "%s" a: %s (%s)', subj, eaddr, str(excp))
         return False
+    ACQ.logger.debug('Inviato messaggio "%s" a: %s', subj, eaddr)
     return True
 
 def check_access(new=False):
@@ -1487,21 +1490,22 @@ def modificadecisione():                     #pylint: disable=R0914
         return pratica_common(d_prat)
     if cs.COSTO_RDO not in d_prat:
         d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
-    if cs.NUMERO_DECISIONE not in d_prat:
-        year = ft.thisyear()
-        ndecis = ft.find_max_decis(year)[0]+1
-        d_prat[cs.NUMERO_DECISIONE] = f"{ndecis}/{year:4d}"
-        d_prat[cs.DATA_DECISIONE] = ft.today(fulltime=False)
-        ft.savedecis(d_prat, year)
-        ACQ.logger.info("Nuovo num. decisione: %s", d_prat[cs.NUMERO_DECISIONE])
     decis = fms.Decisione(fk.request.form, **d_prat)
     if fk.request.method == 'POST':
-        if decis.validate():
+        if decis.validate(d_prat):
             d_prat.update(clean_data(decis.data))
+            if not d_prat[cs.NUMERO_DECISIONE]:
+                year = ft.thisyear()
+                ndecis = ft.find_max_decis(year)[0]+1
+                d_prat[cs.NUMERO_DECISIONE] = f"{ndecis}/{year:4d}"
+                d_prat[cs.DATA_DECISIONE] = ft.today(fulltime=False)
+                what = "Generata"
+            else:
+                what = "Modificata"
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
             genera_documento(d_prat, doc)
-            storia(d_prat, 'Generata/modificata decisione a contrarre N. '
+            storia(d_prat, what+' decisione a contrarre N. '
                            f'{d_prat[cs.NUMERO_DECISIONE]}')
             ndecis = int(d_prat[cs.NUMERO_DECISIONE].split('/')[0])
             if ft.check_dupl_decis(ndecis):
@@ -1514,7 +1518,6 @@ def modificadecisione():                     #pylint: disable=R0914
         for err in errors:
             fk.flash(err, category="error")
         ACQ.logger.debug("Errori form Decisione: %s", "; ".join(errors))
-
     ddp = {'title': 'Immissione dati per decisione di contrarre',
            'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
            'before': '<form method=POST action=/modificadecisione '
