@@ -428,6 +428,19 @@ class ProgettoAcquisto(FormWErrors):
             self.errlist.append("Costo: "+", ".join(self.costo_progetto.errlist))
         return not self.errlist
 
+# Tabella informazioni variabili in funzione della modalità di acquisto
+#
+#                          PCP  Mepa<40  mepa<143 ubuy<40  ubuy<143 acc.quadro consip
+# numero_decisione      -   X     X         X       X        X         X         X
+# data_decisione        -   X     X         X       X        X         X         X
+# data_negoziazione     -         X         X       X        X
+# numero_negoziazione   -         X         X       X        X
+# data_offerta          -         X         X       X        X
+# numero_offerta        -         X         X       X        X
+# data_scadenza         -         X         X       X        X
+# data_protocollo_doc   -   X                                          X
+# numero_protocollo_doc -   X                                          X
+
 class Decisione(FormWErrors):
     "form per definizione decisione di contrarre"
     numero_decisione = MyTextField('Numero decisione', True)

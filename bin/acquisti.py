@@ -87,10 +87,11 @@ import table as tb
 # Versione 5.3.1 1/2025:   Corretto ftools.py per bug in calcolo ultima pratica dell'anno
 # Versione 5.3.2 1/2025:   Messo log invio mail
 # Versione 5.4   1/2025:   Corretti errori nel form per Decisione
+# Versione 5.4.1 1/2025:   Aggiunta linea di log in trovapratiche
 
 __author__ = 'Luca Fini'
-__version__ = '5.4'
-__date__ = '27/1/2025'
+__version__ = '5.4.1'
+__date__ = '29/1/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -2276,7 +2277,8 @@ def localtest():
 
 def production():
     "lancia la procedura in modo produzione (all'interno del web server)"
-    ACQ.logger.setLevel(logging.INFO)
+#   ACQ.logger.setLevel(logging.INFO)
+    ACQ.logger.setLevel(logging.DEBUG)
     ft.set_logger(ACQ.logger, (cs.WORKDIR, 'acquisti.log'),
                   CONFIG.config[cs.EMAIL_PROCEDURA],
                   CONFIG.config[cs.EMAIL_WEBMASTER],
