@@ -16,7 +16,8 @@ Uso da linea di comando:
     python ftools.py prat nprat  - Visualizza File dati di una pratica
     python ftools.py show        - Mostra file per password
     python ftools.py steal nprat - "Ruba" pratica (sostituisce webmaster a richiedente,
-                                   responsabile e RUP
+                                   responsabile e RUP)
+    python ftools.py tab         - Mostra tabelle degli stati
     python ftools.py ulist       - Visualizza lista utenti
     python ftools.py user uid    - Mostra/crea/modifica utente
     python ftools.py values      - Mostra tutti i valori del campo dato
@@ -77,10 +78,11 @@ import send_email as sm
 #                           Corretto filtro di selezione pratica in attesa RUP
 # VERSION 5.5    23/01/2025 Aggiunto test estensivo
 # VERSION 5.6    23/01/2025 Aggiunta funzione "steal"
+# VERSION 5.7    23/01/2025 Aggiunta funzione mostra tabelle di stati
 
 __author__ = 'Luca Fini'
-__version__ = '5.5'
-__date__ = '23/01/2025'
+__version__ = '5.7'
+__date__ = '12/02/2025'
 
 # pylint: disable=C0302, W0718
 
@@ -1332,7 +1334,20 @@ modificano i dati
     ndet, date, prat = find_max_decis(year)
     print('** Ultima decisione N. =', ndet, f' (data: {date}, pratica: {prat})')
 
-
+def showstates():
+    "Mostra tabelle degli stati"
+    tab = cs.TABELLA_PASSI
+    for code, mode in cs.MENU_MOD_ACQ:
+        print(f'----- {mode} -----')
+        step = CdP.INI
+        while True:
+            if isinstance(step, dict):
+                step = step[code]
+            info = tab[step]
+            print(' .', step, '-', info[0], '-->', info[2])
+            if step == CdP.FIN:
+                break
+            step = info[4]
 
 def main():                                           # pylint: disable=R0912
     "Procedura per uso da linea di comando e test"
@@ -1371,6 +1386,8 @@ def main():                                           # pylint: disable=R0912
         show64file('pwfile.json')
     elif verb == 'st':
         steal(sys.argv[2])
+    elif verb == 'ta':
+        showstates()
     elif verb == 'ul':
         showusers()
     elif verb == 'us':
