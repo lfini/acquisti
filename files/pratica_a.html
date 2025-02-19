@@ -2,11 +2,6 @@
 <table width=100%>
 <tr><td valign=top width=60% bgcolor=#f0f0f0>
 
-{% if creapratica in info.commands and info.progetto_modificabile %}
-<form method=GET action=/creapratica>
-<input type=submit value="Crea nuova pratica" name=creapratica>
-</form>
-{% endif %}
 <p>
 <b>Progetto:</b>
 {% if info.pdf_progetto %}

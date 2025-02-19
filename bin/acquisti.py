@@ -88,10 +88,11 @@ import table as tb
 # Versione 5.3.2 1/2025:   Messo log invio mail
 # Versione 5.4   1/2025:   Corretti errori nel form per Decisione
 # Versione 5.4.1 1/2025:   Aggiunta linea di log in trovapratiche
+# Versione 5.5   2/2025:   Aggiunta modalità acquisto generica.
 
 __author__ = 'Luca Fini'
-__version__ = '5.4.1'
-__date__ = '29/1/2025'
+__version__ = '5.5'
+__date__ = '18/2/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -153,42 +154,6 @@ Per procedere devi specificare una motivazione per l'annullamento
 e premere "Conferma" </td></tr>
 '''
 
-def verifica_tabella_passi():
-    'Verifica tabella passi'
-    tab = cs.TABELLA_PASSI
-    codes = list(cs.CdP)
-    t_keys = list(tab.keys())
-    some_err = False
-    for code in codes:
-        if code not in t_keys:
-            ACQ.logger.error('Elemento CdP.%s non usato', code)
-            some_err = True
-
-    for key, value in tab.items():
-        if len(value) != 5:
-            ACQ.logger.error('Errore passo %s: lunghezza', key)
-            some_err = True
-        if not isinstance(value[0], str):
-            ACQ.logger.error('Errore passo %s[0]: non stringa', key)
-            some_err = True
-        if not isinstance(value[1], list):
-            ACQ.logger.error('Errore passo %s[1]: non lista', key)
-            some_err = True
-        if len(value[1]) not in (0, 2):
-            ACQ.logger.error('Errore passo %s[1]: lunghezza diversa da 2', key)
-            some_err = True
-        if not isinstance(value[2], list):
-            ACQ.logger.error('Errore passo %s[2]: non lista', key)
-            some_err = True
-        if not isinstance(value[3], list):
-            ACQ.logger.error('Errore passo %s[3]: non lista', key)
-            some_err = True
-        if not isinstance(value[4], (dict, cs.CdP)):
-            ACQ.logger.error('Errore passo %s[4]: non enum CdP', key)
-            some_err = True
-    if some_err:
-        raise RuntimeError('Trovati errori in Tabella generale passi')
-
 class ToBeImplemented(RuntimeError):
     'Parte codice non implementata'
 
@@ -239,6 +204,8 @@ Pratica:
 
     def get_passo(self, what=''):
         'riporta passo corrente - what = "text", "file", "cmd", "alleg", "next", "Full"'
+        if not self.data[cs.TAB_PASSI]:
+            return None
         passcode = self.data[cs.TAB_PASSI][-1]
         if not what:
             return passcode
@@ -606,7 +573,7 @@ def check_access(new=False):
                   cs.EMAIL_RICHIEDENTE: user['email'],
                   cs.NOME_RICHIEDENTE: user['name']+' '+user['surname'],
                   cs.DATA_PRATICA: ft.today(fulltime=False),
-                  cs.TAB_PASSI: [CdP.INI],
+                  cs.TAB_PASSI: [CdP.NUL],
                   cs.PRATICA_APERTA: True}
     ACQ.logger.debug('Session: %s', str(fk.session))
     ACQ.logger.debug('Request form:')
@@ -946,6 +913,8 @@ def login():
 
 def update_costo(d_prat: Pratica, spec):
     'Aggiorna dati relativi al costo (spec: costo, costo_decisione)'
+    if d_prat[cs.MOD_ACQUISTO] == cs.GENERIC:
+        return
     totimp, totiva, tottot, totbase = costo_totale(d_prat[spec])
     d_prat[cs.COSTO_NETTO] = f'{totimp:.2f}'
     d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
@@ -1073,7 +1042,7 @@ def procedi():
     ACQ.logger.info('URL: /procedi (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat, (CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS, CdP.OGP)):
+    if status_not_ok(d_prat, (CdP.GEN, CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS, CdP.OGP)):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     ret = d_prat.next()
@@ -1089,7 +1058,7 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
     ACQ.logger.info('URL: /modificaprogetto (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat, (CdP.INI, )):
+    if status_not_ok(d_prat, (CdP.NUL, CdP.INI, CdP.GEN)):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
@@ -1105,6 +1074,8 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         return pratica_common(d_prat)
     if mod_acquisto := fk.request.form.get(cs.MOD_ACQUISTO):
         d_prat[cs.MOD_ACQUISTO] = mod_acquisto
+        if len(d_prat[cs.TAB_PASSI]) <= 1:
+            d_prat[cs.TAB_PASSI] = [CdP.GEN] if mod_acquisto == cs.GENERIC else [CdP.INI]
     ACQ.logger.debug('Modalità acquisto: %s', mod_acquisto)
     prog = fms.ProgettoAcquisto(fk.request.form, **d_prat)
     codfs = ft.GlobLists.CODFLIST.column('Codice', unique=True)
@@ -1148,7 +1119,8 @@ def modificaprogetto():               # pylint: disable=R0912,R0915,R0911,R0914
         d_prat[cs.SAVED] = 1
         storia(d_prat, 'Generato/modificato progetto di acquisto')
         salvapratica(d_prat)
-        genera_documento(d_prat, doc)
+        if d_prat[cs.MOD_ACQUISTO] != cs.GENERIC:
+            genera_documento(d_prat, doc)
         avvisi(d_prat, "A")
         return pratica_common(d_prat)
     errors = prog.get_errors()
@@ -2271,7 +2243,6 @@ def localtest():
                   CONFIG.config[cs.EMAIL_PROCEDURA],
                   CONFIG.config[cs.EMAIL_WEBMASTER],
                   f'Notifica errore ACQUISTI v. {__version__} (debug)')
-    verifica_tabella_passi()
     initialize_me()
     ACQ.run(host="0.0.0.0", port=4001, debug=True)
 

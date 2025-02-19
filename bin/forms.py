@@ -393,25 +393,29 @@ class ProgettoAcquisto(FormWErrors):
             html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
             html += render_field(self.email_responsabile, sameline=True)
             html += BRK+render_field(self.lista_codf)+E_TRTD
-            if self.modalita_acquisto.data == cs.CONSIP:
-                html += B_TRTD+Markup('<h4>Dati relativi alla convenzione Consip</h4>\n')+\
-                        render_field(self.convenzione, size=20, sameline=True) +\
-                        NBSP+render_field(self.tot_lotti, size=10, sameline=True)+\
-                        NBSP+render_field(self.lotto, size=10, sameline=True)+PAR
-                html += render_field(self.guf_it_data, size=10, sameline=True) +\
-                        NBSP+render_field(self.guf_it_num, size=10, sameline=True)+BRK +\
-                        render_field(self.guf_eu_data, size=10, sameline=True) +\
-                        NBSP+render_field(self.guf_eu_num, size=10, sameline=True)+E_TRTD
-            html += B_TRTD+render_field(self.fornitore_nome, size=80)+PAR
-            html += render_field(self.fornitore_sede, sep='', size=80)+PAR
-            html += render_field(self.fornitore_codfisc, sameline=True)+BRK
-            html += render_field(self.fornitore_partiva, sameline=True)+E_TRTD
-            html += B_TRTD+render_field(self.costo_progetto, sameline=True)+E_TRTD
+            if self.modalita_acquisto.data != cs.GENERIC:
+                if self.modalita_acquisto.data == cs.CONSIP:
+                    html += B_TRTD+Markup('<h4>Dati relativi alla convenzione Consip</h4>\n')+\
+                            render_field(self.convenzione, size=20, sameline=True) +\
+                            NBSP+render_field(self.tot_lotti, size=10, sameline=True)+\
+                            NBSP+render_field(self.lotto, size=10, sameline=True)+PAR
+                    html += render_field(self.guf_it_data, size=10, sameline=True) +\
+                            NBSP+render_field(self.guf_it_num, size=10, sameline=True)+BRK +\
+                            render_field(self.guf_eu_data, size=10, sameline=True) +\
+                            NBSP+render_field(self.guf_eu_num, size=10, sameline=True)+E_TRTD
+                html += B_TRTD+render_field(self.fornitore_nome, size=80)+PAR
+                html += render_field(self.fornitore_sede, sep='', size=80)+PAR
+                html += render_field(self.fornitore_codfisc, sameline=True)+BRK
+                html += render_field(self.fornitore_partiva, sameline=True)+E_TRTD
+                html += B_TRTD+render_field(self.costo_progetto, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.note_progetto, rows=10, cols=80)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, extra_validators=None):                                   #pylint: disable=R0912
+        if not self.modalita_acquisto.data:
+            self.errlist.append("Specificare modalità di acquisto")
+            return not self.errlist
         if not ft.date_to_time(self.data_pratica.data):
             self.errlist.append("Errore specifica data")
         if not self.descrizione_acquisto.data:
@@ -422,24 +426,24 @@ class ProgettoAcquisto(FormWErrors):
             self.errlist.append("Manca codice Fu.Ob.")
         if not self.email_responsabile.data:
             self.errlist.append("Manca responsabile acquisto")
-        if not self.modalita_acquisto.data:
-            self.errlist.append("Specificare modalità di acquisto")
+        if self.modalita_acquisto.data == cs.GENERIC:
+            return not self.errlist
         if not self.costo_progetto.validate():
             self.errlist.append("Costo: "+", ".join(self.costo_progetto.errlist))
         return not self.errlist
 
 # Tabella informazioni variabili in funzione della modalità di acquisto
 #
-#                          PCP  Mepa<40  mepa<143 ubuy<40  ubuy<143 acc.quadro consip
-# numero_decisione      -   X     X         X       X        X         X         X
-# data_decisione        -   X     X         X       X        X         X         X
-# data_negoziazione     -         X         X       X        X
-# numero_negoziazione   -         X         X       X        X
-# data_offerta          -         X         X       X        X
-# numero_offerta        -         X         X       X        X
-# data_scadenza         -         X         X       X        X
-# data_protocollo_doc   -   X                                          X
-# numero_protocollo_doc -   X                                          X
+#                         PCP Mepa<40 mepa<143 ubuy<40 ubuy<143 acc.quad consip
+# numero_decisione      -  X    X        X       X       X         X       X
+# data_decisione        -  X    X        X       X       X         X       X
+# data_negoziazione     -       X        X       X       X
+# numero_negoziazione   -       X        X       X       X
+# data_offerta          -       X        X       X       X
+# numero_offerta        -       X        X       X       X
+# data_scadenza         -       X        X       X       X
+# data_protocollo_doc   -  X                                       X
+# numero_protocollo_doc -  X                                       X
 
 class Decisione(FormWErrors):
     "form per definizione decisione di contrarre"

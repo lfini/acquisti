@@ -47,6 +47,7 @@ TRATT_MEPA_143 = 'tratt.mepa143'
 TRATT_MEPA_40 = 'tratt.mepa40'
 TRATT_UBUY_143 = 'tratt.ubuy143'
 TRATT_UBUY_40 = 'tratt.ubuy40'
+GENERIC = 'prat.generic'
 
 TAB_TEMPLATE = {          # suffissi per i template delle varie modalità di acquisto
         ACC_QUADRO: 'aquad',
@@ -57,6 +58,7 @@ TAB_TEMPLATE = {          # suffissi per i template delle varie modalità di acq
         TRATT_MEPA_40: 'tm40k',
         TRATT_UBUY_143: 'ub143k',
         TRATT_UBUY_40: 'ub40k',
+        GENERIC: 'generic',
         }
 
 
@@ -267,6 +269,7 @@ MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40k€"),
                 (TRATT_UBUY_143, "Trattativa diretta UBUY da 40k€ e sotto 140k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
+                (GENERIC, "Pratica generica (da utilizzare solo su richiesta dell'Amministrazione)"),
                )
 
 # Tipi allegato
@@ -324,7 +327,9 @@ TAB_ALLEGATI = {ALL_GENERICO: ("A99_", "Documento generico", ALL_NAME),
 
 class CdP(IntEnum):
     'Codici passi operativi'
+    NUL = -1
     INI = 0
+    GEN = 5
     PIR = 10
     PAR = 20
     RUI = 30
@@ -342,11 +347,28 @@ class CdP(IntEnum):
 
 ############### Tabella generale passi operativi   ############################
 TABELLA_PASSI = {
+    CdP.NUL: ("Modalità acquisto non definita",
+              [],
+              [],
+              [],
+              {TRATT_MEPA_40: CdP.INI,   # prossimo passo dipende da
+               TRATT_UBUY_40: CdP.INI,   # modalità acquisto
+               TRATT_MEPA_143: CdP.INI,
+               TRATT_UBUY_143: CdP.INI,
+               CONSIP: CdP.INI,
+               ACC_QUADRO: CdP.INI,
+               INFER_5000: CdP.INI,
+               GENERIC: CdP.GEN}),
     CdP.INI: ("Iniziale",                            # Descrizione stato
               [DOC_PROGETTO, [PROVVISORIO]],         # File da generare per procedere (con opzioni)
               ['modificaprogetto', 'inviaprogetto'], # Comandi abilitati
               [ALL_PREV],                            # Allegati necessari per procedere
               CdP.PIR),                              # passo successivo
+    CdP.GEN: ("Archiviazione documenti",             # Descrizione stato
+              [],                                    # File da generare per procedere (con opzioni)
+              ['chiudipratica'],                     # Comandi abilitati
+              [],                                    # Allegati necessari per procedere
+              CdP.FIN),                              # passo successivo
     CdP.PIR: ("Progetto inviato al resp. dei fondi",
               [],
               ['approvaprogetto'],
