@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.8"
-__date__ = "27/01/2025"
+__version__ = "2.9"
+__date__ = "27/03/2025"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -90,9 +90,31 @@ class MyRadioField(wt.RadioField):
         self.help_spec = _has(self.short_name)
         self.is_required = required
         self.a_label = label
+
     def pre_validate(self, form):
         "Override la pre validation per modificare il messaggio"
         return True
+
+class MyRadioFieldOneLine(MyRadioField):
+    "Rendering su una sola linea"
+    def __call__(self, **kwargs):
+        'Rendering del field'
+        field_id = kwargs.pop('id', self.id)
+        html = []
+        for num, item in enumerate(self.iter_choices()):
+            value, label, checked = item[:3]
+            choice_id = f'{field_id}-{num}'
+            options = {"name": self.name, "value": value, "id": choice_id, "type": "radio"}
+            if checked:
+                options['checked'] = 'checked'
+            html.append(f'<input {ft.html_params(options)} /> {label}&nbsp;&nbsp;')
+#           html.append(f'<label for="{choice_id}">{label}</label><br>')
+        return ' '.join(html)
+
+#<input id="conferma_migliora-0" name="conferma_migliora" type="radio" value="migliora">
+#    <label for="conferma_migliora-0">migliora</label>&nbsp;
+#    <input id="conferma_migliora-1" name="conferma_migliora" type="radio" value="conferma">
+#    <label for="conferma_migliora-1">conferma</label>
 
 class MyTextField(wt.StringField):
     "La mia versione del StringField"
@@ -449,6 +471,7 @@ class Decisione(FormWErrors):
     "form per definizione decisione di contrarre"
     numero_decisione = MyTextField('Numero decisione', True)
     data_decisione = MyTextField('Data (g/m/aaaa)', True)
+    ccnl = MyTextField('CCNL', False)
     data_negoziazione = MyTextField('Data di pubblicazione (g/m/aaaa)', True)
     numero_negoziazione = MyTextField('ID negoziazione', True)
     data_scadenza = MyTextField('Data scadenza per presentazione offerta (g/m/aaaa)', True)
@@ -459,6 +482,8 @@ class Decisione(FormWErrors):
     numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
     numero_cig = MyTextField('CIG', True, [wt.validators.Optional()])
     costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
+    conferma_migliora = MyRadioFieldOneLine('', False,
+                                     choices=cs.SCELTA_MIGLIORA_CONFERMA)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
     dec_firma_vicario = MyBooleanField('Firma il Direttore Vicario', False)
@@ -486,8 +511,11 @@ class Decisione(FormWErrors):
         if d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO):
             html += B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4
             html += render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
-        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
+        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+PAR
+        html += "L'offerta proposta "+render_field(self.conferma_migliora, sameline=True)
+        html += "  il quadro economico"+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
+        html += render_field(self.ccnl, sameline=True)+BRK
         html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
         html += render_field(self.dec_firma_vicario, sameline=True)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD

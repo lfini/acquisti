@@ -135,6 +135,7 @@ RICH_IS_RESP = 'rich_resp'
 DOC_DECISIONE = "decisione.pdf"
 DOC_NOMINARUP = "nominarup.pdf"
 DOC_PROGETTO = "progetto.pdf"
+DOC_PROPOSTA = "proposta.pdf"
 DOC_ORDINE = "ordine.pdf"
 DOC_RDO = "rdo.pdf"
 
@@ -165,6 +166,7 @@ DATA_DECISIONE = 'data_decisione'               # dati_pratica
 DATA_NEGOZIAZIONE = 'data_negoziazione'         # dati_pratica
 DATA_OFFERTA = 'data_offerta'                   # dati_pratica
 DATA_PRATICA = 'data_pratica'                   # dati_pratica
+DATA_PROPOSTA = 'data_proposta'                 # dati_pratica
 DATA_SCADENZA = 'data_scadenza'                 # dati_pratica
 DATA_RESP_APPROVA = 'data_resp_approva'         # dati_pratica
 DATA_DIR_AUTORIZZA = 'data_dir_autorizza'       # dati_pratica
@@ -219,6 +221,7 @@ ONERI_SIC_GARA = 'oneri_sic_gara'               # dati_pratica
 ORD_FIRMA_VICARIO = 'ord_firma_vicario'         # dati pratica
 PDF_NOMINARUP = 'pdf_nominarup'                 # dati_pratica
 PDF_DECISIONE = 'pdf_decisione'                 # dati_pratica
+PDF_PROPOSTA = 'pdf_proposta'                   # dati_pratica
 PDF_ORDINE = 'pdf_ordine'                       # dati_pratica
 PDF_RDO = 'pdf_rdo'                             # dati_pratica
 PDF_PROGETTO = 'pdf_progetto'                   # dati_pratica
@@ -271,6 +274,10 @@ MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
                 (GENERIC, "Pratica generica (da utilizzare solo su richiesta dell'Amministrazione)"),
                )
+
+SCELTA_MIGLIORA_CONFERMA = (('migliora', 'migliora'),
+                           ('conferma', 'conferma')
+                           )
 
 # Tipi allegato
 ALL_CIG = "CIG"

@@ -89,10 +89,11 @@ import table as tb
 # Versione 5.4   1/2025:   Corretti errori nel form per Decisione
 # Versione 5.4.1 1/2025:   Aggiunta linea di log in trovapratiche
 # Versione 5.5   2/2025:   Aggiunta modalità acquisto generica.
+# Versione 5.6   3/2025:   Aggiunta generazione del documento proposta di aggiudicazione
 
 __author__ = 'Luca Fini'
-__version__ = '5.5'
-__date__ = '18/2/2025'
+__version__ = '5.6'
+__date__ = '26/3/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -352,6 +353,11 @@ def test_doc_progetto(d_prat: Pratica) -> bool:
     pdf_path = os.path.join(d_prat.basedir, cs.DOC_PROGETTO)
     return os.path.exists(pdf_path)
 
+def test_doc_proposta(d_prat: Pratica) -> bool:
+    "test: esistenza documento progetto"
+    pdf_path = os.path.join(d_prat.basedir, cs.DOC_PROPOSTA)
+    return os.path.exists(pdf_path)
+
 def test_doc_nominarup(d_prat: Pratica) -> bool:
     "test: esistenza documento autorizzazione"
     pdf_path = os.path.join(d_prat.basedir, cs.DOC_NOMINARUP)
@@ -509,6 +515,7 @@ def make_info(d_prat: Pratica) -> dict:
     info[cs.PDF_PROGETTO] = YES if test_doc_progetto(d_prat) else NOT
     info[cs.PDF_NOMINARUP] = YES if test_doc_nominarup(d_prat) else NOT
     info[cs.PDF_DECISIONE] = YES if test_doc_decisione(d_prat) else NOT
+    info[cs.PDF_PROPOSTA] = YES if test_doc_proposta(d_prat) else NOT
     info[cs.PDF_ORDINE] = YES if test_doc_ordine(d_prat) else NOT
     info[cs.PDF_RDO] = YES if test_doc_rdo(d_prat) else NOT
     return info
@@ -1477,7 +1484,10 @@ def modificadecisione():                     #pylint: disable=R0914
                 what = "Modificata"
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
+            if cs.DATA_PROPOSTA not in d_prat:
+                d_prat[cs.DATA_PROPOSTA] = ft.today()
             genera_documento(d_prat, doc)
+            genera_documento(d_prat, [cs.DOC_PROPOSTA, ''])
             storia(d_prat, what+' decisione a contrarre N. '
                            f'{d_prat[cs.NUMERO_DECISIONE]}')
             ndecis = int(d_prat[cs.NUMERO_DECISIONE].split('/')[0])

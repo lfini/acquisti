@@ -1,0 +1,123 @@
+%% Template: progetto-tm40k.tex. Version 1.0
+
+((* include 'header.tex' *))
+
+((* if provvisorio *))
+\watermark{\put(150,-300){\rotatebox{45}{\Huge P~R~O~V~V~I~S~O~R~I~O }}}
+((* endif *))
+
+\begin{document}
+\topaddr
+
+((* if debug *))
+\begin{quotation}
+	\textbf{DEBUG:} template = \texttt{progetto-tm40k.tex}
+\end{quotation}
+((* endif *))
+
+Pratica N. ((( pratica.numero_pratica )))
+
+
+
+\begin{flushright}
+Al Direttore dell'Osservatorio Astrofisico di Arcetri
+\end{flushright}
+
+\begin{center}
+\framebox[\linewidth]{%
+\begin{minipage}{0.9\linewidth}
+PROPOSTA DI AGGIUDICAZIONE PER AFFIDAMENTO DIRETTO ai sensi dell'art. 50, comma~1,
+lett.~b) D.Lgs. 36/2023 per l'acquisto di
+((( pratica.descrizione_acquisto )))
+\end{minipage}
+}
+
+
+	IL RESPONSABILE UNICO DEL PROGETTO (RUP)
+\end{center}
+
+In relazione alla procedura di affidamento indicata in epigrafe 
+
+
+\textbf{VISTO~}
+il progetto di fornitura autorizzato dal Responsabile dei Fondi;
+
+
+\textbf{VISTA~}
+l'autorizzazione a procedere all'acquisto del Direttore di Struttura;	
+
+
+\textbf{CONSIDERATO~}
+che all'esito di informale e preventiva indagine di mercato,
+si è individuato nella società (((pratica.fornitore_nome))),
+con sede legale in (((pratica.fornitore_sede))), Codice Fiscale
+(((pratica.fornitore_codfisc))) , il migliore Operatore Economico in
+grado di assolvere all'esecuzione dell'appalto in oggetto, in quanto:
+
+\begin{itemize}
+\item[-] l'offerta da esso presentata si è rilevata plausibile e conforme ai
+valori di mercato;
+
+\item[-] tale Operatore Economico vanta una solida e riconosciuta competenza nel
+settore di riferimento;
+\end{itemize}
+
+
+\textbf{VISTO~}
+il D.Lgs. 36/2023, e in particolare l'art. 50, comma 1, lett. b) , che
+consente l'affidamento diretto per contratti di importo inferiore alle
+soglie previste;
+
+
+\textbf{CONSIDERATO~}
+la necessità di garantire il principio di economicità, efficienza,
+tempestività e proporzionalità, nel rispetto dei principi di rotazione
+previsto dall'art. 49 del D.Lgs. 36/2023 e del principio di trasparenza
+di cui all'art. 20 del D.Lgs. 36/2024;
+
+
+\textbf{CHE~}
+conseguentemente è stata avviata una procedura diretta a provocare una
+formale offerta da parte del suddetto O.E., confermativa o migliorativa
+della precedente e, per il tramite di detta procedura, si è provveduto
+a richiedere all'O.E. le dichiarazioni richieste dalla vigente normativa
+in materia di appalti pubblici;
+
+
+\textbf{PRESO ATTO~}
+che l'O.E. ha, tempestivamente, depositato la propria offerta formale,
+((* if pratica.conferma_migliora == 'migliora' *)) migliorativa
+((* else *)) confermativa ((* endif *))
+della precedente (Offerta: Euro ((( pratica.costo_netto )))
+IVA esclusa)  e ha allegato i documenti richiesti;
+
+
+\textbf{VISTE~}
+le risultanze a seguito delle verifiche avviate a carico dell'Operatore
+Economico, dalle quali non emergono elementi ostativi all'affidamento;
+
+
+\textbf{VERIFICATO~}
+che gli obb.fu. assicurano copertura al quadro economico dell'affidamento
+in oggetto, come da ultimo confermati all'atto della sopra menzionata
+approvazione del progetto;  
+
+
+
+\begin{center}
+PROPONE
+\end{center}
+
+al Direttore dell'Osservatorio Astrofisico di Arcetri, di procedere
+all'adozione di determina di affidamento, ai sensi dell'art. 17, comma
+2 e dell'art. 50, comma 1, lett. b) del D.Lgs. 31 marzo 2023 n. 36, per
+l'acquisto di (((pratica.descrizione_acquisto))) a favore della società
+(((pratica.fornitore_nome))), con sede in (((pratica.fornitore_sede))),
+Codice Fiscale (((pratica.fornitore_codfisc))), per l'importo da essa
+offerto di Euro (((pratica.costo_netto))) IVA esclusa.
+
+
+Firenze, (((pratica.data_proposta)))
+
+
+\end{document}
