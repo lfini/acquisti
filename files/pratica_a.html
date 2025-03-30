@@ -43,11 +43,20 @@
 {% if 'modificardo' in info.commands and info.rdo_modificabile%}
 &nbsp;&nbsp;[<a href=/modificardo>Crea/Modifica</a>]
 {% endif %}
+{% if 'procedi_rdo' in info.commands%}
+&nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
+{% endif %}
 {% endif %}
 <p>
 <b>Proposta: </b>
 {% if info.pdf_proposta %}
   [<a href=/vedifile/proposta.pdf>Vedi</a>]
+{% endif %}
+{% if 'genera_proposta' in info.commands %}
+  [<a href=/genera_proposta>Genera proposta</a>]
+{% endif %}
+{% if 'procedi_pro' in info.commands and info.pdf_proposta%}
+&nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
 {% endif %}
 <p>
 <b>Decisione: </b>
@@ -63,6 +72,9 @@
 {% endif %}
 {% if 'inviadecisione' in info.commands and info.decis_inviabile and info.pdf_decisione %}
 &nbsp;&nbsp;[<a href=/inviadecisione>Invia decisione per firma digitale</a>]
+{% endif %}
+{% if 'procedi_dci' in info.commands %}
+&nbsp;&nbsp;[<a href=/procedi>Procedi</a>]&nbsp;&nbsp;&nbsp;&nbsp;
 {% endif %}
 <p>
 {% if info.ordine %}

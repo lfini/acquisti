@@ -272,12 +272,9 @@ MENU_MOD_ACQ = ((TRATT_MEPA_40, "Trattativa diretta MePA sotto 40k€"),
                 (TRATT_UBUY_40, "Trattativa diretta UBUY sotto 40k€"),
                 (TRATT_UBUY_143, "Trattativa diretta UBUY da 40k€ e sotto 140k€"),
                 (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
-                (GENERIC, "Pratica generica (da utilizzare solo su richiesta dell'Amministrazione)"),
+                (GENERIC, "Pratica generica (da utilizzare solo su " \
+                          "richiesta dell'Amministrazione)"),
                )
-
-SCELTA_MIGLIORA_CONFERMA = (('migliora', 'migliora'),
-                           ('conferma', 'conferma')
-                           )
 
 # Tipi allegato
 ALL_CIG = "CIG"
@@ -342,7 +339,8 @@ class CdP(IntEnum):
     RUI = 30
     IRD = 40
     AUD = 50
-    ROG = 60
+    PRO = 55
+#   ROG = 60
     DEC = 70
     DCI = 80
     ORD = 85
@@ -354,7 +352,7 @@ class CdP(IntEnum):
 
 ############### Tabella generale passi operativi   ############################
 TABELLA_PASSI = {
-    CdP.NUL: ("Modalità acquisto non definita",
+    CdP.NUL: ("Inizio",
               [],
               [],
               [],
@@ -366,7 +364,7 @@ TABELLA_PASSI = {
                ACC_QUADRO: CdP.INI,
                INFER_5000: CdP.INI,
                GENERIC: CdP.GEN}),
-    CdP.INI: ("Iniziale",                            # Descrizione stato
+    CdP.INI: ("Genera progetto",                     # Descrizione stato
               [DOC_PROGETTO, [PROVVISORIO]],         # File da generare per procedere (con opzioni)
               ['modificaprogetto', 'inviaprogetto'], # Comandi abilitati
               [ALL_PREV],                            # Allegati necessari per procedere
@@ -399,19 +397,19 @@ TABELLA_PASSI = {
                TRATT_UBUY_40: CdP.AUD,   # modalità acquisto
                TRATT_MEPA_143: CdP.AUD,
                TRATT_UBUY_143: CdP.AUD,
-               CONSIP: CdP.DEC,
-               ACC_QUADRO: CdP.DEC,
-               INFER_5000: CdP.DEC}),
-    CdP.AUD: ("Generazione Richiesta di Offerta",
+               CONSIP: CdP.PRO,
+               ACC_QUADRO: CdP.PRO,
+               INFER_5000: CdP.PRO}),
+    CdP.AUD: ("Genera RdO, allega RdO firmata",
               [DOC_RDO, []],
-              ['modificardo', 'procedi'],
+              ['modificardo', 'procedi_rdo'],
+              [ALL_RDO],
+              CdP.PRO),
+    CdP.PRO: ("Genera proposta di aggiudicazione",
+              [DOC_PROPOSTA, []],
+              ['genera_proposta', 'procedi_pro'],
               [],
-              CdP.ROG),
-    CdP.ROG: ("Genera decisione, allega RdO firmata",
-              [DOC_DECISIONE, [PROVVISORIO]],
-              ['modificadecisione', 'inviadecisione'],
-              [ALL_RDO, ALL_CIG],
-              CdP.DCI),
+              CdP.DEC),
     CdP.DEC: ("Genera decisione",
               [DOC_DECISIONE, [PROVVISORIO]],
               ['modificadecisione', 'inviadecisione'],
@@ -419,7 +417,7 @@ TABELLA_PASSI = {
               CdP.DCI),
     CdP.DCI: ("Decisione di contrarre inviata al Direttore per firma",
               [],
-              ['procedi'],
+              ['procedi_dci'],
               [ALL_DECIS_FIRM],
               {TRATT_MEPA_40: CdP.OGP,   # prossimo passo dipende da
                TRATT_UBUY_40: CdP.ORD,   # modalità acquisto

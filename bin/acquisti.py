@@ -90,10 +90,11 @@ import table as tb
 # Versione 5.4.1 1/2025:   Aggiunta linea di log in trovapratiche
 # Versione 5.5   2/2025:   Aggiunta modalità acquisto generica.
 # Versione 5.6   3/2025:   Aggiunta generazione del documento proposta di aggiudicazione
+# Versione 5.6.1 3/2025:   Modificato albero delle decisioni 
 
 __author__ = 'Luca Fini'
-__version__ = '5.6'
-__date__ = '26/3/2025'
+__version__ = '5.6.1'
+__date__ = '30/3/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1049,7 +1050,7 @@ def procedi():
     ACQ.logger.info('URL: /procedi (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat, (CdP.GEN, CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS, CdP.OGP)):
+    if status_not_ok(d_prat, (CdP.GEN, CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS, CdP.PRO, CdP.OGP)):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     ret = d_prat.next()
@@ -1177,7 +1178,7 @@ def inviadecisione():                    #pylint: disable=R0914
     ACQ.logger.info('URL: /inviadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat, (CdP.ROG, CdP.DEC)):
+    if status_not_ok(d_prat, (CdP.DEC, )):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     err = auth_decisione_inviabile(d_prat)
@@ -1231,7 +1232,7 @@ def approvaprogetto():
         ACQ.logger.error('Approvazione non autorizzata: %s. Utente %s pratica %s',
                       err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
         return pratica_common(d_prat)
-    d_prat[cs.DATA_RESP_APPROVA] = ft.today()
+    d_prat[cs.DATA_RESP_APPROVA] = ft.today(False)
     d_prat.next()
     genera_documento(d_prat, (cs.DOC_PROGETTO, [cs.RESPONSABILE]))
     storia(d_prat, 'Progetto approvato da resp. fondi.')
@@ -1315,7 +1316,7 @@ def autorizza():
     doc_opts = [cs.RESPONSABILE, cs.DIRETTORE]
     if d_prat.get(cs.RUP_FIRMA_VICARIO):
         doc_opts.append(cs.VICARIO)
-    d_prat[cs.DATA_DIR_AUTORIZZA] = ft.today()
+    d_prat[cs.DATA_DIR_AUTORIZZA] = ft.today(False)
     genera_documento(d_prat, (cs.DOC_PROGETTO, doc_opts))
     genera_documento(d_prat, (cs.DOC_NOMINARUP, doc_opts))   # genera versione definitiva
     salvapratica(d_prat)
@@ -1455,7 +1456,7 @@ def modificadecisione():                     #pylint: disable=R0914
     ACQ.logger.info('URL: /modificadecisione (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat, (CdP.ROG, CdP.DEC)):
+    if status_not_ok(d_prat, (CdP.DEC, )):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     if cs.ANNULLA in fk.request.form:
@@ -1484,10 +1485,7 @@ def modificadecisione():                     #pylint: disable=R0914
                 what = "Modificata"
             update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
-            if cs.DATA_PROPOSTA not in d_prat:
-                d_prat[cs.DATA_PROPOSTA] = ft.today()
             genera_documento(d_prat, doc)
-            genera_documento(d_prat, [cs.DOC_PROPOSTA, ''])
             storia(d_prat, what+' decisione a contrarre N. '
                            f'{d_prat[cs.NUMERO_DECISIONE]}')
             ndecis = int(d_prat[cs.NUMERO_DECISIONE].split('/')[0])
@@ -1510,6 +1508,21 @@ def modificadecisione():                     #pylint: disable=R0914
            'body': decis(d_prat)}
     return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
                               test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
+
+@ACQ.route('/genera_proposta', methods=('GET', 'POST', ))
+def genera_proposta():                     #pylint: disable=R0914
+    "pagina: genera proposta di aggiudicazione"
+    ACQ.logger.info('URL: /genera_proposta (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.PRO, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
+    d_prat[cs.DATA_PROPOSTA] = ft.today(fulltime=False)
+    genera_documento(d_prat, [cs.DOC_PROPOSTA, ''])
+    storia(d_prat, 'Generata proposta di aggiudicazione')
+    salvapratica(d_prat)
+    return pratica_common(d_prat)
 
 @ACQ.route('/upload', methods=('POST', ))
 def upload():               # pylint: disable=R0914,R0911,R0912
