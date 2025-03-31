@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.9"
-__date__ = "30/03/2025"
+__version__ = "2.10"
+__date__ = "31/03/2025"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -94,6 +94,21 @@ class MyRadioField(wt.RadioField):
     def pre_validate(self, form):
         "Override la pre validation per modificare il messaggio"
         return True
+
+class MyRadioFieldOneLine(MyRadioField):
+    "Rendering su una sola linea"
+    def __call__(self, **kwargs):
+        'Rendering del field'
+        field_id = kwargs.pop('id', self.id)
+        html = []
+        for num, item in enumerate(self.iter_choices()):
+            value, label, checked = item[:3]
+            choice_id = f'{field_id}-{num}'
+            options = {"name": self.name, "value": value, "id": choice_id, "type": "radio"}
+            if checked:
+                options['checked'] = 'checked'
+            html.append(f'<input {ft.html_params(options)} /> {label}&nbsp;&nbsp;')
+        return ' '.join(html)
 
 class MyTextField(wt.StringField):
     "La mia versione del StringField"
@@ -413,7 +428,7 @@ class ProgettoAcquisto(FormWErrors):
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
-    def validate(self, extra_validators=None):                                   #pylint: disable=R0912
+    def validate(self, extra_validators=None):            #pylint: disable=R0912
         if not self.modalita_acquisto.data:
             self.errlist.append("Specificare modalità di acquisto")
             return not self.errlist
@@ -429,8 +444,40 @@ class ProgettoAcquisto(FormWErrors):
             self.errlist.append("Manca responsabile acquisto")
         if self.modalita_acquisto.data == cs.GENERIC:
             return not self.errlist
+        if not (self.fornitore_nome.data and self.fornitore_sede.data and \
+                self.fornitore_codfisc.data and self.fornitore_partiva.data):
+            self.errlist.append("dati fornitore incompleti")
         if not self.costo_progetto.validate():
             self.errlist.append("Costo: "+", ".join(self.costo_progetto.errlist))
+        return not self.errlist
+
+class Proposta(FormWErrors):
+    "form per definizione proposta di aggiudicazione"
+    costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
+    conferma_migliora = MyRadioFieldOneLine('', False,
+                                     choices=(('migliora', 'migliora'),
+                                              ('conferma', 'conferma')))
+    T_avanti = wt.SubmitField('Avanti', [wt.validators.Optional()])
+    T_annulla = wt.SubmitField('Annulla', [wt.validators.Optional()])
+
+    def __call__(self, d_prat):
+        "rendering del form"
+        html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
+                                f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
+        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
+        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
+        html += B_TRTD+Markup("L'offerta proposta ")+ \
+                render_field(self.conferma_migliora, sameline=True)+ \
+                Markup(" il quadro economico")+E_TRTD
+        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        return html
+
+    def validate(self, _):              #pylint: disable=W0222
+        "Validazione specifica per il form"
+        self.errlist = []
+        if self.conferma_migliora.data not in ('migliora', 'conferma'):
+            self.errlist.append("Manca indicazione miglioramento/conferma")
         return not self.errlist
 
 # Tabella informazioni variabili in funzione della modalità di acquisto
@@ -460,7 +507,6 @@ class Decisione(FormWErrors):
     numero_protocollo_doc = MyTextField('Numero protocollo documentazione', True)
     numero_cup = MyTextField('CUP', True, [wt.validators.Optional()])
     numero_cig = MyTextField('CIG', True, [wt.validators.Optional()])
-    costo_rdo = MyFormField(Costo2, 'Quadro economico', True)
     capitolo = MyTextField('Capitolo', True,
                            [wt.validators.InputRequired("Manca indicazione capitolo")])
     dec_firma_vicario = MyBooleanField('Firma il Direttore Vicario', False)
@@ -488,7 +534,6 @@ class Decisione(FormWErrors):
         if d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO):
             html += B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4
             html += render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
-        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
         html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
         html += render_field(self.ccnl, sameline=True)+BRK
         html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')

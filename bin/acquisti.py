@@ -92,6 +92,7 @@ import table as tb
 # Versione 5.6   3/2025:   Aggiunta generazione del documento proposta di aggiudicazione
 # Versione 5.6.1 3/2025:   Modificato albero delle decisioni
 # Versione 5.6.2 3/2025:   Aggiustamenti dopo precedente modifica
+# Versione 5.6.3 3/2025:   Aggiuntom pannello specifico per proposta di aggiudicazione
 
 __author__ = 'Luca Fini'
 __version__ = '5.6.2'
@@ -437,32 +438,8 @@ def auth_rollback(d_prat: Pratica) -> str:
         return YES
     return NO_NON_ADMIN
 
-def auth_rdo_modificabile(d_prat: Pratica) -> str:
+def auth_admin_or_rup(d_prat: Pratica) -> str:
     "test: rdo modificabile"
-    if test_rup(d_prat) or test_admin(d_prat.user):
-        return YES
-    return NO_NON_ADMIN_RUP
-
-def auth_decisione_modificabile(d_prat: Pratica) -> str:
-    "test: decisione di contrarre modificabile"
-    if test_rup(d_prat) or test_admin(d_prat.user):
-        return YES
-    return NO_NON_ADMIN_RUP
-
-def auth_ordine_modificabile(d_prat: Pratica) -> str:
-    "test: ordine modificabile"
-    if test_rup(d_prat) or test_admin(d_prat.user):
-        return YES
-    return NO_NON_ADMIN_RUP
-
-def auth_decisione_inviabile(d_prat: Pratica) -> str:
-    "test: decisione di contrarre inviabile"
-    if test_rup(d_prat) or test_admin(d_prat.user):
-        return YES
-    return NO_NON_ADMIN_RUP
-
-def auth_decisione_cancellabile(d_prat: Pratica) -> str:
-    "test: decisione di contrarre cancellabile"
     if test_rup(d_prat) or test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN_RUP
@@ -500,9 +477,9 @@ def make_info(d_prat: Pratica) -> dict:
     info['allegati_cancellabili'] = auth_allegati_cancellabili(d_prat)
     info['autorizz_richiedibile'] = auth_autorizz_richiedibile(d_prat)
     info['autorizzabile'] = auth_autorizzabile(d_prat)
-    info['decis_modificabile'] = auth_decisione_modificabile(d_prat)
-    info['decis_inviabile'] = auth_decisione_inviabile(d_prat)
-    info['ordine_modificabile'] = auth_ordine_modificabile(d_prat)
+    info['decis_modificabile'] = auth_admin_or_rup(d_prat)
+    info['decis_inviabile'] = auth_admin_or_rup(d_prat)
+    info['ordine_modificabile'] = auth_admin_or_rup(d_prat)
     info['ordine'] = YES if test_ordine_richiesto(d_prat) else NOT
     info['pratica_annullabile'] = auth_pratica_annullabile(d_prat)
     info['progetto_approvabile'] = auth_progetto_approvabile(d_prat)
@@ -513,7 +490,7 @@ def make_info(d_prat: Pratica) -> dict:
     info['rdo_richiesta'] = YES if test_rdo_richiesta(d_prat) else NOT
     info['rollback'] = auth_rollback(d_prat)
     info['rup_indicabile'] = auth_rup_indicabile(d_prat)
-    info['rdo_modificabile'] = auth_rdo_modificabile(d_prat)
+    info['rdo_modificabile'] = auth_admin_or_rup(d_prat)
     info[cs.PDF_PROGETTO] = YES if test_doc_progetto(d_prat) else NOT
     info[cs.PDF_NOMINARUP] = YES if test_doc_nominarup(d_prat) else NOT
     info[cs.PDF_DECISIONE] = YES if test_doc_decisione(d_prat) else NOT
@@ -1183,7 +1160,7 @@ def inviadecisione():                    #pylint: disable=R0914
     if status_not_ok(d_prat, (CdP.DEC, )):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
-    err = auth_decisione_inviabile(d_prat)
+    err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         ACQ.logger.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
@@ -1368,7 +1345,7 @@ def modificardo():
     if status_not_ok(d_prat, (CdP.AUD, )):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
-    err = auth_rdo_modificabile(d_prat)
+    err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         ACQ.logger.error('Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s', \
@@ -1419,7 +1396,7 @@ def modificaordine():                     #pylint: disable=R0914
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
-    err = auth_ordine_modificabile(d_prat)
+    err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         ACQ.logger.error('Gestione ordine non autorizzata: %s. Utente %s, pratica %s',
@@ -1452,6 +1429,49 @@ def modificaordine():                     #pylint: disable=R0914
     return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
                               test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
 
+@ACQ.route('/modificaproposta', methods=('GET', 'POST', ))
+def modificaproposta():                     #pylint: disable=R0914
+    "pagina: modifica proposta di aggiudicazione"
+    ACQ.logger.info('URL: /modificaproposta (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.PRO, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
+    if cs.ANNULLA in fk.request.form:
+        fk.flash('Operazione annullata', category="info")
+        return pratica_common(d_prat)
+    err = auth_admin_or_rup(d_prat)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        ACQ.logger.error('Gestione proposta di aggiudicazione non autorizzata: ' \
+                         '%s. Utente %s, pratica %s',
+                          err, d_prat.user['userid'], d_prat[cs.NUMERO_PRATICA])
+        return pratica_common(d_prat)
+    if cs.COSTO_RDO not in d_prat:
+        d_prat[cs.COSTO_RDO] = d_prat[cs.COSTO_PROGETTO].copy()
+    prop = fms.Proposta(fk.request.form, **d_prat)
+    if fk.request.method == 'POST':
+        if prop.validate(d_prat):
+            d_prat.update(clean_data(prop.data))
+            update_costo(d_prat, cs.COSTO_RDO)
+            doc = d_prat.get_passo('f')
+            genera_documento(d_prat, doc)
+            storia(d_prat, 'Generata proposta di aggiudicazione')
+            return pratica_common(d_prat)
+        errors = prop.get_errors()
+        for err in errors:
+            fk.flash(err, category="error")
+        ACQ.logger.debug("Errori form proposta: %s", "; ".join(errors))
+    ddp = {'title': 'Immissione dati per proposta di aggiudicazione',
+           'subtitle': f"Pratica N. {d_prat['numero_pratica']}",
+           'before': '<form method=POST action=/modificaproposta '
+                     'accept-charset="utf-8" novalidate>',
+           'after': "</form>",
+           'body': prop(d_prat)}
+    return fk.render_template('form_layout.html', sede=CONFIG.config[cs.SEDE],
+                              test_mode=CONFIG.config.get(cs.TEST_MODE), data=ddp)
+
 @ACQ.route('/modificadecisione', methods=('GET', 'POST', ))
 def modificadecisione():                     #pylint: disable=R0914
     "pagina: modifica decisione di contrarre"
@@ -1464,7 +1484,7 @@ def modificadecisione():                     #pylint: disable=R0914
     if cs.ANNULLA in fk.request.form:
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
-    err = auth_decisione_modificabile(d_prat)
+    err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
         ACQ.logger.error('Gestione decisione di contrarre non autorizzata: ' \
@@ -1485,7 +1505,6 @@ def modificadecisione():                     #pylint: disable=R0914
                 what = "Generata"
             else:
                 what = "Modificata"
-            update_costo(d_prat, cs.COSTO_RDO)
             doc = d_prat.get_passo('f')
             genera_documento(d_prat, doc)
             storia(d_prat, what+' decisione a contrarre N. '

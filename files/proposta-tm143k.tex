@@ -85,7 +85,8 @@ in materia di appalti pubblici;
 
 \textbf{PRESO ATTO~}
 che l'O.E. ha, tempestivamente, depositato la propria offerta formale,
-confermativa o migliorativa
+((* if pratica.conferma_migliora == 'migliora' *)) migliorativa
+((* else *)) confermativa ((* endif *))
 della precedente (Offerta: Euro ((( pratica.costo_netto )))
 IVA esclusa)  e ha allegato i documenti richiesti;
 

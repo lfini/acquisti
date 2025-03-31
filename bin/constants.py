@@ -407,7 +407,7 @@ TABELLA_PASSI = {
               CdP.PRO),
     CdP.PRO: ("Genera proposta di aggiudicazione",
               [DOC_PROPOSTA, []],
-              ['genera_proposta', 'procedi_pro'],
+              ['modificaproposta', 'procedi_pro'],
               [],
               CdP.DEC),
     CdP.ROG: ("Passo non più definito",
