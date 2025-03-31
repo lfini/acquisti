@@ -90,11 +90,12 @@ import table as tb
 # Versione 5.4.1 1/2025:   Aggiunta linea di log in trovapratiche
 # Versione 5.5   2/2025:   Aggiunta modalità acquisto generica.
 # Versione 5.6   3/2025:   Aggiunta generazione del documento proposta di aggiudicazione
-# Versione 5.6.1 3/2025:   Modificato albero delle decisioni 
+# Versione 5.6.1 3/2025:   Modificato albero delle decisioni
+# Versione 5.6.2 3/2025:   Aggiustamenti dopo precedente modifica
 
 __author__ = 'Luca Fini'
-__version__ = '5.6.1'
-__date__ = '30/3/2025'
+__version__ = '5.6.2'
+__date__ = '31/3/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1050,7 +1051,8 @@ def procedi():
     ACQ.logger.info('URL: /procedi (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat, (CdP.GEN, CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS, CdP.PRO, CdP.OGP)):
+    if status_not_ok(d_prat, (CdP.GEN, CdP.AUD, CdP.DCI, CdP.ORD, CdP.ALS,
+                              CdP.PRO, CdP.OGP, CdP.ROG)):
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     ret = d_prat.next()

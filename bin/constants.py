@@ -340,7 +340,7 @@ class CdP(IntEnum):
     IRD = 40
     AUD = 50
     PRO = 55
-#   ROG = 60
+    ROG = 60
     DEC = 70
     DCI = 80
     ORD = 85
@@ -408,6 +408,11 @@ TABELLA_PASSI = {
     CdP.PRO: ("Genera proposta di aggiudicazione",
               [DOC_PROPOSTA, []],
               ['genera_proposta', 'procedi_pro'],
+              [],
+              CdP.DEC),
+    CdP.ROG: ("Passo non più definito",
+              [],
+              ['procedi'],
               [],
               CdP.DEC),
     CdP.DEC: ("Genera decisione",
