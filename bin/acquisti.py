@@ -92,11 +92,12 @@ import table as tb
 # Versione 5.6   3/2025:   Aggiunta generazione del documento proposta di aggiudicazione
 # Versione 5.6.1 3/2025:   Modificato albero delle decisioni
 # Versione 5.6.2 3/2025:   Aggiustamenti dopo precedente modifica
-# Versione 5.6.3 3/2025:   Aggiuntom pannello specifico per proposta di aggiudicazione
+# Versione 5.6.3 3/2025:   Aggiunto pannello specifico per proposta di aggiudicazione
+# Versione 5.6.4 4/2025:   Aggiunto controllo per impedire tentato annullamento primo passo
 
 __author__ = 'Luca Fini'
-__version__ = '5.6.2'
-__date__ = '31/3/2025'
+__version__ = '5.6.4'
+__date__ = '1/4/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1753,8 +1754,9 @@ def togglestoria():
         d_prat[cs.VEDI_STORIA] = 1
     salvapratica(d_prat)
     return pratica_common(d_prat)
+
 @ACQ.route('/rollback', methods=('GET', 'POST'))
-def rollback():                       #pylint: disable=R0914
+def rollback():                       #pylint: disable=R0914,R0911
     "Pagina: annulla ultimo passo"
     ACQ.logger.info('URL: /rollback (%s)', fk.request.method)
     if not (d_prat := check_access()):
@@ -1770,6 +1772,11 @@ def rollback():                       #pylint: disable=R0914
         return pratica_common(d_prat)
     passcode = d_prat.get_passo()
     prevcode = d_prat.get_back()
+    if prevcode is None:
+        err = 'Annullamento passo non consentito'
+        fk.flash(err, category="error")
+        ACQ.logger.error(err)
+        return pratica_common(d_prat)
     ACQ.logger.debug('Al passo %s rolling back to %s', passcode, prevcode)
     doc_to_remove = pass_info(passcode, what='file')
     doc_to_remove_str = doc_to_remove[0] if doc_to_remove else 'Nessuno'
