@@ -94,10 +94,13 @@ import table as tb
 # Versione 5.6.2 3/2025:   Aggiustamenti dopo precedente modifica
 # Versione 5.6.3 3/2025:   Aggiunto pannello specifico per proposta di aggiudicazione
 # Versione 5.6.4 4/2025:   Aggiunto controllo per impedire tentato annullamento primo passo
+#                          Corretto bug mancato salvataggio dati dopo modifica proposta
+#                          Corretto bug cancellazione file dopo annullamento passo
+#                          Corretto bug che consentiva annullamento passo a pratica chiusa
 
 __author__ = 'Luca Fini'
 __version__ = '5.6.4'
-__date__ = '1/4/2025'
+__date__ = '25/4/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -258,14 +261,11 @@ Pratica:
         cpasso = self.data[cs.TAB_PASSI].pop(-1)
         ppasso = self.data[cs.TAB_PASSI][-1]
         ACQ.logger.debug('back(), {%s} -> {%s}', cpasso, ppasso)
-        alleg = self.get_passo('a')
-        for alg in alleg:
-            name = cs.TAB_ALLEGATI[alg][0]
-            ret = ft.remove((self.basedir, name))
-            if ret:
-                ACQ.logger.info('Rimosso file: %s', ret)
-        doc = self.get_passo('f')
-        genera_documento(self, doc)
+#       alleg = self.get_passo('a')
+#       for alg in alleg:
+#           name = cs.TAB_ALLEGATI[alg][0]
+#           ret = ft.remove((self.basedir, name))
+#           ACQ.logger.info(ret)
         return True
 
     def annulla(self, motivo):
@@ -435,6 +435,8 @@ def auth_autorizzabile(d_prat: Pratica) -> str:
 
 def auth_rollback(d_prat: Pratica) -> str:
     "test: rollback attivabile"
+    if not d_prat.get(cs.PRATICA_APERTA):
+        return NO_PRATICA_CHIUSA
     if test_admin(d_prat.user):
         return YES
     return NO_NON_ADMIN
@@ -741,17 +743,11 @@ def get_tipo_allegato():
         return allx[0][:-2]
     return ""
 
-def filename_allegato(tipo, origname, ext, spec, d_prat):    # pylint: disable=R0913
+def filename_allegato(tipo, origname, ext, d_prat):    # pylint: disable=R0913
     "Genera nomi file per allegati"
     prefix, model = (cs.TAB_ALLEGATI[tipo][0], cs.TAB_ALLEGATI[tipo][2])
     if model == cs.ALL_SING:
         return prefix+ext
-    if model == cs.ALL_SPEC:
-        if spec:
-            cspec = spec.strip("/\\?!;,><|#*\"'$%&£()`§")
-            cspec = cspec.replace(" ", "_")
-            return f"{prefix}_({cspec}){ext}"
-        return ""
     if model == cs.ALL_NAME:
         return prefix+origname+ext
     if model != cs.ALL_PRAT:
@@ -1459,6 +1455,7 @@ def modificaproposta():                     #pylint: disable=R0914
             doc = d_prat.get_passo('f')
             genera_documento(d_prat, doc)
             storia(d_prat, 'Generata proposta di aggiudicazione')
+            salvapratica(d_prat)
             return pratica_common(d_prat)
         errors = prop.get_errors()
         for err in errors:
@@ -1568,11 +1565,7 @@ def upload():               # pylint: disable=R0914,R0911,R0912
     if ext not in cs.UPLOAD_TYPES:
         fk.flash(f"Tipo allegato non valido: {fle.filename}", category="error")
         return pratica_common(d_prat)
-    spec = fk.request.form.get(cs.SIGLA_DITTA, "")
-    name = filename_allegato(tipo_allegato, origname, ext, spec, d_prat)
-    if not name:
-        fk.flash("Devi specificare una sigla per la ditta!", category="error")
-        return pratica_common(d_prat)
+    name = filename_allegato(tipo_allegato, origname, ext, d_prat)
     fpath = os.path.join(d_prat.basedir, name)
     if os.path.exists(fpath):
         fk.flash(f'File "{name}" già esistente!', category='error')
@@ -1604,8 +1597,7 @@ def cancella(name):
     else:
         storia(d_prat, f'Rimosso allegato {name}')
         ret = ft.remove((d_prat.basedir, name))
-        if ret:
-            ACQ.logger.info('Rimosso file: %s', ret)
+        ACQ.logger.info(ret)
     salvapratica(d_prat)
     return pratica_common(d_prat)
 
@@ -1761,8 +1753,8 @@ def rollback():                       #pylint: disable=R0914,R0911
     ACQ.logger.info('URL: /rollback (%s)', fk.request.method)
     if not (d_prat := check_access()):
         return fk.redirect(fk.url_for('start'))
-    if status_not_ok(d_prat):
-        fk.flash(ILLEGAL_OP, category="error")
+    if not d_prat.get(cs.PRATICA_APERTA):
+        fk.flash('Pratica chiusa', category="error")
         return pratica_common(d_prat)
     err = auth_rollback(d_prat)
     if err.startswith(NOT):
@@ -1777,35 +1769,35 @@ def rollback():                       #pylint: disable=R0914,R0911
         fk.flash(err, category="error")
         ACQ.logger.error(err)
         return pratica_common(d_prat)
-    ACQ.logger.debug('Al passo %s rolling back to %s', passcode, prevcode)
-    doc_to_remove = pass_info(passcode, what='file')
-    doc_to_remove_str = doc_to_remove[0] if doc_to_remove else 'Nessuno'
-    cod_all = pass_info(passcode, what='alleg')
-    all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
-    ACQ.logger.debug('Documento da cancellare: %s', doc_to_remove_str)
-    ACQ.logger.debug('Allegati da cancellare: %s', ', '.join(all_to_remove))
     if 'annulla' in fk.request.form:
         ACQ.logger.info('Operazione annullata')
         fk.flash('Operazione annullata', category="info")
         return pratica_common(d_prat)
+    ACQ.logger.debug('Al passo %s rolling back to %s', passcode, prevcode)
+    doc_to_remove = pass_info(passcode, what='file')
+    doc_to_remove_str = doc_to_remove[0] if doc_to_remove else 'Nessuno'
+    cod_all = pass_info(prevcode, what='alleg')
+    all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
     if 'conferma' in fk.request.form:
         ACQ.logger.info('Annullamento confermato')
+        ACQ.logger.info('Documento da cancellare: %s', doc_to_remove_str)
+        ACQ.logger.info('Allegati da cancellare: %s', ', '.join(all_to_remove))
         if doc_to_remove:
             ret = ft.remove((d_prat.basedir, doc_to_remove[0]))
-            if ret:
-                ACQ.logger.info('Rimosso file: %s', ret)
+            ACQ.logger.info(ret)
         for tipo in cod_all:
-            name = filename_allegato(tipo, '', '.pdf', '', d_prat)
-            ret = ft.remove((d_prat.basedir, name))
-            if ret:
-                ACQ.logger.info('Rimosso file: %s', ret)
+            name = filename_allegato(tipo, '', '', d_prat)
+            ret = ft.remove((d_prat.basedir, name), prefix=True)
+            ACQ.logger.info(ret)
+        d_prat.back()
+        doc = d_prat.get_passo('f')
+        genera_documento(d_prat, doc)
         msg = "Annullato ultimo passo pratica"
         storia(d_prat, msg)
-        d_prat.back()
-        storia(d_prat, f'Passo corrente: {d_prat.get_passo("text")}')
         salvapratica(d_prat)
         fk.flash(msg, category="info")
         ACQ.logger.info(msg)
+        ACQ.logger.info('Passo corrente: %s', d_prat.get_passo("text"))
         return pratica_common(d_prat)
     ddp = {'passo': pass_info(passcode, 'text'),
            'prec': pass_info(prevcode, 'text'),
@@ -2299,8 +2291,8 @@ def localtest():
 
 def production():
     "lancia la procedura in modo produzione (all'interno del web server)"
-#   ACQ.logger.setLevel(logging.INFO)
-    ACQ.logger.setLevel(logging.DEBUG)
+    ACQ.logger.setLevel(logging.INFO)
+#   ACQ.logger.setLevel(logging.DEBUG)
     ft.set_logger(ACQ.logger, (cs.WORKDIR, 'acquisti.log'),
                   CONFIG.config[cs.EMAIL_PROCEDURA],
                   CONFIG.config[cs.EMAIL_WEBMASTER],

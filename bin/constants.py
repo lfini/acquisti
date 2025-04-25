@@ -234,7 +234,6 @@ RDO_FIRMA_VICARIO = 'rdo_firma_vicario'         # dati pratica
 RUP = 'rup'                                     # dati_pratica
 RUP_FIRMA_VICARIO = 'rup_firma_vicario'         # dati pratica
 SAVED = '_saved'                                # dati_pratica
-SIGLA_DITTA = 'sigla_ditta'                     # form MyUpload1
 STORIA_PRATICA = 'storia_pratica'               # dati_pratica
 STR_COSTO_IT = 'str_costo_it'                   # dati_pratica
 STR_CODF = 'stringa_codf'                       # dati_pratica

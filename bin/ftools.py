@@ -79,10 +79,11 @@ import send_email as sm
 # VERSION 5.5    23/01/2025 Aggiunto test estensivo
 # VERSION 5.6    23/01/2025 Aggiunta funzione "steal"
 # VERSION 5.7    23/01/2025 Aggiunta funzione mostra tabelle di stati
+# VERSION 5.8    25/04/2025 Modificata funzione "remove"
 
 __author__ = 'Luca Fini'
-__version__ = '5.7'
-__date__ = '12/02/2025'
+__version__ = '5.8'
+__date__ = '25/04/2025'
 
 # pylint: disable=C0302, W0718
 
@@ -888,14 +889,28 @@ def namebasedir(anno, num):
 
 IS_PRAT_DIR = re.compile(r'\d{4}_\d{6}')   #  Seleziona directory per pratica
 
-def remove(path):
-    "Remove files ignora FileNotFoudError"
-    fullname = tb.getpath(path)
+def file_search(basename):
+    "cerca file con dato basename"
+    thedir, name = os.path.split(basename)
+    found = [x for x in os.listdir(thedir) if x.startswith(name)]
+    if found:
+        return os.path.join(thedir, found[0])
+    return None
+
+def remove(path, prefix=False):
+    "Remove files ignora FileNotFoudError. prefix==True: nome file senza estensione"
+    fullbasename = tb.getpath(path)
+    if prefix:
+        fullname = file_search(fullbasename)
+        if fullname is None:
+            return f'FileNotFoud: {fullbasename}.*'
+    else:
+        fullname = fullbasename
     try:
         os.unlink(fullname)
     except FileNotFoundError:
-        return ''
-    return fullname
+        return f'FileNotFoud: {fullname}'
+    return f'Rimosso file: {fullname}'
 
 def testlogin():
     "Test funzionamento login"
@@ -1342,7 +1357,7 @@ def showstates():
         step = CdP.INI
         while True:
             if isinstance(step, dict):
-                step = step[code]
+                step = step[code]              #pylint: disable=E1136
             info = tab[step]
             print(' .', step, '-', info[0], '-->', info[2])
             if step == CdP.FIN:
