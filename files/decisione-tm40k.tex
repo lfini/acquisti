@@ -384,6 +384,10 @@ consultatosi preventivamente con il Richiedente, ((( pratica.nome_richiedente ))
 ((* endif *)) %
 ha giudicato l'offerta congrua e valida;
 
+\textbf{ACQUISITE~}	le dichiarazioni sostitutive di atto di notorietà
+richieste dalla vigente normativa in materia di appalti pubblici relativamente
+ad affidamenti di importo inferiore a Euro 40.000,00; 
+
 \textbf{VISTE~}	le risultanze a seguito delle verifiche avviate a
 carico dell'Operatore Economico mediante acquisizione di "moduli" e
 "dichiarazioni", debitamente compilati e sottoscritti dallo stesso, come
@@ -397,9 +401,27 @@ di seguito elencati e specificati:
 \item[$-$] "DGUE - Documento di Gara Unico Europeo"; 
 \end{itemize}
 
-\textbf{ACCERTATA~}  in capo all'Operatore Economico affidatario della fornitura in oggetto,
-a seguito dei controlli di rito eseguiti ai sensi della vigente normativa in materia,
-l'insussistenza di elementi ostativi all'affidamento;
+\textbf{RITENUTO~}
+che in relazione all'oggetto dell'affidamento il contratto collettivo
+nazionale di lavoro applicabile sia il (((pratica.ccnl))), in quanto coerente con
+il settore merceologico e le mansioni richieste per l'esecuzione
+dell'appalto;
+
+\textbf{PRECISATO~}
+che tale scelta è motivata dal fatto che il (((pratica.ccnl))) è comunemente
+applicato alle imprese operanti nel settore e garantisce il rispetto
+delle condizioni economico-normative previste dalla normativa vigente;
+
+\textbf{CONSIDERATO~}
+che l'Operatore economico ha indicato di applicare al personale impiegato
+nell'esecuzione del presente appalto, il (((pratica.ccnl)));
+
+\textbf{RITENUTO~}
+che l'applicazione del suddetto (((pratica.ccnl))) garantisca il rispetto dei minimi
+salariali e delle condizioni di lavoro previste dalla legge;
+
+\textbf{VISTA~}
+la proposta di aggiudicazione del Responsabile Unico del Progetto;
 
 \textbf{CONSIDERATO~}
 che, ai sensi dell'articolo 1 del
@@ -425,51 +447,11 @@ Pubblici di Ricerca", e, quindi anche allo "Osservatorio Astrofisico
 Arcetri dello "Istituto Nazionale di Astrofisica";
 \end{enumerate}
 
-\textbf{RITENUTO~}
-che in relazione all'oggetto dell'affidamento il contratto collettivo
-nazionale di lavoro applicabile sia il (((pratica.ccnl))), in quanto coerente con
-il settore merceologico e le mansioni richieste per l'esecuzione
-dell'appalto;
+((* include 'nomina-direttore.tex' *))
 
-\textbf{PRECISATO~}
-che tale scelta è motivata dal fatto che il (((pratica.ccnl))) è comunemente
-applicato alle imprese operanti nel settore e garantisce il rispetto
-delle condizioni economico-normative previste dalla normativa vigente;
-
-\textbf{CONSIDERATO~}
-che l'Operatore economico ha indicato di applicare al personale impiegato
-nell'esecuzione del presente appalto, il (((pratica.ccnl)));
-
-\textbf{RITENUTO~}
-che l'applicazione del suddetto (((pratica.ccnl))) garantisca il rispetto dei minimi
-salariali e delle condizioni di lavoro previste dalla legge;
-
-\textbf{VISTA~}
-la proposta di aggiudicazione del Responsabile Unico del Progetto;
-
-
-\textbf{VISTA~}
-la Delibera del 20 dicembre 2023, numero 82, con la quale il Consiglio
-di Amministrazione ha designato, tra gli altri, il Dott. Simone Esposito, con decorrenza
-dal 01 gennaio 2024 e per la durata di un triennio, quale Direttore dello
-"Osservatorio Astrofisico di Arcetri";
-
-\textbf{VISTO~}	
-il Decreto del Presidente del 21 dicembre 2023, numero 32, con il quale,
-in attuazione della Delibera del Consiglio di Amministrazione del 20
-dicembre 2023, numero 82, e per i periodi temporali in essa specificati,
-sono stati nominati, ai sensi dell'articolo 18 dello Statuto dello
-"Istituto Nazionale di Astrofisica", i nuovi Direttori delle "Strutture
-di Ricerca";
-
-\textbf{VISTA~}
-inoltre, la Determina Direttoriale del 28 dicembre 2023, numero 160,
-con la quale il Dottore Gaetano Telesio, nella sua qualità di Direttore
-Generale dello "Istituto Nazionale di Astrofisica", ha conferito,
-ai sensi dell'articolo 14, comma 3, lettera g), del vigente Statuto, a
-decorrere dal 01 gennaio 2024 e per la durata di un triennio, l'incarico
-di Direttore dello "Osservatorio Astrofisico di Arcetri" al Dott. Simone
-Esposito;
+((* if pratica.dec_firma_vicario *))
+((* include 'nomina-vicario.tex' *))
+((* endif *))
 
 \textbf{VISTA~}
 la delibera di approvazione del Bilancio di previsione
@@ -492,7 +474,6 @@ delle novità in materia di imposta di bollo introdotte dal "Nuovo Codice degli 
 \textbf{VISTO~}
 l’Allegato I.4 al Decreto Legislativo 31 Marzo 2023 n. 36 (“Imposta
 di bollo relativa alla stipulazione del contratto”);
-
 
 \textbf{VISTA~}
 la comunicazione dell'Agenzia delle Entrate del 28
@@ -562,8 +543,8 @@ della Imposta sul Valore Aggiunto, a Euro ((( pratica.costo_netto ))),
 previa attestazione di regolare esecuzione.
 
 Articolo 8: Di dare atto che avverso il presente procedimento è ammesso
-ricorso giurisdizionale al Tribunale Amministrativo Regionale per la
-Toscana nei termini previsti dall'articolo 120 del Decreto Legislativo
+ricorso giurisdizionale al competente Tribunale Amministrativo regionale
+nei termini previsti dall'articolo 120 del Decreto Legislativo
 2 luglio 2010 n. 104 e successive modificazioni e integrazioni;
 
 Articolo 9: Di dare atto che, rispetto alla procedura di affidamento in
