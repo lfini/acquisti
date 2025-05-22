@@ -97,10 +97,12 @@ import table as tb
 #                          Corretto bug mancato salvataggio dati dopo modifica proposta
 #                          Corretto bug cancellazione file dopo annullamento passo
 #                          Corretto bug che consentiva annullamento passo a pratica chiusa
+# Versione 5.6.5 5/2025:   Corretto bug nella generazione testo della decisione: testo variabile
+#                          quando RUP e richiedente coincidono
 
 __author__ = 'Luca Fini'
-__version__ = '5.6.4'
-__date__ = '25/4/2025'
+__version__ = '5.6.5'
+__date__ = '22/5/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -801,8 +803,7 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     ndata = {x: 1 for x in opts}
     if cs.VICARIO in opts:
         ndata[cs.NOME_VICARIO] = CONFIG.config[cs.NOME_VICARIO]
-    if d_prat.get(cs.EMAIL_RESPONSABILE, 'A') == d_prat.get(cs.EMAIL_RICHIEDENTE, 'B'):
-        ndata['rich_is_rup'] = 1
+    ndata['rich_is_rup'] = d_prat.get(cs.EMAIL_RUP, 'A') == d_prat.get(cs.EMAIL_RICHIEDENTE, 'B')
     ndata[cs.SEDE] = CONFIG.config[cs.SEDE]
     ndata[cs.RICH_IS_RESP] = d_prat[cs.EMAIL_RICHIEDENTE] == d_prat[cs.EMAIL_RESPONSABILE]
     ndata["headerpath"] = os.path.join(cs.FILEDIR, "header.png")
@@ -1796,7 +1797,6 @@ def rollback():                       #pylint: disable=R0914,R0911
         storia(d_prat, msg)
         salvapratica(d_prat)
         fk.flash(msg, category="info")
-        ACQ.logger.info(msg)
         ACQ.logger.info('Passo corrente: %s', d_prat.get_passo("text"))
         return pratica_common(d_prat)
     ddp = {'passo': pass_info(passcode, 'text'),
