@@ -80,10 +80,11 @@ import send_email as sm
 # VERSION 5.6    23/01/2025 Aggiunta funzione "steal"
 # VERSION 5.7    23/01/2025 Aggiunta funzione mostra tabelle di stati
 # VERSION 5.8    25/04/2025 Modificata funzione "remove"
+# VERSION 5.9    10/06/2025 Corretto bug nella selezione delle pratiche annullate
 
 __author__ = 'Luca Fini'
-__version__ = '5.8'
-__date__ = '25/04/2025'
+__version__ = '5.9'
+__date__ = '10/06/2025'
 
 # pylint: disable=C0302, W0718
 
@@ -1207,7 +1208,7 @@ def trova_pratiche_2(anno, stato, match_rich, match_resp,         #pylint: disab
         match_list.append(lambda x: not x[cs.PRATICA_APERTA])
         expr_list.append('chiusa')
     elif stato.lower().startswith('n'):
-        match_list.append(lambda x: (x.get[cs.TAB_PASSI][-1] == CdP.ANN))
+        match_list.append(lambda x: (x.get(cs.TAB_PASSI, [None])[-1] == CdP.ANN))
         expr_list.append('annullata')
     if match_rich:
         match_rich = match_rich.lower()

@@ -99,10 +99,11 @@ import table as tb
 #                          Corretto bug che consentiva annullamento passo a pratica chiusa
 # Versione 5.6.5 5/2025:   Corretto bug nella generazione testo della decisione: testo variabile
 #                          quando RUP e richiedente coincidono
+# Versione 5.6.6 6/2025:   Corretto bug nella selezione della pratiche annullate
 
 __author__ = 'Luca Fini'
-__version__ = '5.6.5'
-__date__ = '22/5/2025'
+__version__ = '5.6.6'
+__date__ = '10/6/2025'
 
 __start__ = time.asctime(time.localtime())
 
