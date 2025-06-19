@@ -100,10 +100,12 @@ import table as tb
 # Versione 5.6.5 5/2025:   Corretto bug nella generazione testo della decisione: testo variabile
 #                          quando RUP e richiedente coincidono
 # Versione 5.6.6 6/2025:   Corretto bug nella selezione della pratiche annullate
+# Versione 5.7   6/2025:   Aggiunto possibilità di mettere nota esplicativa per
+#                          esenzione IVA
 
 __author__ = 'Luca Fini'
-__version__ = '5.6.6'
-__date__ = '10/6/2025'
+__version__ = '5.7.0'
+__date__ = '19/6/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -624,16 +626,6 @@ def clean_data(somedata):
         return clean_list(somedata)
     return somedata
 
-def clean_lista(rdo_data):
-    "Rimuove elementi vuoti o cancellati da lista ditte"
-    newlist = []
-    for ditta in rdo_data[cs.LISTA_DITTE]:
-        if ditta.get("T_cancella"):
-            continue
-        if bool(ditta[cs.FORNITORE_NOME]) or  bool(ditta[cs.FORNITORE_SEDE]):
-            newlist.append(ditta)
-    rdo_data[cs.LISTA_DITTE] = newlist
-
 def _clean_name(name):
     "Pulisce nome file (rimuove '_' e estensione)"
     cleaned = name[4:]
@@ -856,23 +848,30 @@ def _voce(voce):
     'genera rappresentazione come lista di una voce di costo'
     s_desc = voce['descrizione'].strip()
     if not s_desc:
-        return '', '', '', '', ''
+        return '', '', '', '', '', '', ''
     s_imp = voce['importo']
     s_iva = voce['iva']
     v_imp = round(float(s_imp), 2) if s_imp else 0.0
     v_ivap = int(s_iva) if s_iva else 0
     v_ivav = round(v_imp*v_ivap/100., 2)
     v_tot = v_imp+v_ivav
-    return s_desc, f'{v_imp:.2f}', s_iva, f'{v_ivav:.2f}', f'{v_tot:.2f}'
+    return [s_desc, f'{v_imp:.2f}', s_iva, f'{v_ivav:.2f}',
+            f'{v_tot:.2f}', '', voce.get('nota_iva', '')]
 
-def costo_dett(costo):
+def costo_dettaglio(costo):
     'genera lista con i dettagli di corso'
-    return [_voce(costo['voce_1']),
-            _voce(costo['voce_2']),
-            _voce(costo['voce_3']),
-            _voce(costo['voce_4']),
-            _voce(costo['voce_5']),
-           ]
+    ret = [_voce(costo['voce_1']),
+           _voce(costo['voce_2']),
+           _voce(costo['voce_3']),
+           _voce(costo['voce_4']),
+           _voce(costo['voce_5']),
+          ]
+    num = 1
+    for voce in ret:
+        if voce[6]:
+            voce[5] = str(num)
+            num += 1
+    return ret
 
 def login():
     "genera pagina di login"
@@ -905,7 +904,7 @@ def update_costo(d_prat: Pratica, spec):
     d_prat[cs.COSTO_IVA] = f'{totiva:.2f}'
     d_prat[cs.COSTO_TOTALE] = f'{tottot:.2f}'
     d_prat[cs.COSTO_BASE] = f'{totbase:.2f}'
-    d_prat[cs.COSTO_DETTAGLIO] = costo_dett(d_prat[spec])
+    d_prat[cs.COSTO_DETTAGLIO] = costo_dettaglio(d_prat[spec])
 
 ACQ = fk.Flask(__name__, template_folder=cs.FILEDIR, static_folder=cs.FILEDIR)
 
@@ -1362,8 +1361,8 @@ def modificardo():
                 d_prat.update(clean_data(rdo_data))
                 update_costo(d_prat, cs.COSTO_RDO)
                 genera_documento(d_prat, (cs.DOC_RDO, [cs.DIRETTORE]))
-#               d_prat.next()
                 storia(d_prat, 'Generata/modificata RdO')
+                d_prat[cs.COSTO_PROGETTO] = d_prat[cs.COSTO_RDO].copy()
                 salvapratica(d_prat)
                 return pratica_common(d_prat)
             errors = rdo.get_errors()

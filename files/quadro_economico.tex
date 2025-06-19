@@ -3,6 +3,7 @@
 \begin{tabular}{lrrl|r}
 	Voce  &   Importo netto  & I.V.A & & totale \\
 \hline
+((* set hasnotes = [] *))
 ((* for voce in pratica.costo_dettaglio *))
     ((* if voce[0]|length *))
 	((* if voce[2] *))
@@ -10,11 +11,29 @@
 	((* else *))
 	((* set iva = '' *))
 	((* endif *))
-	(((voce[0])))  &  (((voce[1]))) & (((voce[3]))) & (((iva))) & (((voce[4]))) \\
+	((* if voce[5] *))
+	((* set indx = '(nota '+voce[5]+')' *))
+	((* set _ = hasnotes.append(1) *))
+	((* else *))
+	((* set indx = '' *))
+	((* endif *))
+	(((voce[0])))  &  (((voce[1]))) & (((voce[3]))) & (((iva)))(((indx))) & (((voce[4]))) \\
     ((* endif *))
 ((* endfor *))
 \hline
 	\textbf{Totale} & (((pratica.costo_netto))) & && \textbf{(((pratica.costo_totale)))} \\
 \end{tabular}
+((* if hasnotes *))
+	\vspace{3mm}
+
+Note:
+
+((* for voce in pratica.costo_dettaglio *))
+	((* if voce[5] *))
+	    ~~((( voce[5] ))))~((( voce[6] ))) \\
+	((* endif *))
+((* endfor *))
+
+((* endif *))
 \end{quote}
 

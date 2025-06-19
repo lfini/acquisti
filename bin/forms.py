@@ -9,8 +9,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.10"
-__date__ = "31/03/2025"
+__version__ = "2.11"
+__date__ = "18/6/2025"
 __author__ = "Luca Fini"
 
 class DEBUG:             #pylint: disable=R0903
@@ -217,6 +217,7 @@ class ImportoPiuIva(wt.Form):
     inbase = wt.BooleanField(default=True, render_kw={'checked': ''})
     importo = wt.StringField(render_kw={'size': 8})
     iva = wt.StringField(render_kw={'size': 2})
+    nota_iva = wt.StringField(render_kw={'size': 15})
     descrizione = wt.StringField("", render_kw={'size': 30})
 
     def __call__(self, show_ck=True, **_unused):
@@ -224,7 +225,8 @@ class ImportoPiuIva(wt.Form):
 #       _debug(f'Rendering di ImportoPiuIva(show_ck:{show_ck})')
         ckstr = self.inbase() if show_ck else ''
         ret = Markup('<td>')+ckstr+self.descrizione()+Markup('</td><td align=right>')+ \
-              self.importo()+Markup('&nbsp;</td><td align=right>')+self.iva()+Markup('&nbsp;</td>')
+              self.importo()+Markup('&nbsp;</td><td align=right>')+ \
+              self.iva()+Markup('</td><td align=right>')+self.nota_iva()+Markup('&nbsp;</td>')
         return ret
 
     def validate(self, *_unused1, **_unused2):
@@ -256,15 +258,16 @@ class _Costo(FormWErrors):
 
     def _renderme(self, show_ck):
         "Rendering del form"
-        ret = Markup('&nbsp;&nbsp; Valuta: ')+self.valuta()+Markup('\n<table>')
-        ret += Markup('<r><td> &nbsp; </td><td align=center>Descrizione</td>')
-        ret += Markup('<td align=center> Importo </td><td align=center> I.V.A. % </td></tr>\n')
-        ret += Markup('<tr><td>voce&nbsp;1:</td>')+self.voce_1.form(show_ck)+Markup('</tr>\n')
-        ret += Markup('<tr><td>voce&nbsp;2:</td>')+self.voce_2.form(show_ck)+Markup('</tr>\n')
-        ret += Markup('<tr><td>voce&nbsp;3:</td>')+self.voce_3.form(show_ck)+Markup('</tr>\n')
-        ret += Markup('<tr><td>voce&nbsp;4:</td>')+self.voce_4.form(show_ck)+Markup('</tr>\n')
-        ret += Markup('<tr><td>voce&nbsp;5:</td>')+self.voce_5.form(show_ck)+Markup('</tr>\n')
-        ret += Markup('</table>\n')
+        ret = Markup('&nbsp;&nbsp; Valuta: ')+self.valuta()+Markup('\n<table>') +\
+              Markup('<r><td> &nbsp; </td><td align=center>Descrizione</td>') +\
+              Markup('<td align=center> Importo </td><td align=center> I.V.A. % </td>') +\
+              Markup('<td align=center> Nota</tr>\n') +\
+              Markup('<tr><td>voce&nbsp;1:</td>')+self.voce_1.form(show_ck)+Markup('</tr>\n') +\
+              Markup('<tr><td>voce&nbsp;2:</td>')+self.voce_2.form(show_ck)+Markup('</tr>\n') +\
+              Markup('<tr><td>voce&nbsp;3:</td>')+self.voce_3.form(show_ck)+Markup('</tr>\n') +\
+              Markup('<tr><td>voce&nbsp;4:</td>')+self.voce_4.form(show_ck)+Markup('</tr>\n') +\
+              Markup('<tr><td>voce&nbsp;5:</td>')+self.voce_5.form(show_ck)+Markup('</tr>\n') +\
+              Markup('</table>\n')
         if show_ck:
             ret += Markup('Togliere la spunta alle voci che non contribuiscono ' \
                           'al prezzo base di asta\n')
@@ -293,7 +296,7 @@ class Costo1(_Costo):
     'Versione di costo senza checkbox'
 
     def renderme(self, **_unused):
-        'render senza checknox'
+        'render senza checbnox'
         return super()._renderme(False)
 
 class Costo2(_Costo):
@@ -344,10 +347,10 @@ class IndicaRUP(FormWErrors):
 
     def __call__(self):
         "rendering del form"
-        html = B_TRTD+render_field(self.email_rup, size=20)+BRK+BRK
-        html += render_field(self.interno_rup, sameline=True, size=3)+E_TRTD
-        html += B_TRTD+render_field(self.rup_firma_vicario, sameline=True)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        html = B_TRTD+render_field(self.email_rup, size=20)+BRK+BRK +\
+               render_field(self.interno_rup, sameline=True, size=3)+E_TRTD +\
+               B_TRTD+render_field(self.rup_firma_vicario, sameline=True)+E_TRTD +\
+               B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, *_unused):
@@ -395,8 +398,8 @@ class ProgettoAcquisto(FormWErrors):
 
     def __call__(self):
         "rendering del form"
-        html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD
-        html += B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
+        html = B_TRTD+render_field(self.data_pratica, sameline=True, size=15)+E_TRTD +\
+               B_TRTD+render_field(self.modalita_acquisto)+E_TRTD
         if self.modalita_acquisto.data is not None:
             if self.modalita_acquisto.data in (cs.CONSIP, cs.ACC_QUADRO):
                 html += B_TRTD+render_field(self.cig_master, size=10, sameline=True)+E_TRTD
@@ -406,24 +409,24 @@ class ProgettoAcquisto(FormWErrors):
             html += B_TRTD+render_field(self.motivazione_acquisto, rows=10, cols=80)+E_TRTD
             pop = popup(fk.url_for('vedicodf'),
                        'Vedi lista Codici fondi e responsabili', size=(1100, 900))
-            html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>')
-            html += render_field(self.email_responsabile, sameline=True)
-            html += BRK+render_field(self.lista_codf)+E_TRTD
+            html += B_TRTD+Markup(f'<div align=right> &rightarrow; {pop}</div>') +\
+                    render_field(self.email_responsabile, sameline=True) +\
+                    BRK+render_field(self.lista_codf)+E_TRTD
             if self.modalita_acquisto.data != cs.GENERIC:
                 if self.modalita_acquisto.data == cs.CONSIP:
                     html += B_TRTD+Markup('<h4>Dati relativi alla convenzione Consip</h4>\n')+\
                             render_field(self.convenzione, size=20, sameline=True) +\
                             NBSP+render_field(self.tot_lotti, size=10, sameline=True)+\
-                            NBSP+render_field(self.lotto, size=10, sameline=True)+PAR
-                    html += render_field(self.guf_it_data, size=10, sameline=True) +\
+                            NBSP+render_field(self.lotto, size=10, sameline=True)+PAR +\
+                            render_field(self.guf_it_data, size=10, sameline=True) +\
                             NBSP+render_field(self.guf_it_num, size=10, sameline=True)+BRK +\
                             render_field(self.guf_eu_data, size=10, sameline=True) +\
                             NBSP+render_field(self.guf_eu_num, size=10, sameline=True)+E_TRTD
-                html += B_TRTD+render_field(self.fornitore_nome, size=80)+PAR
-                html += render_field(self.fornitore_sede, sep='', size=80)+PAR
-                html += render_field(self.fornitore_codfisc, sameline=True)+BRK
-                html += render_field(self.fornitore_partiva, sameline=True)+E_TRTD
-                html += B_TRTD+render_field(self.costo_progetto, sameline=True)+E_TRTD
+                html += B_TRTD+render_field(self.fornitore_nome, size=80)+PAR +\
+                        render_field(self.fornitore_sede, sep='', size=80)+PAR +\
+                        render_field(self.fornitore_codfisc, sameline=True)+BRK +\
+                        render_field(self.fornitore_partiva, sameline=True)+E_TRTD +\
+                        B_TRTD+render_field(self.costo_progetto, sameline=True)+E_TRTD
             html += B_TRTD+render_field(self.note_progetto, rows=10, cols=80)+E_TRTD
         html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
@@ -464,13 +467,13 @@ class Proposta(FormWErrors):
         "rendering del form"
         html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD
-        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
-        html += B_TRTD+Markup("L'offerta proposta ")+ \
-                render_field(self.conferma_migliora, sameline=True)+ \
-                Markup(" il quadro economico")+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}') +\
+               Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD +\
+               B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD +\
+               B_TRTD+Markup("L'offerta proposta ")+ \
+               render_field(self.conferma_migliora, sameline=True)+ \
+               Markup(" il quadro economico")+E_TRTD +\
+               B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, _):              #pylint: disable=W0222
@@ -517,28 +520,28 @@ class Decisione(FormWErrors):
         "rendering del form"
         html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
                                 f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
-                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
-        html += Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD+B_TRTD
+                                f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}') +\
+               Markup(f'<p><b>{d_prat[cs.DESCRIZIONE_ACQUISTO]}')+E_TRTD+B_TRTD
         if self.numero_decisione.data:
             html += render_field(self.numero_decisione, sameline=True)+NBSP4
             html += render_field(self.data_decisione, sameline=True)+BRK
-        html += render_field(self.numero_cig, sameline=True)+BRK
-        html += render_field(self.numero_cup, sameline=True)+BRK+E_TRTD
+        html += render_field(self.numero_cig, sameline=True)+BRK +\
+                render_field(self.numero_cup, sameline=True)+BRK+E_TRTD
         if d_prat[cs.MOD_ACQUISTO] in (cs.TRATT_MEPA_40, cs.TRATT_MEPA_143,
                                        cs.TRATT_UBUY_40, cs.TRATT_UBUY_143):
-            html += B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4
-            html += render_field(self.numero_negoziazione, sameline=True)+NBSP4
-            html += render_field(self.data_scadenza, sameline=True)+PAR
-            html += render_field(self.data_offerta, sameline=True)+NBSP4
-            html += render_field(self.numero_offerta, sameline=True)+E_TRTD
+            html += B_TRTD+render_field(self.data_negoziazione, sameline=True)+NBSP4 +\
+                    render_field(self.numero_negoziazione, sameline=True)+NBSP4 +\
+                    render_field(self.data_scadenza, sameline=True)+PAR +\
+                    render_field(self.data_offerta, sameline=True)+NBSP4 +\
+                    render_field(self.numero_offerta, sameline=True)+E_TRTD
         if d_prat[cs.MOD_ACQUISTO] in (cs.INFER_5000, cs.ACC_QUADRO):
-            html += B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4
-            html += render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
-        html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>")
-        html += render_field(self.ccnl, sameline=True)+BRK
-        html += render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;')
-        html += render_field(self.dec_firma_vicario, sameline=True)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+            html += B_TRTD+render_field(self.data_protocollo_doc, sameline=True)+NBSP4 +\
+                    render_field(self.numero_protocollo_doc, sameline=True)+E_TRTD
+        html += B_TRTD+Markup(f"Fu. Ob.: {d_prat[cs.STR_CODF]}<p>") +\
+                render_field(self.ccnl, sameline=True)+BRK +\
+                render_field(self.capitolo, sameline=True)+Markup('&nbsp;&nbsp;&nbsp;&nbsp;') +\
+                render_field(self.dec_firma_vicario, sameline=True)+E_TRTD +\
+                B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, d_prat):              #pylint: disable=W0237
@@ -595,21 +598,21 @@ class Ordine(FormWErrors):
         "rendering del form"
         html = B_TRTD+Markup(f'Pratica del {d_prat[cs.DATA_PRATICA]}. '\
                              f'Resp.Fondi: {d_prat[cs.NOME_RESPONSABILE]}. '\
-                             f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}')
-        html += Markup(f'''<p><b>Descrizione acquisto:</b>
+                             f'Richiedente: {d_prat[cs.NOME_RICHIEDENTE]}') +\
+               Markup(f'''<p><b>Descrizione acquisto:</b>
         <blockquote>{d_prat[cs.DESCRIZIONE_ACQUISTO]}</blockquote>
-        ''')
-        html += Markup(f'''<p><b>Numero CIG:</b> {d_prat[cs.NUMERO_CIG]}<br>
+        ''') +\
+               Markup(f'''<p><b>Numero CIG:</b> {d_prat[cs.NUMERO_CIG]}<br>
         <b>Numero CUP:</b> {d_prat[cs.NUMERO_CUP]}
-        ''')
-        html += Markup(f'<p><b>Fornitore:</b><blockquote>{d_prat[cs.FORNITORE_NOME]}<br>'\
-                          f'{d_prat[cs.FORNITORE_SEDE]}</blockquote>')+E_TRTD
-        html += B_TRTD+ render_field(self.numero_ordine)+E_TRTD
-        html += B_TRTD+ render_field(self.termine_giorni)+E_TRTD
-        html += B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD
-        html += B_TRTD+render_field(self.ord_firma_vicario, sameline=True)+E_TRTD
-        html += B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        ''') +\
+               Markup(f'<p><b>Fornitore:</b><blockquote>{d_prat[cs.FORNITORE_NOME]}<br>'\
+                      f'{d_prat[cs.FORNITORE_SEDE]}</blockquote>')+E_TRTD +\
+               B_TRTD+ render_field(self.numero_ordine)+E_TRTD +\
+               B_TRTD+ render_field(self.termine_giorni)+E_TRTD +\
+               B_TRTD+render_field(self.descrizione_ordine, rows=3, cols=80)+E_TRTD +\
+               B_TRTD+render_field(self.ord_firma_vicario, sameline=True)+E_TRTD +\
+               B_TRTD+render_field(self.note_ordine, rows=10, cols=80)+E_TRTD +\
+               B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
 class AnnullaPratica(FormWErrors):
@@ -621,8 +624,8 @@ class AnnullaPratica(FormWErrors):
 
     def __call__(self):
         "rendering del form"
-        html = B_TRTD+render_field(self.motivazione_annullamento, size=30, sameline=True)+BRK+BRK
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_conferma()+E_TRTD
+        html = B_TRTD+render_field(self.motivazione_annullamento, size=30, sameline=True) +\
+               BRK+BRK+B_TRTD+self.T_annulla()+NBSP+self.T_conferma()+E_TRTD
         return html
 
 class TrovaPratica(FormWErrors):
@@ -641,14 +644,14 @@ class TrovaPratica(FormWErrors):
 
     def __call__(self):
         "Rendering del form"
-        html = B_TRTD+render_field(self.trova_prat_aperta, sameline=True)+BRK+BRK
-        html += render_field(self.trova_richiedente, sameline=True)+BRK+BRK
-        html += render_field(self.trova_responsabile, sameline=True)+BRK+BRK
-        html += render_field(self.trova_rup, sameline=True)+BRK+BRK
-        html += render_field(self.trova_anno, sameline=True)+BRK+BRK
-        html += render_field(self.trova_parola, sameline=True)+BRK+BRK
-        html += render_field(self.elenco_ascendente, sameline=True)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        html = B_TRTD+render_field(self.trova_prat_aperta, sameline=True)+BRK+BRK +\
+               render_field(self.trova_richiedente, sameline=True)+BRK+BRK +\
+               render_field(self.trova_responsabile, sameline=True)+BRK+BRK +\
+               render_field(self.trova_rup, sameline=True)+BRK+BRK +\
+               render_field(self.trova_anno, sameline=True)+BRK+BRK +\
+               render_field(self.trova_parola, sameline=True)+BRK+BRK +\
+               render_field(self.elenco_ascendente, sameline=True)+E_TRTD +\
+               B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
 B_TD = Markup("<td>")
@@ -665,11 +668,10 @@ class RdO(FormWErrors):
 
     def __call__(self, **kw):
         "Rendering del form"
-        html = B_TRTD+render_field(self.numero_cup)+BRK
-#       html += render_field(self.numero_cig)+BRK
-        html += B_TRTD+render_field(self.fine_gara)+E_TRTD
-        html += B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD
-        html += B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
+        html = B_TRTD+render_field(self.numero_cup)+BRK +\
+               B_TRTD+render_field(self.fine_gara)+E_TRTD +\
+               B_TRTD+render_field(self.costo_rdo, sameline=True)+E_TRTD +\
+               B_TRTD+self.T_annulla()+NBSP+self.T_avanti()+E_TRTD
         return html
 
     def validate(self, extra_validators=None):
