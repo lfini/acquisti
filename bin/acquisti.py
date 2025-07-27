@@ -102,10 +102,11 @@ import table as tb
 # Versione 5.6.6 6/2025:   Corretto bug nella selezione della pratiche annullate
 # Versione 5.7   6/2025:   Aggiunto possibilità di mettere nota esplicativa per
 #                          esenzione IVA
+# Versione 5.7.1 7/2025:   Corretto annullamento del primo passo
 
 __author__ = 'Luca Fini'
-__version__ = '5.7.0'
-__date__ = '19/6/2025'
+__version__ = '5.7.1'
+__date__ = '27/7/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -229,7 +230,7 @@ Pratica:
         try:
             passcode = self.data[cs.TAB_PASSI][-2]
         except IndexError:
-            return None
+            passcode = CdP.INI
         return pass_info(passcode, what)
 
     def check_next(self):
@@ -927,7 +928,7 @@ def user_info():
     'trova record utente'
     if userid := fk.session.get('userid'):
         return ft.get_user(userid)
-    ACQ.logger.error('user_info() called with userid: %s', userid)
+    ACQ.logger.error('user_info() called with no "userid" field in session')
     return {}
 
 @ACQ.route("/")
