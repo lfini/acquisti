@@ -103,10 +103,11 @@ import table as tb
 # Versione 5.7   6/2025:   Aggiunto possibilità di mettere nota esplicativa per
 #                          esenzione IVA
 # Versione 5.7.1 7/2025:   Corretto annullamento del primo passo
+# Versione 5.7.2 7/2025:   Modificato controllo versione configurazione
 
 __author__ = 'Luca Fini'
-__version__ = '5.7.1'
-__date__ = '27/7/2025'
+__version__ = '5.7.2'
+__date__ = '30/7/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -912,7 +913,7 @@ ACQ = fk.Flask(__name__, template_folder=cs.FILEDIR, static_folder=cs.FILEDIR)
 @ACQ.before_request
 def before():
     "procedura da eseguire prima di ogni pagina"
-    if CONFIG.config.get(cs.CONFIG_VERSION, -1) != cs.CONFIG_REQUIRED:
+    if CONFIG.config.get(cs.CONFIG_VERSION, -1) < cs.CONFIG_REQUIRED:
         raise RuntimeError('File configurazione incompatibile')
     remote = fk.request.remote_addr
     if userid := fk.session.get('userid'):
