@@ -55,8 +55,8 @@
 {% if 'modificaproposta' in info.commands %}
   [<a href=/modificaproposta>Genera proposta</a>]
 {% endif %}
-{% if 'procedi_pro' in info.commands and info.pdf_proposta%}
-&nbsp;&nbsp;[<a href=/procedi>Procedi</a>]
+{% if 'inviaproposta' in info.commands and info.pdf_proposta and (info.rup or info.admin)%}
+&nbsp;&nbsp;[<a href=/inviaproposta>Invia al direttore</a>]
 {% endif %}
 <p>
 <b>Decisione: </b>
@@ -105,8 +105,13 @@
 &nbsp;&nbsp;[<a href=/cancella/{{ a[0] }}>Cancella</a>]
       {% endif %}
    {% endfor %}
+  </ul>
 {% endif %}
-
+<p>
+{% if 'invia_obblig' in info.commands %}
+<p>
+<form action="/invia_obblig" method="POST" accept-charset="utf-8" novalidate><input type="submit" name="invia" value="Invia obblig.">&nbsp;<input type="text", id="email" name="email"></form>
+{% endif %}
 <p>
 {% if pratica.pratica_aperta %}
 </td><td valign=top width=40% bgcolor=#ffddaa>

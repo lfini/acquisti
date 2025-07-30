@@ -18,7 +18,7 @@ from table import jload, jsave
 
 __version__ = "1.7"
 
-MY_VERSION = 6
+MY_VERSION = 7
 
 LDAP_PORT_DESC = """IP port del server LDAP per autenticazione utenti
 [es: 389]
@@ -54,7 +54,17 @@ A questo indirizzo sono inviati i messaggi automatici
 generati dalla procedura [es: ordini.oaa@inaf.it]
 """
 
+EMAIL_PUBBLICAZIONE_DESC = """Indirizzo e-mail per pubblicazione.
+
+A questo indirizzo viene inviata la decisione di contrarre dopo
+la firma elettronica del direttore. [es.: pubblicazione.oaa@inaf.it]
+
+NOTA: Se si specifica il valore "-" la funzione di invio
+è disabilitata.
+"""
+
 EMAIL_SERVIZIO_DESC = """Indirizzo e-mail di servizio.
+
 A questo indirizzo sono inviati  i documenti da trasmettere
 al direttore per la firma elettronica.
 
@@ -164,6 +174,7 @@ PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
                       (cs.NOME_VICARIO, NOME_VICARIO_DESC),
                       (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
                       (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
+                      (cs.EMAIL_PUBBLICAZIONE, EMAIL_PUBBLICAZIONE_DESC),
                       (cs.EMAIL_SERVIZIO, EMAIL_SERVIZIO_DESC),
                       (cs.LATEX_PATH, LATEX_PATH_DESC),
                       (cs.TEST_MODE, TEST_MODE_DESC),

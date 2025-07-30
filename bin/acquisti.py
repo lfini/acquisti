@@ -104,9 +104,15 @@ import table as tb
 #                          esenzione IVA
 # Versione 5.7.1 7/2025:   Corretto annullamento del primo passo
 # Versione 5.7.2 7/2025:   Modificato controllo versione configurazione
+# Versione 5.8   7/2025:   Aggiunto invio decisione firmata ad indirizzo istituzionale
+#                          Aggiunto comando per invio della Obbligazione giuridic. perfez. a
+#                          indirizzo da specificare
+#                          Modificata gestione proposta di aggiudicazione
+#                          Corretto bug mancata cancellazione della decisione firmata quando
+#                          viene annullato il passo corrispondente
 
 __author__ = 'Luca Fini'
-__version__ = '5.7.2'
+__version__ = '5.8'
 __date__ = '30/7/2025'
 
 __start__ = time.asctime(time.localtime())
@@ -499,6 +505,7 @@ def make_info(d_prat: Pratica) -> dict:
     info['progetto_inviabile'] = auth_progetto_inviabile(d_prat)
     info['rdo_richiesta'] = YES if test_rdo_richiesta(d_prat) else NOT
     info['rollback'] = auth_rollback(d_prat)
+    info['rup'] = YES if test_rup(d_prat) else NOT
     info['rup_indicabile'] = auth_rup_indicabile(d_prat)
     info['rdo_modificabile'] = auth_admin_or_rup(d_prat)
     info[cs.PDF_PROGETTO] = YES if test_doc_progetto(d_prat) else NOT
@@ -547,7 +554,7 @@ def send_email(eaddr, text, subj, attach=None):
     except Exception as excp:    #pylint: disable=W0718
         ACQ.logger.error('Invio messaggio "%s" a: %s (%s)', subj, eaddr, str(excp))
         return False
-    ACQ.logger.debug('Inviato messaggio "%s" a: %s', subj, eaddr)
+    ACQ.logger.info('Inviato messaggio "%s" a: %s', subj, eaddr)
     return True
 
 def check_access(new=False):
@@ -1151,6 +1158,49 @@ def inviaprogetto():
         fk.flash(msg, category="error")
     return pratica_common(d_prat)
 
+@ACQ.route('/inviaproposta')
+def inviaproposta():                    #pylint: disable=R0914
+    "pagina: invia proposta di aggiudicazione al direttore"
+    ACQ.logger.info('URL: /inviaproposta (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    if status_not_ok(d_prat, (CdP.PRO, )):
+        fk.flash(ILLEGAL_OP, category="error")
+        return pratica_common(d_prat)
+    err = auth_admin_or_rup(d_prat)
+    if err.startswith(NOT):
+        fk.flash(err, category="error")
+        ACQ.logger.error(INVIO_NON_AUTORIZZ, err, d_prat.user['userid'],
+                      d_prat[cs.NUMERO_PRATICA])
+        return pratica_common(d_prat)
+    cannot_go = d_prat.check_next()[0]
+    if cannot_go:
+        fk.flash(cannot_go, category="error")
+        return pratica_common(d_prat)
+    doc_opts = []
+    if d_prat.get(cs.DEC_FIRMA_VICARIO):
+        chifirma = "Dir. Vicario"
+        doc_opts.append(cs.VICARIO)
+    else:
+        chifirma = "Direttore"
+    doc_pdf = genera_documento(d_prat, (cs.DOC_PROPOSTA, doc_opts))
+    d_prat[cs.DOC_PROPOSTA] = doc_pdf
+    testo = cs.TESTO_INVIA_PROPOSTA.format(**d_prat)+ \
+            cs.DETTAGLIO_PRATICA.format(**d_prat)
+    subj = f'Proposta di aggiudicazione da inviare al {chifirma} per firma'
+    attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
+    recipient = CONFIG.config[cs.EMAIL_DIREZIONE]
+    ret = send_email(recipient, testo, subj, attach=attach)
+    if ret:
+        msg = f"Proposta di aggiudicazione inviata a: {recipient}"
+        fk.flash(msg, category="info")
+        storia(d_prat, msg)
+        d_prat.next()
+        salvapratica(d_prat)
+    else:
+        fk.flash("Invio e-mail fallito", category="error")
+    return pratica_common(d_prat)
+
 @ACQ.route('/inviadecisione')
 def inviadecisione():                    #pylint: disable=R0914
     "pagina: invia decisione di contrarre per firma digitale direttore"
@@ -1570,13 +1620,20 @@ def upload():               # pylint: disable=R0914,R0911,R0912
         return pratica_common(d_prat)
     name = filename_allegato(tipo_allegato, origname, ext, d_prat)
     fpath = os.path.join(d_prat.basedir, name)
-    if os.path.exists(fpath):
+    if tipo_allegato == cs.ALL_GENERICO and os.path.exists(fpath):
         fk.flash(f'File "{name}" già esistente!', category='error')
         fk.flash('Devi modificare il nome del file '
                  '(o rimuovere quello esistente)', category="error")
         return pratica_common(d_prat)
     fle.save(fpath)        # Archivia file da upload
     ft.protect(fpath)
+    if tipo_allegato == cs.ALL_DECIS_FIRM:
+        sendto = CONFIG.config.get(cs.EMAIL_PUBBLICAZIONE, '-')
+        if not sendto.startswith('-'):
+            text = cs.TESTO_INVIO_PUBBLICAZIONE
+            attach = (fpath, name)
+            subj = "decisione.pdf"
+            send_email(sendto, text, subj, attach=attach)
     text = 'Allegato ' + cs.TAB_ALLEGATI[tipo_allegato][1]
     storia(d_prat, text)
     salvapratica(d_prat)
@@ -1808,6 +1865,32 @@ def rollback():                       #pylint: disable=R0914,R0911
     return fk.render_template('rollback.html', sede=CONFIG.config[cs.SEDE],
                               test_mode=CONFIG.config.get(cs.TEST_MODE), pratica=d_prat, data=ddp)
 
+@ACQ.route('/invia_obblig', methods=('GET', 'POST'))
+def invia_obblig():
+    "pagina: invia obbligaz. giuridicamente perfezionata per e-mail"
+    ACQ.logger.info('URL: /invia_obblig (%s)', fk.request.method)
+    if not (d_prat := check_access()):
+        return fk.redirect(fk.url_for('start'))
+    email = fk.request.form.get('email')
+    if not email:
+        ACQ.logger.error("Indirizzo e-mail mancante in invia_obblig")
+        fk.flash("Devi specificare un indirizzo e-mail valido", category="error")
+        return pratica_common(d_prat)
+    subj = f"Obbligaz. giurid. perfez. per pratica N. {d_prat[cs.NUMERO_PRATICA]}"
+    att_name = attach = filename_allegato(cs.ALL_OBBLIG, "", ".pdf", d_prat)
+    attach = (os.path.join(d_prat.basedir, att_name), att_name)
+    ret = send_email(email, "", subj, attach=attach)
+    if ret:
+        msg = "Obbligazione giuridicamente perfezionata per la pratica " \
+              f"{d_prat[cs.NUMERO_PRATICA]} inviata a: {email}"
+        fk.flash(msg, category="info")
+        storia(d_prat, msg)
+        salvapratica(d_prat)
+    else:
+        fk.flash("Errore invio di obbligazione giuridicamente perfezionata "
+                 f"per la pratica {d_prat[cs.NUMERO_PRATICA]} a: {email}", category="error")
+    return pratica_common(d_prat)
+
 @ACQ.route('/chiudipratica')
 def chiudipratica():
     "pagina: chiudi pratica"
@@ -1836,10 +1919,9 @@ def annullapratica():
     if fk.request.method == 'POST':
         if annul.validate():
             d_prat.annulla(annul.motivazione_annullamento.data)
-            salvapratica(d_prat)
             msg = f"Pratica {d_prat[cs.NUMERO_PRATICA]} annullata"
             storia(d_prat, msg)
-            ACQ.logger.info(msg)
+            salvapratica(d_prat)
             fk.flash(msg, category='info')
             return pratica_common(d_prat)
         msg = "Motivazione annullamento non specificata"

@@ -5,14 +5,14 @@ Definizione delle costanti per procedura acquisti
 import os.path
 from enum import IntEnum
 
-__version__ = "2.3"
-__date__ = "5/5/2024"
+__version__ = "2.4"
+__date__ = "30/7/2024"
 __author__ = "Luca Fini"
 
 CONFIG_NAME = 'config.json'      # nome file di configurazione
 CONFIG_SAVE = 'config.save'      # nome file di configurazione backup
 CONFIG_VERSION = 'config_version'
-CONFIG_REQUIRED = 6              # versione file configurazione richiesta
+CONFIG_REQUIRED = 7              # versione file configurazione richiesta
 
 DECIS_FILE = 'decisioni.lst'           # nome file per lista decisioni
 DECIS_FMT = '{ndecis} {date} {nprat}'  # formato linee lista decisioni
@@ -101,6 +101,7 @@ CUU = 'cuu'
 EMAIL_DIRETTORE = 'email_direttore'
 EMAIL_DIREZIONE = 'email_direzione'
 EMAIL_PROCEDURA = 'email_procedura'
+EMAIL_PUBBLICAZIONE = 'email_pubblicazione'
 EMAIL_SERVIZIO = 'email_servizio'
 EMAIL_UFFICIO = 'email_ufficio'
 EMAIL_WEBMASTER = 'email_webmaster'
@@ -404,9 +405,9 @@ TABELLA_PASSI = {
               ['modificardo', 'procedi_rdo'],
               [ALL_RDO],
               CdP.PRO),
-    CdP.PRO: ("Genera proposta di aggiudicazione",
-              [DOC_PROPOSTA, []],
-              ['modificaproposta', 'procedi_pro'],
+    CdP.PRO: ("Genera proposta di aggiudicazione ed invia al direttore",
+              [DOC_PROPOSTA, [PROVVISORIO]],
+              ['modificaproposta', 'inviaproposta'],
               [],
               CdP.DEC),
     CdP.ROG: ("Passo non più definito",
@@ -447,7 +448,7 @@ TABELLA_PASSI = {
               CdP.END),
     CdP.END: ("Pratica conclusa. Attesa chiusura",
               [],
-              ['chiudipratica'],
+              ['invia_obblig', 'chiudipratica'],
               [],
               CdP.FIN),
     CdP.FIN: ("Pratica chiusa",
@@ -514,6 +515,8 @@ Per approvare progetto e fondi, puoi accedere alla procedura Acquisti:
 e selezionare: Elenco pratiche da approvare (come resp. fondi)
 """
 
+TESTO_INVIO_PUBBLICAZIONE = "Decisione firmata per pubblicazione"
+
 TESTO_NOTIFICA_APPROVAZIONE = """
 Il progetto di acquisto N. {numero_pratica}:
 
@@ -554,6 +557,12 @@ Ti è stata inviata la decisione di contrarre relativa al progetto di acquisto
 N. {numero_pratica} sotto dettagliato.
 
 Il documento: {decis_da_firmare} deve essere inviato al direttore per la firma digitale.
+
+'''
+
+TESTO_INVIA_PROPOSTA = '''
+
+Ti è stata inviata la proposta di acquisto relativa alla pratica: N. {numero_pratica}.
 
 '''
 
