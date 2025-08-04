@@ -110,10 +110,11 @@ import table as tb
 #                          Modificata gestione proposta di aggiudicazione
 #                          Corretto bug mancata cancellazione della decisione firmata quando
 #                          viene annullato il passo corrispondente
+# Versione 5.8.1 8/2025:   Corretto bug: aggiunta data invio proposta nella firma "debole"
 
 __author__ = 'Luca Fini'
-__version__ = '5.8'
-__date__ = '30/7/2025'
+__version__ = '5.8.1'
+__date__ = '4/8/2025'
 
 __start__ = time.asctime(time.localtime())
 
@@ -1183,6 +1184,7 @@ def inviaproposta():                    #pylint: disable=R0914
         doc_opts.append(cs.VICARIO)
     else:
         chifirma = "Direttore"
+    d_prat[cs.DATA_PROPOSTA_INVIATA] = ft.today(fulltime=False)
     doc_pdf = genera_documento(d_prat, (cs.DOC_PROPOSTA, doc_opts))
     d_prat[cs.DOC_PROPOSTA] = doc_pdf
     testo = cs.TESTO_INVIA_PROPOSTA.format(**d_prat)+ \
@@ -1591,6 +1593,7 @@ def genera_proposta():                     #pylint: disable=R0914
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     d_prat[cs.DATA_PROPOSTA] = ft.today(fulltime=False)
+    d_prat[cs.DATA_PROPOSTA_INVIATA] =''
     genera_documento(d_prat, [cs.DOC_PROPOSTA, ''])
     storia(d_prat, 'Generata proposta di aggiudicazione')
     salvapratica(d_prat)

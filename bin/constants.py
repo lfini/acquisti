@@ -5,8 +5,8 @@ Definizione delle costanti per procedura acquisti
 import os.path
 from enum import IntEnum
 
-__version__ = "2.4"
-__date__ = "30/7/2024"
+__version__ = "2.5"
+__date__ = "4/8/2024"
 __author__ = "Luca Fini"
 
 CONFIG_NAME = 'config.json'      # nome file di configurazione
@@ -169,6 +169,7 @@ DATA_OFFERTA = 'data_offerta'                   # dati_pratica
 DATA_PRATICA = 'data_pratica'                   # dati_pratica
 DATA_PROPOSTA = 'data_proposta'                 # dati_pratica
 DATA_SCADENZA = 'data_scadenza'                 # dati_pratica
+DATA_PROPOSTA_INVIATA = 'data_proposta_inviata' # dati_pratica
 DATA_RESP_APPROVA = 'data_resp_approva'         # dati_pratica
 DATA_DIR_AUTORIZZA = 'data_dir_autorizza'       # dati_pratica
 DATA_RUP_APPROV_DIR = 'data_rup_approv_dir'     # dati_pratica
