@@ -10,7 +10,7 @@ Dove:
 import sys
 import os
 from collections import OrderedDict
-import readline                         # pylint: disable=W0611
+import readline  # pylint: disable=W0611
 
 import ftools
 import constants as cs
@@ -153,43 +153,52 @@ Dovrebbe corrispondere all'identità GMail utilizzata per l'invio di messaggi.
 [Es.: acquisti.oaa@gmail.com]
 """
 
-SEDE = OrderedDict([(cs.SEDE_IT, SEDE_DESC),
-                    (cs.SEDE_UK, SEDE_UK_DESC),
-                    (cs.INDIRIZZO, INDIRIZZO_DESC),
-                    (cs.CITTA, CITTA_DESC),
-                    (cs.WEBSITE, WEBSITE_DESC),
-                    (cs.COD_FISC, COD_FISC_DESC),
-                    (cs.PART_IVA, PART_IVA_DESC),
-                    (cs.PEC_OSS, PEC_DESC),
-                    (cs.TEL_OSS, TEL_DESC),
-                    (cs.CUU, CUU_DESC),
-                   ])
+SEDE = OrderedDict(
+    [
+        (cs.SEDE_IT, SEDE_DESC),
+        (cs.SEDE_UK, SEDE_UK_DESC),
+        (cs.INDIRIZZO, INDIRIZZO_DESC),
+        (cs.CITTA, CITTA_DESC),
+        (cs.WEBSITE, WEBSITE_DESC),
+        (cs.COD_FISC, COD_FISC_DESC),
+        (cs.PART_IVA, PART_IVA_DESC),
+        (cs.PEC_OSS, PEC_DESC),
+        (cs.TEL_OSS, TEL_DESC),
+        (cs.CUU, CUU_DESC),
+    ]
+)
 
-PARAMS = OrderedDict([(cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
-                      (cs.EMAIL_WEBMASTER, EMAIL_WEBMASTER_DESC),
-                      (cs.NOME_DIRETTORE, NOME_DIRETTORE_DESC),
-                      (cs.GENDER_DIRETTORE, GENDER_DIRETTORE_DESC),
-                      (cs.EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
-                      (cs.EMAIL_VICARIO, EMAIL_VICARIO_DESC),
-                      (cs.NOME_VICARIO, NOME_VICARIO_DESC),
-                      (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
-                      (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
-                      (cs.EMAIL_PUBBLICAZIONE, EMAIL_PUBBLICAZIONE_DESC),
-                      (cs.EMAIL_SERVIZIO, EMAIL_SERVIZIO_DESC),
-                      (cs.LATEX_PATH, LATEX_PATH_DESC),
-                      (cs.TEST_MODE, TEST_MODE_DESC),
-                     ])
+PARAMS = OrderedDict(
+    [
+        (cs.NOME_WEBMASTER, NOME_WEBMASTER_DESC),
+        (cs.EMAIL_WEBMASTER, EMAIL_WEBMASTER_DESC),
+        (cs.NOME_DIRETTORE, NOME_DIRETTORE_DESC),
+        (cs.GENDER_DIRETTORE, GENDER_DIRETTORE_DESC),
+        (cs.EMAIL_DIRETTORE, EMAIL_DIRETTORE_DESC),
+        (cs.EMAIL_VICARIO, EMAIL_VICARIO_DESC),
+        (cs.NOME_VICARIO, NOME_VICARIO_DESC),
+        (cs.EMAIL_UFFICIO, EMAIL_UFFICIO_DESC),
+        (cs.EMAIL_DIREZIONE, EMAIL_DIREZIONE_DESC),
+        (cs.EMAIL_PUBBLICAZIONE, EMAIL_PUBBLICAZIONE_DESC),
+        (cs.EMAIL_SERVIZIO, EMAIL_SERVIZIO_DESC),
+        (cs.LATEX_PATH, LATEX_PATH_DESC),
+        (cs.TEST_MODE, TEST_MODE_DESC),
+    ]
+)
 
-TECH = OrderedDict([(cs.SMTP_HOST, SMTP_HOST_DESC),
-                    (cs.EMAIL_PROCEDURA, EMAIL_PROCEDURA_DESC),
-                    (cs.LDAP_HOST, LDAP_HOST_DESC),
-                    (cs.LDAP_PORT, LDAP_PORT_DESC),
-                   ]
-                  )
+TECH = OrderedDict(
+    [
+        (cs.SMTP_HOST, SMTP_HOST_DESC),
+        (cs.EMAIL_PROCEDURA, EMAIL_PROCEDURA_DESC),
+        (cs.LDAP_HOST, LDAP_HOST_DESC),
+        (cs.LDAP_PORT, LDAP_PORT_DESC),
+    ]
+)
+
 
 def creadirs():
     "Crea struttura directory di lavoro"
-    approvdir = os.path.join(cs.DATADIR, 'approv')
+    approvdir = os.path.join(cs.DATADIR, "approv")
 
     print()
     if os.path.exists(cs.DATADIR):
@@ -211,6 +220,7 @@ def creadirs():
         print(f"Creata directory {cs.WORKDIR}")
     print()
 
+
 def ask_one(name, old_config, new_config, help_text):
     "Chiede valore di un parametro"
     print("\n\n\n\n\n---------")
@@ -220,7 +230,9 @@ def ask_one(name, old_config, new_config, help_text):
         if "_pw" in name:
             old_val = ftools.decrypt(old_val)
         print(" - Valore attuale:", old_val)
-        new_val = input(" - Nuovo valore (se non specificato usa valore attuale) ").strip()
+        new_val = input(
+            " - Nuovo valore (se non specificato usa valore attuale) "
+        ).strip()
     else:
         print(" - Valore attuale: non definito")
         new_val = None
@@ -232,6 +244,7 @@ def ask_one(name, old_config, new_config, help_text):
         new_val = ftools.encrypt(new_val)
     new_config[name] = new_val
 
+
 def ask_dict(questions, old_dict):
     "Gestione richieste interattive"
     new_dict = {}
@@ -239,13 +252,15 @@ def ask_dict(questions, old_dict):
         ask_one(key, old_dict, new_dict, value)
     return new_dict
 
+
 def show(config, filename):
     "Mostra file di configurazione"
     print()
     print("File di configurazione:", filename)
-    def showdict(adict, title, indent=''):
+
+    def showdict(adict, title, indent=""):
         print(indent, title)
-        indent += '  '
+        indent += "  "
         keys = list(adict.keys())
         keys.sort()
         for key in keys:
@@ -253,8 +268,10 @@ def show(config, filename):
             if isinstance(val, dict):
                 showdict(val, key, indent)
             else:
-                print(indent, f'{key}: {val}')
+                print(indent, f"{key}: {val}")
+
     showdict(config, filename)
+
 
 def main():
     "Procedura"
@@ -303,6 +320,7 @@ def main():
         print()
         print('Usa "-c" per creare/modificare la configurazione')
         print()
+
 
 if __name__ == "__main__":
     main()

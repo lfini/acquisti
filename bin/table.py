@@ -27,22 +27,27 @@ import time
 import base64
 import random
 
-__author__ = 'Luca Fini'
-__version__ = '2.2'
-__date__ = '05/10/2024'
+__author__ = "Luca Fini"
+__version__ = "2.2"
+__date__ = "05/10/2024"
+
 
 class TableException(Exception):
     "Exception raised by this module"
 
+
 class LockException(Exception):
     "Exception when file is locked"
+
     def __init__(self, filename, owner):
         Exception.__init__(self, f"File {filename} locked by: {owner}")
 
+
 class CsvFile:
     "CSV file management class"
+
     def __init__(self):
-        self._csvdata = ''
+        self._csvdata = ""
 
     def write(self, line):
         "Add a line"
@@ -52,35 +57,38 @@ class CsvFile:
         "Return content"
         return self._csvdata
 
+
 def getpath(path):
     "Build a file path from components"
     if isinstance(path, str):
         return path
     return os.path.join(*path)
 
+
 def _clean(item):
     if isinstance(item, str):
         return item.strip()
     return item
 
-#pylint: disable=C3001
-class Table:                             # pylint: disable=R0902
+
+# pylint: disable=C3001
+class Table:  # pylint: disable=R0902
     """
-Table class:
-   table.header: array of column names
-   table.rows:   array of rows.
-   table.opts:   options (currently unused)
+    Table class:
+       table.header: array of column names
+       table.rows:   array of rows.
+       table.opts:   options (currently unused)
 
-   Constructor:
-      t = Table(path, header=[], csvfile='', lock='')
+       Constructor:
+          t = Table(path, header=[], csvfile='', lock='')
 
-      path = ('rel', 'path', ...)
-      header = ['field1', field2, ...] used for creation, the _IND_
-             field (main key, numerical) is prepended.
-      csv  if specified the table is initialized from a CSV file
-      lock if not empty, the table file is lock opened with given info"""
+          path = ('rel', 'path', ...)
+          header = ['field1', field2, ...] used for creation, the _IND_
+                 field (main key, numerical) is prepended.
+          csv  if specified the table is initialized from a CSV file
+          lock if not empty, the table file is lock opened with given info"""
 
-    def __init__(self, path, header=None, csvfile='', lock=''):
+    def __init__(self, path, header=None, csvfile="", lock=""):
         self.filename = getpath(path)
         if csvfile:
             self.rows = []
@@ -99,20 +107,20 @@ Table class:
                 jdata = jload(self.filename, nofile={})
                 self.lkinfo = None
             if jdata:
-                self.header = jdata['header']
-                self.rows = jdata['rows']
-                self.opts = jdata['opts']
+                self.header = jdata["header"]
+                self.rows = jdata["rows"]
+                self.opts = jdata["opts"]
             else:
                 if header:
-                    self.header = ['_IND_'] + list(header)
+                    self.header = ["_IND_"] + list(header)
                 else:
-                    raise TableException('A table header must be specified')
+                    raise TableException("A table header must be specified")
                 self.rows = []
                 self.opts = []
             self.ncols = len(self.header)
             try:
                 self._maxpos = max(self.rows, key=lambda x: x[0])[0]
-            except:                       # pylint: disable=W0702
+            except:  # pylint: disable=W0702
                 self._maxpos = 0
             self.readtime = time.time()
 
@@ -129,9 +137,9 @@ Table class:
 
     def _fromcsv(self, csvfile):
         "Import table data from CSV file"
-        with open(csvfile, encoding='utf8') as filed:
+        with open(csvfile, encoding="utf8") as filed:
             reader = csv.DictReader(filed)
-            self.header = ['_IND_'] + reader.fieldnames
+            self.header = ["_IND_"] + reader.fieldnames
             self.ncols = len(self.header)
             for row in reader:
                 self.insert_row(row)
@@ -140,7 +148,7 @@ Table class:
         "Return row index of row with main key pos"
         try:
             index = [x[0] for x in self.rows].index(pos)
-        except:                       # pylint: disable=W0702
+        except:  # pylint: disable=W0702
             index = -1
         return index
 
@@ -149,19 +157,19 @@ Table class:
         if isinstance(field, str):
             try:
                 return self.header.index(field)
-            except:                       # pylint: disable=W0702
+            except:  # pylint: disable=W0702
                 return -1
         try:
             indx = int(field)
-        except:                       # pylint: disable=W0702
+        except:  # pylint: disable=W0702
             return -1
         if indx < 0 or indx >= len(self.header):
             return -1
         return indx
 
     def _insert_list(self, row, pos):
-        if len(row) != len(self.header)-1:
-            raise TableException('Table row format mismatch')
+        if len(row) != len(self.header) - 1:
+            raise TableException("Table row format mismatch")
         clrow = [_clean(r) for r in row]
         indx = self._index(pos)
         if indx >= 0:
@@ -170,7 +178,7 @@ Table class:
             if pos <= 0:
                 self._maxpos += 1
                 pos = self._maxpos
-            self.rows.append([pos]+ clrow)
+            self.rows.append([pos] + clrow)
         return pos
 
     def _insert_dict(self, row, pos):
@@ -180,7 +188,7 @@ Table class:
         try:
             srow = [row[k] for k in self.header[1:]]
         except Exception as excp:
-            raise TableException(f'Table row format mismatch [{str(excp)}]') from None
+            raise TableException(f"Table row format mismatch [{str(excp)}]") from None
         return self._insert_list(srow, pos)
 
     def has_duplicates(self):
@@ -196,13 +204,13 @@ Table class:
             try:
                 row[rix] = func(row[rix])
             except:
-                raise TableException(f'Cannot convert row: {row[0]}') from None
+                raise TableException(f"Cannot convert row: {row[0]}") from None
 
     def needs_update(self):
         "Returns true if file has been written since it has been read"
         try:
             ftime = os.stat(self.filename).st_mtime
-        except:                       # pylint: disable=W0702
+        except:  # pylint: disable=W0702
             ftime = 0
         return self.readtime < ftime
 
@@ -237,6 +245,7 @@ Table class:
 
     def columns(self, fields=(), as_dict=False):
         "Returns rows from table containing only given column fields"
+
         def select(ffs, row):
             "Column extract function"
             return [row[x] for x in ffs]
@@ -273,7 +282,7 @@ Table class:
         else:
             adj = _noindex
         filed = CsvFile()
-        wrow = csv.writer(filed, dialect='excel')
+        wrow = csv.writer(filed, dialect="excel")
         wrow.writerow(adj(self.header))
         for row in self.rows:
             wrow.writerow(adj(row))
@@ -312,18 +321,20 @@ Table class:
             ret = srow
         return ret
 
-    def add_column(self, pos, label, value='', column=None):
+    def add_column(self, pos, label, value="", column=None):
         "Add a column to a table"
         if label in self.header:
-            raise TableException('Duplicate column label: '+label)
+            raise TableException("Duplicate column label: " + label)
         if pos < 1 or pos > len(self.header):
-            raise TableException(f'Illegal column index: {pos} [len(header):{len(self.header)}]')
+            raise TableException(
+                f"Illegal column index: {pos} [len(header):{len(self.header)}]"
+            )
         self.header.insert(pos, label)
         colid = 0
         for row in self.rows:
             try:
                 toinsert = column[colid]
-            except:                       # pylint: disable=W0702
+            except:  # pylint: disable=W0702
                 toinsert = value
             row.insert(pos, toinsert)
             colid += 1
@@ -332,12 +343,14 @@ Table class:
         "Remove a column"
         indx = self._field(field)
         if indx < 1 or indx >= len(self.header):
-            raise TableException(f'Illegal column index: {indx}')
+            raise TableException(f"Illegal column index: {indx}")
         del self.header[indx]
         for row in self.rows:
             del row[indx]
 
-    def where(self, field, item, as_dict=False, index=False, comp=None):   # pylint: disable=R0913
+    def where(  # pylint: disable=R0913,R0917
+        self, field, item, as_dict=False, index=False, comp=None
+    ):
         "Returns rows with matching field"
         indx = self._field(field)
         if indx < 0:
@@ -393,56 +406,61 @@ Table class:
 
     def save(self, fname=""):
         "Salva tabella in file json"
-        jdata = {'header': self.header, 'rows': self.rows, 'opts':self.opts}
+        jdata = {"header": self.header, "rows": self.rows, "opts": self.opts}
         if not fname:
             fname = self.filename
         jsave(fname, jdata, lockinfo=self.lkinfo)
 
+
 def _junlock(path):
     name = getpath(path)
-    lockname = name+'.lock'
+    lockname = name + ".lock"
     try:
         os.unlink(lockname)
-    except:                       # pylint: disable=W0702
+    except:  # pylint: disable=W0702
         pass
     return name
 
+
 def _islocked(name):
     "Returns lock info if file is locked"
-    lockname = name+'.lock'
+    lockname = name + ".lock"
     try:
-        with open(lockname, 'r', encoding='utf8') as jfd:
+        with open(lockname, "r", encoding="utf8") as jfd:
             lkinfo = json.load(jfd)
     except IOError:
         lkinfo = None
     return lkinfo
 
+
 def _getlock(name, ident):
     "Tries to lock file. Returns lock info on success"
-    lockname = name+'.lock'
+    lockname = name + ".lock"
     try:
-        fno = os.open(lockname, os.O_CREAT|os.O_EXCL|os.O_RDWR, 0o664)
+        fno = os.open(lockname, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o664)
     except OSError as excp:
         if excp.errno == errno.EEXIST:
-            with open(lockname, 'r', encoding='utf8') as jfd:
+            with open(lockname, "r", encoding="utf8") as jfd:
                 lkinfo = json.load(jfd)
             raise LockException(name, lkinfo[2]) from None
         raise
     lkinfo = (uuid.uuid4().hex, time.time(), ident)
-    filed = os.fdopen(fno, 'w', encoding='utf8')
+    filed = os.fdopen(fno, "w", encoding="utf8")
     json.dump(lkinfo, filed)
     filed.close()
     return lkinfo
 
+
 def _jload(name, nofile=None):
     try:
-        with open(name, encoding='utf8') as jfd:
+        with open(name, encoding="utf8") as jfd:
             ret = json.load(jfd)
-    except Exception as excp:                       # pylint: disable=W0703
+    except Exception as excp:  # pylint: disable=W0703
         if nofile is None:
             raise TableException(f"Errore jload({name}) [{str(excp)}]") from None
         ret = nofile
     return ret
+
 
 def jload(path, nofile=None):
     'Returns "nofile" if file cannot be read'
@@ -452,6 +470,7 @@ def jload(path, nofile=None):
         raise LockException(name, lkinfo[2])
     return _jload(name, nofile)
 
+
 def jsave(path, data, lockinfo=None):
     "Save object as json file"
     name = getpath(path)
@@ -460,7 +479,7 @@ def jsave(path, data, lockinfo=None):
         if (not lockinfo) or (lkinfo[0] != lockinfo[0]):
             raise LockException(name, lkinfo[2])
     try:
-        with open(name, mode='w', encoding='utf8') as jfd:
+        with open(name, mode="w", encoding="utf8") as jfd:
             json.dump(data, jfd, indent=2)
     except Exception as excp:
         raise TableException(f"Error jsave({name}) [{str(excp)}]") from None
@@ -468,17 +487,19 @@ def jsave(path, data, lockinfo=None):
         fpath = _junlock(path)
         os.chmod(fpath, 0o600)
 
+
 def jsave_b64(ppath, theobj):
     "base64 encoding of dict saved to jfile"
     name = getpath(ppath)
     b64obj = base64.b64encode(json.dumps(theobj).encode("utf-8")).decode("ascii")
-    with open(name, "w", encoding='utf8') as fds:
+    with open(name, "w", encoding="utf8") as fds:
         fds.write(b64obj)
+
 
 def jload_b64(ppath):
     "Jload and base64 decode"
     name = getpath(ppath)
-    with open(name, "r", encoding='utf8') as fds:
+    with open(name, "r", encoding="utf8") as fds:
         b64obj = fds.read()
     return json.loads(base64.b64decode(b64obj).decode("utf-8"))
 
@@ -490,21 +511,22 @@ def usage():
     print(f"table.py.  {__author__} - Version: {__version__}, {__date__}")
     print(__doc__)
 
-def fulltest():                        # pylint: disable=R0914,R0915
+
+def fulltest():  # pylint: disable=R0914,R0915
     "Codice di test"
-    table_file = 'test_table.json'
-    lock_file = table_file+'.lock'
+    table_file = "test_table.json"
+    lock_file = table_file + ".lock"
 
     try:
         os.unlink(table_file)
-    except:                       # pylint: disable=W0702
+    except:  # pylint: disable=W0702
         pass
     try:
         os.unlink(lock_file)
-    except:                       # pylint: disable=W0702
+    except:  # pylint: disable=W0702
         pass
 
-    tbl = Table(table_file, header=('Field1', 'Field2', 'Field3', 'Field4'))
+    tbl = Table(table_file, header=("Field1", "Field2", "Field3", "Field4"))
     known_row = [4, 7, 123, 9]
     rand_row = list(range(4))
     idx = 7
@@ -530,11 +552,11 @@ def fulltest():                        # pylint: disable=R0914,R0915
     assert s_row == known_row, "Errore indice riga campione"
 
     s_col1 = tbl.column(3)
-    s_col2 = tbl.column('Field3')
+    s_col2 = tbl.column("Field3")
     assert s_col1 == s_col2, "Errore selezione colonna"
 
     tbl.sort(3)
-    col0 = tbl.column(0)   # Index column
+    col0 = tbl.column(0)  # Index column
     assert col0[-1] == 8, "Errore indice riga campione, dopo sort"
 
     tbl.insert_row(known_row, 15)
@@ -544,15 +566,15 @@ def fulltest():                        # pylint: disable=R0914,R0915
     s_row2 = tbl.get_row(11)
     assert s_row1 == known_row and s_row2 == known_row, "Errore renumber()"
 
-    cols = tbl.columns(('Field3', 'Field1'))
+    cols = tbl.columns(("Field3", "Field1"))
     assert cols[-1] == [known_row[2], known_row[0]], "Errore selezione colonne"
 
-    w_rows = tbl.where('Field3', 123, index=True)
+    w_rows = tbl.where("Field3", 123, index=True)
     assert len(w_rows) == 2, "Errore metodo where()"
     tbl.save()
     assert os.path.exists(table_file), "File per tabella inesistente"
 
-    tbl = Table(table_file, lock='lock1')
+    tbl = Table(table_file, lock="lock1")
 
     try:
         tbl = Table(table_file)
@@ -564,7 +586,7 @@ def fulltest():                        # pylint: disable=R0914,R0915
     assert excp_ok, "Errore lock tabella"
 
     tbl.unlock()
-    tbl = Table(table_file, lock='lock2')
+    tbl = Table(table_file, lock="lock2")
     s_row = tbl.get_row(11)
     assert s_row == known_row, "Errore rilettura tabella"
 
@@ -580,73 +602,77 @@ def fulltest():                        # pylint: disable=R0914,R0915
 
     print("All tests: OK")
 
+
 def compare(ftab1, ftab2):
-    'Confronta tabelle da due file assgnati'
+    "Confronta tabelle da due file assgnati"
     tab1 = Table(ftab1)
     tab2 = Table(ftab2)
-    print('1:', tab1.header)
-    print('2:', tab2.header)
+    print("1:", tab1.header)
+    print("2:", tab2.header)
     if tab1.header != tab2.header:
-        print('Le tabelle hanno colonne differenti:')
+        print("Le tabelle hanno colonne differenti:")
         sys.exit()
     else:
-        print(' *** Le colonne corrispondono ***')
+        print(" *** Le colonne corrispondono ***")
     codf1 = set(x[1] for x in tab1.rows)
     codf2 = set(x[1] for x in tab2.rows)
     only1 = sorted(list(codf1 - codf1.intersection(codf2)))
     only2 = sorted(list(codf2 - codf1.intersection(codf2)))
-    print('1 - Codici presenti SOLO in', ftab1, '***')
+    print("1 - Codici presenti SOLO in", ftab1, "***")
     for codf in only1:
-        print(' -', codf)
-    print('2 - Codici presenti SOLO in', ftab2, '***')
+        print(" -", codf)
+    print("2 - Codici presenti SOLO in", ftab2, "***")
     for codf in only2:
-        print(' -', codf)
+        print(" -", codf)
     print()
-    ans = input('Trasferimento codici: 1 (da 1 a 2), 2 (da 2 a 1)? ')
-    if ans == '1':
+    ans = input("Trasferimento codici: 1 (da 1 a 2), 2 (da 2 a 1)? ")
+    if ans == "1":
         movecodf(only1, tab1, tab2)
-    elif ans == '2':
+    elif ans == "2":
         movecodf(only2, tab2, tab1)
 
+
 def movecodf(candidati, taba, tabb):
-    'sposta codici da lista candidati da taba a tabb'
+    "sposta codici da lista candidati da taba a tabb"
     while True:
         if not candidati:
             break
         print()
         for idx, codf in enumerate(candidati):
-            print(' ', idx+1, '-', codf)
-        ans = input('Indice codf da spostare: (0: fine)? ')
+            print(" ", idx + 1, "-", codf)
+        ans = input("Indice codf da spostare: (0: fine)? ")
         try:
             idx = int(ans)
         except ValueError:
             break
         if 0 < idx <= len(candidati):
-            codf = candidati[idx-1]
-            row = taba.where('Codice', codf)
+            codf = candidati[idx - 1]
+            row = taba.where("Codice", codf)
             if len(row) == 1:
                 tabb.insert_row(row[0])
-                print('Codice:', codf, 'Trasverito')
-                del candidati[idx-1]
+                print("Codice:", codf, "Trasverito")
+                del candidati[idx - 1]
             else:
-                print('La ricerca ha prodotto:', row)
-                print('Spostamento non possibile')
+                print("La ricerca ha prodotto:", row)
+                print("Spostamento non possibile")
         else:
             break
-        ans = input('Nome file per tabella aggiornata? ').strip()
+        ans = input("Nome file per tabella aggiornata? ").strip()
         if ans:
             tabb.save(ans)
             print()
-            print('Tabella salvata in:', ans)
+            print("Tabella salvata in:", ans)
 
-ARGERR = 'Errore argomenti. Usa -h per aiuto'
+
+ARGERR = "Errore argomenti. Usa -h per aiuto"
+
 
 def main():
-    'Interactive use'
-    if '-h' in sys.argv:
+    "Interactive use"
+    if "-h" in sys.argv:
         print(__doc__)
         sys.exit()
-    if '-f' in sys.argv:
+    if "-f" in sys.argv:
         fulltest()
         sys.exit()
 
@@ -656,5 +682,6 @@ def main():
 
     compare(sys.argv[1], sys.argv[2])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

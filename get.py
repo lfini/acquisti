@@ -55,3 +55,7 @@ for pratn in range(start, end):
     except subprocess.CalledProcessError:
         print(f"Errore esecuzione rsync alla pratica: {prat}")
         break
+
+remdec = f'{REMOTE}:v5/data/{sys.argv[1]}/decisioni.lst'
+localdec = f'data/{sys.argv[1]}/'
+execute(remdec, localdec)
