@@ -81,10 +81,11 @@ import send_email as sm
 # VERSION 5.7    23/01/2025 Aggiunta funzione mostra tabelle di stati
 # VERSION 5.8    25/04/2025 Modificata funzione "remove"
 # VERSION 5.9    10/06/2025 Corretto bug nella selezione delle pratiche annullate
+# VERSION 5.10   26/10/2025 Aggiunto trucco per funzione mostra tabella stati
 
 __author__ = "Luca Fini"
-__version__ = "5.9"
-__date__ = "10/06/2025"
+__version__ = "5.10"
+__date__ = "26/10/2025"
 
 # pylint: disable=C0302, W0718
 

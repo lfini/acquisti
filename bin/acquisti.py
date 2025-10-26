@@ -113,10 +113,11 @@ import table as tb
 # Versione 5.8.1 8/2025:   Corretto bug: aggiunta data invio proposta nella firma "debole"
 # Versione 5.8.2 8/2025:   Aggiunto invio al RUP della decisione firmata
 # Versione 5.8.3 9/2025:   Aggiunto testo email per invio documento di stipula
+# Versione 5.9.0 10/2025:  Aggiunto funzione annullamento passo
 
 __author__ = "Luca Fini"
-__version__ = "5.8.3"
-__date__ = "19/9/2025"
+__version__ = "5.9.0"
+__date__ = "26/10/2025"
 
 __start__ = time.asctime(time.localtime())
 
@@ -182,6 +183,19 @@ Per procedere devi specificare una motivazione per l'annullamento
 e premere "Conferma" </td></tr>
 """
 
+##### Funzioni ausiliarie per annullamento passi:
+
+def rimuovi_rup(d_prat):
+    "rimuove RUP dai dati paratica"
+    if cs.EMAIL_RUP in d_prat:
+        del d_prat[cs.EMAIL_RUP]
+    if cs.INTERNO_RUP in d_prat:
+        del d_prat[cs.INTERNO_RUP]
+    if cs.NOME_RUP in d_prat:
+        del d_prat[cs.NOME_RUP]
+
+# Tabella funzioni di annullamento
+FUNZIONI_ANNULLAMENTO = { cs.RIMUOVI_RUP: rimuovi_rup }
 
 class ToBeImplemented(RuntimeError):
     "Parte codice non implementata"
@@ -194,18 +208,23 @@ class CONFIG:  # pylint: disable=R0903
 
 
 def pass_info(passcode, what=""):  # pylint: disable=R0911
-    "Riporta la descrizione del passo di dato codice"
+    """
+    Riporta la descrizione del passo di dato codice"
+    what = "text", "file", "cmd", "alleg", "next", "func", "Full"
+"""
     passo = cs.TABELLA_PASSI[passcode]
-    if what.startswith("t"):
+    if what.startswith("te"):
         return passo[0]
-    if what.startswith("f"):
+    if what.startswith("fi"):
         return passo[1]
-    if what.startswith("c"):
+    if what.startswith("cm"):
         return passo[2]
-    if what.startswith("a"):
+    if what.startswith("al"):
         return passo[3]
-    if what.startswith("n"):
+    if what.startswith("ne"):
         return passo[4]
+    if what.startswith("fu"):
+        return passo[5]
     if what.startswith("F"):
         return passo
     return passcode
@@ -255,7 +274,7 @@ Pratica:
     def check_next(self):
         "Verifica se passo successivo consentito"
         cpasso = self.data[cs.TAB_PASSI][-1]
-        _, doc, _, alleg, npasso = cs.TABELLA_PASSI[cpasso]
+        _, doc, _, alleg, npasso, _ = cs.TABELLA_PASSI[cpasso]
         if isinstance(npasso, dict):
             npasso = npasso[self.data[cs.MOD_ACQUISTO]]
         if doc:
@@ -286,11 +305,6 @@ Pratica:
         cpasso = self.data[cs.TAB_PASSI].pop(-1)
         ppasso = self.data[cs.TAB_PASSI][-1]
         ACQ.logger.debug("back(), {%s} -> {%s}", cpasso, ppasso)
-        #       alleg = self.get_passo('a')
-        #       for alg in alleg:
-        #           name = cs.TAB_ALLEGATI[alg][0]
-        #           ret = ft.remove((self.basedir, name))
-        #           ACQ.logger.info(ret)
         return True
 
     def annulla(self, motivo):
@@ -742,7 +756,7 @@ def pratica_common(d_prat: Pratica):
         if ALL_MATCH.match(a)
     ]
     info["allegati_mancanti"] = ", ".join(all_mancanti)
-    info["stato_pratica"] = d_prat.get_passo("t")
+    info["stato_pratica"] = d_prat.get_passo("text")
     info["commands"] = d_prat.get_passo("cmd")
     return fk.render_template(
         "pratica.html",
@@ -1321,7 +1335,7 @@ def modificaprogetto():  # pylint: disable=R0912,R0915,R0911,R0914
         d_prat[cs.CITTA] = CONFIG.config[cs.SEDE][cs.CITTA]
         d_prat[cs.FIRMA_APPROV_RESP] = ""
         update_costo(d_prat, cs.COSTO_PROGETTO)
-        doc = d_prat.get_passo("f")
+        doc = d_prat.get_passo("file")
         d_prat[cs.SAVED] = 1
         storia(d_prat, "Generato/modificato progetto di acquisto")
         salvapratica(d_prat)
@@ -1544,7 +1558,7 @@ def indicarup():
             d_prat[cs.INTERNO_RUP] = rupf.interno_rup.data
             d_prat[cs.NOME_RUP] = nome_da_email(d_prat[cs.EMAIL_RUP], True)
             d_prat[cs.RUP_FIRMA_VICARIO] = 1 if rupf.rup_firma_vicario.data else 0
-            doc = d_prat.get_passo("f")
+            doc = d_prat.get_passo("file")
             genera_documento(d_prat, doc)
             d_prat.next()
             text = cs.TESTO_INDICA_RUP.format(
@@ -1709,13 +1723,7 @@ def modificardo():
     )
 
 
-@ACQ.route(
-    "/modificaordine",
-    methods=(
-        "GET",
-        "POST",
-    ),
-)
+@ACQ.route("/modificaordine", methods=( "GET", "POST"))
 def modificaordine():  # pylint: disable=R0914
     "pagina: modifica ordine (sopl per acquyisti inf. 5k)"
     ACQ.logger.info("URL: /modificaordine (%s)", fk.request.method)
@@ -1744,7 +1752,7 @@ def modificaordine():  # pylint: disable=R0914
         if ordn.validate():
             d_prat.update(clean_data(ordn.data))
             update_costo(d_prat, cs.COSTO_RDO)
-            doc = d_prat.get_passo("f")
+            doc = d_prat.get_passo("file")
             genera_documento(d_prat, doc)
             storia(
                 d_prat,
@@ -1774,13 +1782,7 @@ def modificaordine():  # pylint: disable=R0914
     )
 
 
-@ACQ.route(
-    "/modificaproposta",
-    methods=(
-        "GET",
-        "POST",
-    ),
-)
+@ACQ.route("/modificaproposta", methods=( "GET", "POST"))
 def modificaproposta():  # pylint: disable=R0914
     "pagina: modifica proposta di aggiudicazione"
     ACQ.logger.info("URL: /modificaproposta (%s)", fk.request.method)
@@ -1810,7 +1812,7 @@ def modificaproposta():  # pylint: disable=R0914
         if prop.validate(d_prat):
             d_prat.update(clean_data(prop.data))
             update_costo(d_prat, cs.COSTO_RDO)
-            doc = d_prat.get_passo("f")
+            doc = d_prat.get_passo("file")
             genera_documento(d_prat, doc)
             storia(d_prat, "Generata proposta di aggiudicazione")
             salvapratica(d_prat)
@@ -1835,13 +1837,7 @@ def modificaproposta():  # pylint: disable=R0914
     )
 
 
-@ACQ.route(
-    "/modificadecisione",
-    methods=(
-        "GET",
-        "POST",
-    ),
-)
+@ACQ.route("/modificadecisione", methods=( "GET", "POST"))
 def modificadecisione():  # pylint: disable=R0914
     "pagina: modifica decisione di contrarre"
     ACQ.logger.info("URL: /modificadecisione (%s)", fk.request.method)
@@ -1878,7 +1874,7 @@ def modificadecisione():  # pylint: disable=R0914
                 what = "Generata"
             else:
                 what = "Modificata"
-            doc = d_prat.get_passo("f")
+            doc = d_prat.get_passo("file")
             genera_documento(d_prat, doc)
             storia(
                 d_prat,
@@ -1914,13 +1910,7 @@ def modificadecisione():  # pylint: disable=R0914
     )
 
 
-@ACQ.route(
-    "/genera_proposta",
-    methods=(
-        "GET",
-        "POST",
-    ),
-)
+@ACQ.route("/genera_proposta", methods=( "GET", "POST"))
 def genera_proposta():  # pylint: disable=R0914
     "pagina: genera proposta di aggiudicazione"
     ACQ.logger.info("URL: /genera_proposta (%s)", fk.request.method)
@@ -1964,7 +1954,7 @@ def upload():  # pylint: disable=R0914,R0911,R0912
     if tipo_allegato == cs.ALL_GENERICO and os.path.exists(fpath):
         fk.flash(f'File "{name}" già esistente!', category="error")
         fk.flash(
-            "Devi modificare il nome del file " "(o rimuovere quello esistente)",
+            "Devi modificare il nome del file (o rimuovere quello esistente)",
             category="error",
         )
         return pratica_common(d_prat)
@@ -2046,7 +2036,7 @@ def lista_pratiche(filtro, anno, ascendente):  # pylint: disable=R0915,R0912,R09
     if oper == ("ALL", "NOR"):
         if not test_admin(user):
             ACQ.logger.error(
-                "Operazione non autorizzata. " "Utente: %s", user["userid"]
+                "Operazione non autorizzata. Utente: %s", user["userid"]
             )
             fk.session.clear()
             return fk.render_template(
@@ -2056,7 +2046,7 @@ def lista_pratiche(filtro, anno, ascendente):  # pylint: disable=R0915,R0912,R09
             )
     elif oper == "DIR":  # Lista pratiche da autorizzare/autorizzate dal Direttore
         if not (test_direttore(user) or test_admin(user)):
-            ACQ.logger.error("Operazione non autorizzata " "Utente: %s", user["userid"])
+            ACQ.logger.error("Operazione non autorizzata Utente: %s", user["userid"])
             fk.session.clear()
             return fk.render_template(
                 "noaccess.html",
@@ -2196,13 +2186,7 @@ def pratica0(num, year):
     return pratica_common(d_prat)
 
 
-@ACQ.route(
-    "/togglestoria",
-    methods=(
-        "GET",
-        "POST",
-    ),
-)
+@ACQ.route("/togglestoria", methods=( "GET", "POST"))
 def togglestoria():
     "pagina: abilita/disabilita storia pratica"
     ACQ.logger.info("URL: /togglestoria (%s)", fk.request.method)
@@ -2263,8 +2247,12 @@ def rollback():  # pylint: disable=R0914,R0911
             name = filename_allegato(tipo, "", "", d_prat)
             ret = ft.remove((d_prat.basedir, name), prefix=True)
             ACQ.logger.info(ret)
+        f_annullamento = pass_info(passcode, what='func')
+        if f_annullamento:
+            ACQ.logger.info("Esecuzione funzione: %s", f_annullamento)
+            FUNZIONI_ANNULLAMENTO[f_annullamento](d_prat)
         d_prat.back()
-        doc = d_prat.get_passo("f")
+        doc = d_prat.get_passo("file")
         genera_documento(d_prat, doc)
         msg = "Annullato ultimo passo pratica"
         storia(d_prat, msg)

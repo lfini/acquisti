@@ -233,6 +233,7 @@ PRATICA_APERTA = "pratica_aperta"  # dati_pratica
 PREZZO_GARA = "prezzo_gara"  # dati_pratica
 PROGETTO_INVIATO = "progetto_inviato"  # dati_pratica
 RDO_FIRMA_VICARIO = "rdo_firma_vicario"  # dati pratica
+RIMUOVI_RUP = "rimuovi_rup"   # funzione annullamento
 RUP = "rup"  # dati_pratica
 RUP_FIRMA_VICARIO = "rup_firma_vicario"  # dati pratica
 SAVED = "_saved"  # dati_pratica
@@ -275,7 +276,7 @@ MENU_MOD_ACQ = (
     (INFER_5000, "Trattativa diretta sotto 5k€ con PCP"),
     (
         GENERIC,
-        "Pratica generica (da utilizzare solo su " "richiesta dell'Amministrazione)",
+        "Pratica generica (da utilizzare solo su richiesta dell'Amministrazione)",
     ),
 )
 
@@ -387,21 +388,24 @@ TABELLA_PASSI = {
         [DOC_PROGETTO, [PROVVISORIO]],  # File da generare per procedere (con opzioni)
         ["modificaprogetto", "inviaprogetto"],  # Comandi abilitati
         [ALL_PREV],  # Allegati necessari per procedere
-        CdP.PIR,
-    ),  # passo successivo
+        CdP.PIR, # passo successivo
+        "",      # funzione annullamento. Chiave nella tabella FUNZIONI_NNULLAMENTO
+    ),
     CdP.GEN: (
         "Archiviazione documenti",  # Descrizione stato
         [],  # File da generare per procedere (con opzioni)
         ["chiudipratica"],  # Comandi abilitati
         [],  # Allegati necessari per procedere
-        CdP.FIN,
-    ),  # passo successivo
+        CdP.FIN,  # passo successivo
+        "",      # funzione annullamento
+    ),
     CdP.PIR: (
         "Progetto inviato al resp. dei fondi",
         [],
         ["approvaprogetto"],
         [],
         CdP.PAR,
+        "",      # funzione annullamento
     ),
     CdP.PAR: (
         "Progetto approvato dal resp. dei fondi",
@@ -409,6 +413,7 @@ TABELLA_PASSI = {
         ["indicarup"],
         [],
         CdP.RUI,
+        "",      # funzione annullamento
     ),
     CdP.RUI: (
         "RUP indicato",
@@ -416,6 +421,7 @@ TABELLA_PASSI = {
         ["rich_autorizzazione"],
         [ALL_CV_RUP, ALL_DICH_RUP],
         CdP.IRD,
+        RIMUOVI_RUP,      # funzione annullamento
     ),
     CdP.IRD: (
         "Inviata richiesta di autorizzazione e nomina RUP al Direttore",
@@ -430,7 +436,9 @@ TABELLA_PASSI = {
             CONSIP: CdP.PRO,
             ACC_QUADRO: CdP.PRO,
             INFER_5000: CdP.PRO,
+            GENERIC: CdP.GEN,
         },
+        "",      # funzione annullamento
     ),
     CdP.AUD: (
         "Genera RdO, allega RdO firmata",
@@ -438,6 +446,7 @@ TABELLA_PASSI = {
         ["modificardo", "procedi_rdo"],
         [ALL_RDO],
         CdP.PRO,
+        "",      # funzione annullamento
     ),
     CdP.PRO: (
         "Genera proposta di aggiudicazione ed invia al direttore",
@@ -445,6 +454,7 @@ TABELLA_PASSI = {
         ["modificaproposta", "inviaproposta"],
         [],
         CdP.DEC,
+        "",      # funzione annullamento
     ),
     CdP.ROG: ("Passo non più definito", [], ["procedi"], [], CdP.DEC),
     CdP.DEC: (
@@ -453,6 +463,7 @@ TABELLA_PASSI = {
         ["modificadecisione", "inviadecisione"],
         [ALL_CIG],
         CdP.DCI,
+        "",      # funzione annullamento
     ),
     CdP.DCI: (
         "Decisione di contrarre inviata al Direttore per firma",
@@ -467,7 +478,9 @@ TABELLA_PASSI = {
             CONSIP: CdP.ALS,
             ACC_QUADRO: CdP.ALS,
             INFER_5000: CdP.ORD,
+            GENERIC: CdP.GEN,
         },
+        "",      # funzione annullamento
     ),
     CdP.ORD: (
         "Genera ordine",
@@ -475,14 +488,16 @@ TABELLA_PASSI = {
         ["modificaordine", "procedi"],
         [],
         CdP.OGP,
+        "",      # funzione annullamento
     ),
-    CdP.ALS: ("Allega documento di stipula", [], ["procedi"], [ALL_STIPULA], CdP.OGP),
+    CdP.ALS: ("Allega documento di stipula", [], ["procedi"], [ALL_STIPULA], CdP.OGP, ""),
     CdP.OGP: (
         "Allega Obbligazione giuridicamente perfezionata",
         [],
         ["procedi"],
         [ALL_OBBLIG],
         CdP.END,
+        "",      # funzione annullamento
     ),
     CdP.END: (
         "Pratica conclusa. Attesa chiusura",
@@ -490,9 +505,10 @@ TABELLA_PASSI = {
         ["invia_obblig", "chiudipratica"],
         [],
         CdP.FIN,
+        "",      # funzione annullamento
     ),
-    CdP.FIN: ("Pratica chiusa", [], ["apripratica"], [], CdP.END),
-    CdP.ANN: ("Pratica annullata", [], [], [], CdP.ANN),
+    CdP.FIN: ("Pratica chiusa", [], ["apripratica"], [], CdP.END, ""),
+    CdP.ANN: ("Pratica annullata", [], [], [], CdP.ANN, ""),
 }
 
 ################################################### Varie stringhe
