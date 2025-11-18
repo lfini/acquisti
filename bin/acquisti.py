@@ -110,14 +110,15 @@ import table as tb
 #                          Modificata gestione proposta di aggiudicazione
 #                          Corretto bug mancata cancellazione della decisione firmata quando
 #                          viene annullato il passo corrispondente
-# Versione 5.8.1 8/2025:   Corretto bug: aggiunta data invio proposta nella firma "debole"
-# Versione 5.8.2 8/2025:   Aggiunto invio al RUP della decisione firmata
-# Versione 5.8.3 9/2025:   Aggiunto testo email per invio documento di stipula
-# Versione 5.9.0 10/2025:  Aggiunto funzione annullamento passo
+# Versione 5.8.1  8/2025:   Corretto bug: aggiunta data invio proposta nella firma "debole"
+# Versione 5.8.2  8/2025:   Aggiunto invio al RUP della decisione firmata
+# Versione 5.8.3  9/2025:   Aggiunto testo email per invio documento di stipula
+# Versione 5.9.0  10/2025:  Aggiunto funzione annullamento passo
+# Versione 5.10.0 11/2025:  Modificato ordine di assunzione CIG
 
 __author__ = "Luca Fini"
-__version__ = "5.9.0"
-__date__ = "26/10/2025"
+__version__ = "5.10.0"
+__date__ = "18/11/2025"
 
 __start__ = time.asctime(time.localtime())
 

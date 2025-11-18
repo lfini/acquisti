@@ -461,7 +461,7 @@ TABELLA_PASSI = {
         "Genera decisione",
         [DOC_DECISIONE, [PROVVISORIO]],
         ["modificadecisione", "inviadecisione"],
-        [ALL_CIG],
+        [],
         CdP.DCI,
         "",      # funzione annullamento
     ),
@@ -469,7 +469,7 @@ TABELLA_PASSI = {
         "Decisione di contrarre inviata al Direttore per firma",
         [],
         ["procedi_dci"],
-        [ALL_DECIS_FIRM],
+        [ALL_DECIS_FIRM, ALL_CIG],
         {
             TRATT_MEPA_40: CdP.OGP,  # prossimo passo dipende da
             TRATT_UBUY_40: CdP.ORD,  # modalità acquisto

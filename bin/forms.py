@@ -681,7 +681,7 @@ class Decisione(FormWErrors):
     data_protocollo_doc = MyTextField("Data protocollo documentazione (g/m/aaaa)", True)
     numero_protocollo_doc = MyTextField("Numero protocollo documentazione", True)
     numero_cup = MyTextField("CUP", True, [wt.validators.Optional()])
-    numero_cig = MyTextField("CIG", True, [wt.validators.Optional()])
+#   numero_cig = MyTextField("CIG", True, [wt.validators.Optional()])
     capitolo = MyTextField(
         "Capitolo", True, [wt.validators.InputRequired("Manca indicazione capitolo")]
     )
@@ -706,9 +706,8 @@ class Decisione(FormWErrors):
             html += render_field(self.numero_decisione, sameline=True) + NBSP4
             html += render_field(self.data_decisione, sameline=True) + BRK
         html += (
-            render_field(self.numero_cig, sameline=True)
-            + BRK
-            + render_field(self.numero_cup, sameline=True)
+#           render_field(self.numero_cig, sameline=True) + BRK +
+            render_field(self.numero_cup, sameline=True)
             + BRK
             + E_TRTD
         )
@@ -723,7 +722,7 @@ class Decisione(FormWErrors):
                 + render_field(self.data_negoziazione, sameline=True)
                 + NBSP4
                 + render_field(self.numero_negoziazione, sameline=True)
-                + NBSP4
+                + PAR
                 + render_field(self.data_scadenza, sameline=True)
                 + PAR
                 + render_field(self.data_offerta, sameline=True)
@@ -786,14 +785,15 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca data protocollo documentazione")
         if has_protdoc and not self.numero_protocollo_doc:
             self.errlist.append("Manca numero protocollo documentazione")
-        if not self.numero_cig.data:
-            self.errlist.append("Manca indicazione CIG")
+#       if not self.numero_cig.data:
+#           self.errlist.append("Manca indicazione CIG")
         return not self.errlist
 
 
 class Ordine(FormWErrors):
     "form per definizione ordine"
     numero_ordine = MyTextField("Numero ordine", True, [])
+    numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     termine_giorni = MyTextField(
         "Termine di esecuzione della prestazione (giorni)", True, []
     )
@@ -809,6 +809,8 @@ class Ordine(FormWErrors):
         self.errlist = []
         if not self.numero_ordine.data:
             self.errlist.append("Manca numero ordine")
+        if not self.numero_cig.data:
+            self.errlist.append("Manca numero CIG")
         if not self.termine_giorni.data:
             self.errlist.append("Manca indicazione termine di esecuzione")
         return not self.errlist
@@ -943,7 +945,6 @@ E_TD = Markup("</td>")
 class RdO(FormWErrors):
     "form per specifiche per la generazione di RdO"
     numero_cup = MyTextField("CUP", True, [wt.validators.Optional()])
-    #   numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
     costo_rdo = MyFormField(Costo2, "Quadro economico", True)
     fine_gara = MyTextField("Data scadenza presentazione offerta (g/m/aaaa)", True)
     T_avanti = wt.SubmitField("Avanti", [wt.validators.Optional()])
