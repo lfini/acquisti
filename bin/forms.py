@@ -681,7 +681,7 @@ class Decisione(FormWErrors):
     data_protocollo_doc = MyTextField("Data protocollo documentazione (g/m/aaaa)", True)
     numero_protocollo_doc = MyTextField("Numero protocollo documentazione", True)
     numero_cup = MyTextField("CUP", True, [wt.validators.Optional()])
-#   numero_cig = MyTextField("CIG", True, [wt.validators.Optional()])
+    #   numero_cig = MyTextField("CIG", True, [wt.validators.Optional()])
     capitolo = MyTextField(
         "Capitolo", True, [wt.validators.InputRequired("Manca indicazione capitolo")]
     )
@@ -706,7 +706,7 @@ class Decisione(FormWErrors):
             html += render_field(self.numero_decisione, sameline=True) + NBSP4
             html += render_field(self.data_decisione, sameline=True) + BRK
         html += (
-#           render_field(self.numero_cig, sameline=True) + BRK +
+            #           render_field(self.numero_cig, sameline=True) + BRK +
             render_field(self.numero_cup, sameline=True)
             + BRK
             + E_TRTD
@@ -785,15 +785,15 @@ class Decisione(FormWErrors):
             self.errlist.append("Manca data protocollo documentazione")
         if has_protdoc and not self.numero_protocollo_doc:
             self.errlist.append("Manca numero protocollo documentazione")
-#       if not self.numero_cig.data:
-#           self.errlist.append("Manca indicazione CIG")
+        #       if not self.numero_cig.data:
+        #           self.errlist.append("Manca indicazione CIG")
         return not self.errlist
 
 
 class Ordine(FormWErrors):
     "form per definizione ordine"
     numero_ordine = MyTextField("Numero ordine", True, [])
-    numero_cig = MyTextField('CIG', True, [wt.validators.InputRequired()])
+    numero_cig = MyTextField("CIG", True, [wt.validators.InputRequired()])
     termine_giorni = MyTextField(
         "Termine di esecuzione della prestazione (giorni)", True, []
     )

@@ -192,7 +192,7 @@ class FTable(tb.Table):
         html.append("</dl>")
         return "\n".join(html)
 
-    def render(        # pylint: disable=R0912,R0913,R0914,R0917
+    def render(  # pylint: disable=R0912,R0913,R0914,R0917
         self,
         title=None,
         menu=(),
@@ -301,7 +301,7 @@ class Matchty:  # pylint: disable=R0903
 class DocList:  # pylint: disable=R0903
     "definizione lista documenti"
 
-    def __init__(      # pylint: disable=R0913,R0917
+    def __init__(  # pylint: disable=R0913,R0917
         self,
         thedir,
         fname,
