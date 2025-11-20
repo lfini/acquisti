@@ -116,10 +116,11 @@ import table as tb
 # Versione 5.9.0  10/2025:  Aggiunto funzione annullamento passo
 # Versione 5.10.0 11/2025:  Modificato ordine di assunzione CIG
 # Versione 5.10.1 11/2025:  Aggiunta trasmissione CIG all'indirizzo per l'archiviazione
+# Versione 5.10.2 11/2025:  Aggiunto numero pratica nei log
 
 __author__ = "Luca Fini"
-__version__ = "5.10.1"
-__date__ = "19/11/2025"
+__version__ = "5.10.2"
+__date__ = "20/11/2025"
 
 __start__ = time.asctime(time.localtime())
 
@@ -184,6 +185,27 @@ stato di avanzamento  non potrà più essere riaperta o riutilizzata.
 Per procedere devi specificare una motivazione per l'annullamento
 e premere "Conferma" </td></tr>
 """
+
+
+def log_info(pratica, fmt, *args):
+    "log informazione con numero di pratica"
+    if pratica:
+        n_prat = pratica.get(cs.NUMERO_PRATICA, "??")
+    else:
+        n_prat = "??"
+    ffmt = f"[Prat: {n_prat}] " + fmt
+    ACQ.logger.info(ffmt, *args)
+
+
+def log_error(pratica, fmt, *args):
+    "log informazione con numero di pratica"
+    if pratica:
+        n_prat = pratica.get(cs.NUMERO_PRATICA, "??")
+    else:
+        n_prat = "??"
+    ffmt = f"[Prat: {n_prat}] " + fmt
+    ACQ.logger.error(ffmt, *args)
+
 
 ##### Funzioni ausiliarie per annullamento passi:
 
@@ -609,10 +631,10 @@ def storia(d_prat: Pratica, text: str):
     "aggiunge record alla storia della pratica"
     line = f'{text} - {ft.today()} ({d_prat.user["fullname"]})'
     d_prat[cs.STORIA_PRATICA].append(line)
-    ACQ.logger.info(text)
+    log_info(d_prat, text)
 
 
-def send_email(eaddr, text, subj, attach=None):
+def send_email(d_prat, eaddr, text, subj, attach=None):
     "invio mail a utente"
     sender = CONFIG.config[cs.EMAIL_UFFICIO]
     if DEBUG.local:
@@ -633,9 +655,9 @@ def send_email(eaddr, text, subj, attach=None):
             debug_addr=DEBUG.email,
         )
     except Exception as excp:  # pylint: disable=W0718
-        ACQ.logger.error('Invio messaggio "%s" a: %s (%s)', subj, eaddr, str(excp))
+        log_error(d_prat, 'invio messaggio "%s" a: %s (%s)', subj, eaddr, str(excp))
         return False
-    ACQ.logger.info('Inviato messaggio "%s" a: %s', subj, eaddr)
+    log_info(d_prat, 'inviato messaggio "%s" a: %s', subj, eaddr)
     return True
 
 
@@ -674,7 +696,7 @@ def status_not_ok(d_prat: Pratica, stati=()):
     "Verifica che l'operazione sia consentita nello stato corrente"
     passcode = d_prat.get_passo()
     text = cs.TABELLA_PASSI[passcode][0]
-    ACQ.logger.info("Stato interno: %d - %s", passcode, text)
+    log_info(d_prat, "stato interno: %d - %s", passcode, text)
     if stati:
         return passcode not in stati
     return False
@@ -699,7 +721,7 @@ def salvapratica(d_prat: Pratica):
     if not d_prat.basedir:
         raise RuntimeError(f"Manca basedir. Pratica: {d_prat[cs.NUMERO_PRATICA]}")
     tb.jsave((d_prat.basedir, cs.PRAT_JFILE), d_prat.data)
-    ACQ.logger.info("Salvati dati pratica: %s/%s", d_prat.basedir, cs.PRAT_JFILE)
+    log_info(d_prat, "salvati dati pratica: %s/%s", d_prat.basedir, cs.PRAT_JFILE)
 
 
 def clean_dict(adict):
@@ -816,7 +838,7 @@ def modifica_pratica(what):  # pylint: disable=R0912,R0915
         return pratica_common(d_prat)
     msg = f"Errore interno - modifica_pratica: codice illegale ({what})"
     fk.flash(msg, category="error")
-    ACQ.logger.error(msg)
+    log_error(d_prat, msg)
     return fk.redirect(fk.url_for("start"))
 
 
@@ -954,8 +976,9 @@ def genera_documento(d_prat: Pratica, spec: list, filenum=0):
     ndata["headerpath"] = os.path.join(cs.FILEDIR, "header.png")
     ndata["footerpath"] = os.path.join(cs.FILEDIR, "footer.png")
     ndata["dir_is_m"] = CONFIG.config["gender_direttore"].lower() == "m"
-    ACQ.logger.info(
-        "Generazione documento: %s/%s (template: %s)",
+    log_info(
+        d_prat,
+        "generazione documento: %s/%s (template: %s)",
         d_prat.basedir,
         nome_pdf,
         template,
@@ -1282,8 +1305,9 @@ def modificaprogetto():  # pylint: disable=R0912,R0915,R0911,R0914
     err = auth_progetto_modificabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Modifica progetto non possibile: %s. Utente:%s pratica %s",
+        log_error(
+            d_prat,
+            "modifica progetto non possibile: %s. Utente:%s pratica %s",
             err,
             d_prat.user["userid"],
             d_prat[cs.NUMERO_PRATICA],
@@ -1319,7 +1343,7 @@ def modificaprogetto():  # pylint: disable=R0912,R0915,R0911,R0914
             basedir = ft.namebasedir(year, number)
             fk.session[cs.BASEDIR] = basedir
             thedir = ft.newdir(basedir)
-            ACQ.logger.info("Creata directory: %s", thedir)
+            log_info(d_prat, "creata directory: %s", thedir)
             d_prat.update(
                 {
                     cs.NUMERO_PRATICA: f"{number}/{year:4d}",
@@ -1367,8 +1391,12 @@ def inviaprogetto():
     err = auth_progetto_inviabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            INVIO_NON_AUTORIZZ, err, d_prat.user["userid"], d_prat[cs.NUMERO_PRATICA]
+        log_error(
+            d_prat,
+            INVIO_NON_AUTORIZZ,
+            err,
+            d_prat.user["userid"],
+            d_prat[cs.NUMERO_PRATICA],
         )
         return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
@@ -1379,7 +1407,7 @@ def inviaprogetto():
         d_prat[cs.NUMERO_PRATICA], fk.request.root_url
     ) + cs.DETTAGLIO_PRATICA.format(**d_prat)
     subj = "Richiesta di approvazione progetto di acquisto."
-    ret = send_email(d_prat[cs.EMAIL_RESPONSABILE], testo, subj)
+    ret = send_email(d_prat, d_prat[cs.EMAIL_RESPONSABILE], testo, subj)
     if ret:
         fk.flash(
             "Richiesta di approvazione per  la pratica "
@@ -1408,8 +1436,12 @@ def inviaproposta():  # pylint: disable=R0914
     err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            INVIO_NON_AUTORIZZ, err, d_prat.user["userid"], d_prat[cs.NUMERO_PRATICA]
+        log_error(
+            d_prat,
+            INVIO_NON_AUTORIZZ,
+            err,
+            d_prat.user["userid"],
+            d_prat[cs.NUMERO_PRATICA],
         )
         return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
@@ -1431,7 +1463,7 @@ def inviaproposta():  # pylint: disable=R0914
     subj = f"Proposta di aggiudicazione da inviare al {chifirma} per firma"
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
     recipient = CONFIG.config[cs.EMAIL_DIREZIONE]
-    ret = send_email(recipient, testo, subj, attach=attach)
+    ret = send_email(d_prat, recipient, testo, subj, attach=attach)
     if ret:
         msg = f"Proposta di aggiudicazione inviata a: {recipient}"
         fk.flash(msg, category="info")
@@ -1455,8 +1487,12 @@ def inviadecisione():  # pylint: disable=R0914
     err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            INVIO_NON_AUTORIZZ, err, d_prat.user["userid"], d_prat[cs.NUMERO_PRATICA]
+        log_error(
+            d_prat,
+            INVIO_NON_AUTORIZZ,
+            err,
+            d_prat.user["userid"],
+            d_prat[cs.NUMERO_PRATICA],
         )
         return pratica_common(d_prat)
     cannot_go = d_prat.check_next()[0]
@@ -1478,7 +1514,7 @@ def inviadecisione():  # pylint: disable=R0914
     subj = f"Decisione di contrarre da inviare al {chifirma} per firma"
     recipient = (d_prat[cs.EMAIL_RUP], CONFIG.config[cs.EMAIL_SERVIZIO])
     attach = (os.path.join(d_prat.basedir, doc_pdf), doc_pdf)
-    ret = send_email(recipient, testo, subj, attach=attach)
+    ret = send_email(d_prat, recipient, testo, subj, attach=attach)
     if ret:
         msg = f"Decisione da firmare digitalmente dal {chifirma} inviata a: {recipient}"
         fk.flash(msg, category="info")
@@ -1505,8 +1541,9 @@ def approvaprogetto():
     err = auth_progetto_approvabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Approvazione non autorizzata: %s. Utente %s pratica %s",
+        log_error(
+            d_prat,
+            "approvazione non autorizzata: %s. Utente %s pratica %s",
             err,
             d_prat.user["userid"],
             d_prat[cs.NUMERO_PRATICA],
@@ -1523,13 +1560,13 @@ def approvaprogetto():
     )
     body = cs.TESTO_NOTIFICA_APPROVAZIONE.format(**d_prat)
     if not test_responsabile(d_prat):
-        if send_email(d_prat[cs.EMAIL_RICHIEDENTE], body, subj):
+        if send_email(d_prat, d_prat[cs.EMAIL_RICHIEDENTE], body, subj):
             fk.flash(
                 f"L'approvazione del progetto {d_prat[cs.NUMERO_PRATICA]} è stata"
                 " correttamente registrata",
                 category="info",
             )
-    send_email(CONFIG.config[cs.EMAIL_UFFICIO], body, subj)
+    send_email(d_prat, CONFIG.config[cs.EMAIL_UFFICIO], body, subj)
     return pratica_common(d_prat)
 
 
@@ -1545,8 +1582,9 @@ def indicarup():
     err = auth_rup_indicabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Indicazione RUP non autorizzata: %s. Utente %s pratica %s",
+        log_error(
+            d_prat,
+            "indicazione RUP non autorizzata: %s. Utente %s pratica %s",
             err,
             d_prat.user["userid"],
             d_prat[cs.NUMERO_PRATICA],
@@ -1569,7 +1607,7 @@ def indicarup():
             text = cs.TESTO_INDICA_RUP.format(
                 d_prat[cs.NUMERO_PRATICA], fk.request.root_url
             )
-            send_email(d_prat[cs.EMAIL_RUP], text, "Indicazione come RUP")
+            send_email(d_prat, d_prat[cs.EMAIL_RUP], text, "Indicazione come RUP")
             msg = f"{d_prat[cs.NOME_RUP]} indicato come RUP"
             fk.flash(msg, category="info")
             storia(d_prat, msg)
@@ -1606,15 +1644,16 @@ def autorizza():
     err = auth_autorizzabile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Autorizzazione richiesta non consentita: %s. Utente %s pratica %s",
+        log_error(
+            d_prat,
+            "autorizzazione richiesta non consentita: %s. Utente %s pratica %s",
             err,
             d_prat.user["userid"],
             d_prat[cs.NUMERO_PRATICA],
         )
         return pratica_common(d_prat)
     text = cs.TESTO_NOMINA_RUP.format(d_prat[cs.NUMERO_PRATICA])
-    send_email(d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
+    send_email(d_prat, d_prat[cs.EMAIL_RUP], text, "Nomina RUP")
     d_prat.next()
     storia(d_prat, "Autorizzazione concessa dal direttore")
     doc_opts = [cs.RESPONSABILE, cs.DIRETTORE]
@@ -1639,8 +1678,9 @@ def rich_autorizzazione():
     err = auth_autorizz_richiedibile(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Invio richiesta di autorizzazione non consentito: "
+        log_error(
+            d_prat,
+            "invio richiesta di autorizzazione non consentito: "
             "%s. Utente %s pratica %s",
             err,
             d_prat.user["userid"],
@@ -1656,7 +1696,7 @@ def rich_autorizzazione():
         + d_prat[cs.NUMERO_PRATICA]
     )
     body = cs.TESTO_RICHIESTA_AUTORIZZAZIONE.format(url=fk.request.root_url, **d_prat)
-    ret = send_email(CONFIG.config[cs.EMAIL_DIREZIONE], body, subj)
+    ret = send_email(d_prat, CONFIG.config[cs.EMAIL_DIREZIONE], body, subj)
     if ret:
         msg = "Richiesta di autorizzazione inviata alla direzione"
         fk.flash(msg, category="info")
@@ -1666,7 +1706,7 @@ def rich_autorizzazione():
         return pratica_common(d_prat)
     err = "Invio richiesta di autorizzazione alla direzione fallito"
     fk.flash(err, category="error")
-    ACQ.logger.error(err)
+    log_error(d_prat, err)
     return pratica_common(d_prat)
 
 
@@ -1682,8 +1722,9 @@ def modificardo():
     err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s",
+        log_error(
+            d_prat,
+            "generazione/modifica rdo non autorizzata: %s. Utente %s, Pratica %s",
             err,
             d_prat.user["userid"],
             d_prat.get(cs.NUMERO_PRATICA, "N.A."),
@@ -1743,8 +1784,9 @@ def modificaordine():  # pylint: disable=R0914
     err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Gestione ordine non autorizzata: %s. Utente %s, pratica %s",
+        log_error(
+            d_prat,
+            "gestione ordine non autorizzata: %s. Utente %s, pratica %s",
             err,
             d_prat.user["userid"],
             d_prat[cs.NUMERO_PRATICA],
@@ -1802,8 +1844,9 @@ def modificaproposta():  # pylint: disable=R0914
     err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Gestione proposta di aggiudicazione non autorizzata: "
+        log_error(
+            d_prat,
+            "gestione proposta di aggiudicazione non autorizzata: "
             "%s. Utente %s, pratica %s",
             err,
             d_prat.user["userid"],
@@ -1857,8 +1900,9 @@ def modificadecisione():  # pylint: disable=R0914
     err = auth_admin_or_rup(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Gestione decisione di contrarre non autorizzata: "
+        log_error(
+            d_prat,
+            "gestione decisione di contrarre non autorizzata: "
             "%s. Utente %s, pratica %s",
             err,
             d_prat.user["userid"],
@@ -1947,7 +1991,7 @@ def upload():  # pylint: disable=R0914,R0911,R0912
         fk.flash(ILLEGAL_OP, category="error")
         return pratica_common(d_prat)
     tipo_allegato = get_tipo_allegato()
-    ACQ.logger.info("Richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
+    log_info(d_prat, "richiesta upload: %s (tipo: %s)", fle.filename, tipo_allegato)
     origname, ext = os.path.splitext(fle.filename)
     origname = secure_filename(origname)
     ext = ext.lower()
@@ -1979,7 +2023,7 @@ def upload():  # pylint: disable=R0914,R0911,R0912
         )
         attach = (fpath, name)
         subj = "Invio documento da procedura acquisti"
-        send_email(sendto, text, subj, attach=attach)
+        send_email(d_prat, sendto, text, subj, attach=attach)
     text = "Allegato " + cs.TAB_ALLEGATI[tipo_allegato][1]
     storia(d_prat, text)
     salvapratica(d_prat)
@@ -1999,8 +2043,9 @@ def cancella(name):
     err = auth_allegati_cancellabili(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
-            "Rimozione allegato non autorizzata: %s. Utente %s pratica %s",
+        log_error(
+            d_prat,
+            "rimozione allegato non autorizzata: %s. Utente %s pratica %s",
             err,
             d_prat.user["userid"],
             d_prat[cs.NUMERO_PRATICA],
@@ -2008,7 +2053,7 @@ def cancella(name):
     else:
         storia(d_prat, f"Rimosso allegato {name}")
         ret = ft.remove((d_prat.basedir, name))
-        ACQ.logger.info(ret)
+        log_info(d_prat, ret)
     salvapratica(d_prat)
     return pratica_common(d_prat)
 
@@ -2045,7 +2090,7 @@ def lista_pratiche(filtro, anno, ascendente):  # pylint: disable=R0915,R0912,R09
     oper = filtro[:3]
     if oper == ("ALL", "NOR"):
         if not test_admin(user):
-            ACQ.logger.error("Operazione non autorizzata. Utente: %s", user["userid"])
+            ACQ.logger.error("operazione non autorizzata. Utente: %s", user["userid"])
             fk.session.clear()
             return fk.render_template(
                 "noaccess.html",
@@ -2221,7 +2266,8 @@ def rollback():  # pylint: disable=R0914,R0911
     err = auth_rollback(d_prat)
     if err.startswith(NOT):
         fk.flash(err, category="error")
-        ACQ.logger.error(
+        log_error(
+            d_prat,
             "annullamento ultimo passo non autorizzato: %s. Utente %s, pratica %s",
             err,
             d_prat.user["userid"],
@@ -2233,10 +2279,10 @@ def rollback():  # pylint: disable=R0914,R0911
     if prevcode is None:
         err = "Annullamento passo non consentito"
         fk.flash(err, category="error")
-        ACQ.logger.error(err)
+        log_error(d_prat, err)
         return pratica_common(d_prat)
     if "annulla" in fk.request.form:
-        ACQ.logger.info("Operazione annullata")
+        log_info(d_prat, "operazione annullata")
         fk.flash("Operazione annullata", category="info")
         return pratica_common(d_prat)
     ACQ.logger.debug("Al passo %s rolling back to %s", passcode, prevcode)
@@ -2245,19 +2291,19 @@ def rollback():  # pylint: disable=R0914,R0911
     cod_all = pass_info(prevcode, what="alleg")
     all_to_remove = [cs.TAB_ALLEGATI[x][0][4:] for x in cod_all]
     if "conferma" in fk.request.form:
-        ACQ.logger.info("Annullamento confermato")
-        ACQ.logger.info("Documento da cancellare: %s", doc_to_remove_str)
-        ACQ.logger.info("Allegati da cancellare: %s", ", ".join(all_to_remove))
+        log_info(d_prat, "annullamento confermato")
+        log_info(d_prat, "documento da cancellare: %s", doc_to_remove_str)
+        log_info(d_prat, "allegati da cancellare: %s", ", ".join(all_to_remove))
         if doc_to_remove:
             ret = ft.remove((d_prat.basedir, doc_to_remove[0]))
-            ACQ.logger.info(ret)
+            log_info(d_prat, ret)
         for tipo in cod_all:
             name = filename_allegato(tipo, "", "", d_prat)
             ret = ft.remove((d_prat.basedir, name), prefix=True)
-            ACQ.logger.info(ret)
+            log_info(d_prat, ret)
         f_annullamento = pass_info(passcode, what="func")
         if f_annullamento:
-            ACQ.logger.info("Esecuzione funzione: %s", f_annullamento)
+            log_info(d_prat, "esecuzione funzione: %s", f_annullamento)
             FUNZIONI_ANNULLAMENTO[f_annullamento](d_prat)
         d_prat.back()
         doc = d_prat.get_passo("file")
@@ -2266,7 +2312,7 @@ def rollback():  # pylint: disable=R0914,R0911
         storia(d_prat, msg)
         salvapratica(d_prat)
         fk.flash(msg, category="info")
-        ACQ.logger.info("Passo corrente: %s", d_prat.get_passo("text"))
+        log_info(d_prat, "passo corrente: %s", d_prat.get_passo("text"))
         return pratica_common(d_prat)
     ddp = {
         "passo": pass_info(passcode, "text"),
@@ -2291,7 +2337,7 @@ def invia_obblig():
         return fk.redirect(fk.url_for("start"))
     email = fk.request.form.get("email")
     if not email:
-        ACQ.logger.error("Indirizzo e-mail mancante in invia_obblig")
+        log_error(d_prat, "indirizzo e-mail mancante in invia_obblig")
         fk.flash("Devi specificare un indirizzo e-mail valido", category="error")
         return pratica_common(d_prat)
     subj = f"Obbligaz. giurid. perfez. per pratica N. {d_prat[cs.NUMERO_PRATICA]}"
@@ -2312,7 +2358,7 @@ def invia_obblig():
         "descrizione": d_prat[cs.DESCRIZIONE_ACQUISTO],
     }
     text = cs.TESTO_INVIO_OBBLIG.format(**params)
-    ret = send_email(email, text, subj, attach=attach)
+    ret = send_email(d_prat, email, text, subj, attach=attach)
     if ret:
         msg = (
             "Obbligazione giuridicamente perfezionata per la pratica "
@@ -2367,7 +2413,7 @@ def annullapratica():
             return pratica_common(d_prat)
         msg = "Motivazione annullamento non specificata"
         fk.flash(msg, category="error")
-        ACQ.logger.error(msg)
+        log_error(d_prat, msg)
     body = annul()
     before_text = (
         NOTA_ANNULLAMENTO
@@ -2816,7 +2862,7 @@ def testmail():
     sender = CONFIG.config.get(cs.EMAIL_UFFICIO, "")
     subj = "Messaggio di prova da procedura 'acquisti'"
     body = cs.MESSAGGIO_DI_PROVA.format(host)
-    ret = send_email(recipient, body, subj)
+    ret = send_email(None, recipient, body, subj)
     succ = "SI" if ret else "NO"
     return fk.render_template(
         "testmail.html",
