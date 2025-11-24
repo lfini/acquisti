@@ -82,10 +82,11 @@ import send_email as sm
 # VERSION 5.8    25/04/2025 Modificata funzione "remove"
 # VERSION 5.9    10/06/2025 Corretto bug nella selezione delle pratiche annullate
 # VERSION 5.10   26/10/2025 Aggiunto trucco per funzione mostra tabella stati
+# VERSION 5.11   24/11/2025 Aumentata dimensione file di log (da 1 Mb a 50 Mb)
 
 __author__ = "Luca Fini"
-__version__ = "5.10"
-__date__ = "26/10/2025"
+__version__ = "5.11"
+__date__ = "24/11/2025"
 
 # pylint: disable=C0302, W0718
 
@@ -431,7 +432,7 @@ def set_logger(applogger, path, sender, recipient, subject):
     "imposta logger su file e via mail"
     fpath = os.path.join(*path)
     formatter = MyFormatter("%(asctime)s %(levelname)s %(message)s")
-    hndl = RotatingFileHandler(fpath, maxBytes=1000000, backupCount=3, encoding="utf8")
+    hndl = RotatingFileHandler(fpath, maxBytes=50_000_000, backupCount=3, encoding="utf8")
     hndl.setLevel(logging.INFO)
     hndl.setFormatter(formatter)
     applogger.addHandler(hndl)
