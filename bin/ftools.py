@@ -83,10 +83,11 @@ import send_email as sm
 # VERSION 5.9    10/06/2025 Corretto bug nella selezione delle pratiche annullate
 # VERSION 5.10   26/10/2025 Aggiunto trucco per funzione mostra tabella stati
 # VERSION 5.11   24/11/2025 Aumentata dimensione file di log (da 1 Mb a 50 Mb)
+# VERSION 5.12   27/11/2025 Modificato contesto logger per aggiungere num. pratica
 
 __author__ = "Luca Fini"
-__version__ = "5.11"
-__date__ = "24/11/2025"
+__version__ = "5.12"
+__date__ = "27/11/2025"
 
 # pylint: disable=C0302, W0718
 
@@ -414,25 +415,36 @@ class MyFormatter(logging.Formatter):
     "formatter per logging"
     remote = "-"
     userid = "-"
+    pratica = "-"
 
     def format(self, record):
         if not record.msg.startswith("["):
-            record.msg = f"[{MyFormatter.remote}:{MyFormatter.userid}] " + record.msg
-        ret = super().format(record)
-        return ret
+            record.msg = (
+                f"[{MyFormatter.remote}:{MyFormatter.userid}] [Prat.: {MyFormatter.pratica}] "
+                + record.msg
+            )
+        return super().format(record)
 
 
 def set_log_context(remote, userid):
     "Imposta contesto per logger"
     MyFormatter.remote = remote
     MyFormatter.userid = userid
+    MyFormatter.pratica = "-"
+
+
+def set_pratica(pratica):
+    "Imposta numero pratica in contesto per logger"
+    MyFormatter.pratica = pratica
 
 
 def set_logger(applogger, path, sender, recipient, subject):
     "imposta logger su file e via mail"
     fpath = os.path.join(*path)
     formatter = MyFormatter("%(asctime)s %(levelname)s %(message)s")
-    hndl = RotatingFileHandler(fpath, maxBytes=50_000_000, backupCount=3, encoding="utf8")
+    hndl = RotatingFileHandler(
+        fpath, maxBytes=50_000_000, backupCount=3, encoding="utf8"
+    )
     hndl.setLevel(logging.INFO)
     hndl.setFormatter(formatter)
     applogger.addHandler(hndl)

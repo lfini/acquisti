@@ -11,8 +11,8 @@ from markupsafe import Markup
 import ftools as ft
 import constants as cs
 
-__version__ = "2.11"
-__date__ = "18/6/2025"
+__version__ = "2.12"
+__date__ = "27/11/2025"
 __author__ = "Luca Fini"
 
 
@@ -830,8 +830,8 @@ class Ordine(FormWErrors):
         """
             )
             + Markup(
-                f"""<p><b>Numero CIG:</b> {d_prat[cs.NUMERO_CIG]}<br>
-        <b>Numero CUP:</b> {d_prat[cs.NUMERO_CUP]}
+                f"""<p><b>Numero CIG:</b> {d_prat.get(cs.NUMERO_CIG, "_")}<br>
+        <b>Numero CUP:</b> {d_prat.get(cs.NUMERO_CUP, "_")}
         """
             )
             + Markup(
