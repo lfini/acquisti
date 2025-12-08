@@ -5,8 +5,8 @@ Definizione delle costanti per procedura acquisti
 import os.path
 from enum import IntEnum
 
-__version__ = "2.5"
-__date__ = "4/8/2024"
+__version__ = "2.6"
+__date__ = "8/12/2025"
 __author__ = "Luca Fini"
 
 CONFIG_NAME = "config.json"  # nome file di configurazione
@@ -217,6 +217,7 @@ NUMERO_CUP = "numero_cup"  # dati_pratica
 NUMERO_DECISIONE = "numero_decisione"  # dati_pratica
 NUMERO_NEGOZIAZIONE = "numero_negoziazione"  # dati pratica
 NUMERO_OFFERTA = "numero_offerta"  # dati_pratica
+NUMERO_ORDINE = "numero_ordine"  # dati_pratica
 NUMERO_PRATICA = "numero_pratica"  # dati_pratica
 ONERI_SICUREZZA = "oneri_sicurezza"  # dati_pratica
 ONERI_SIC_GARA = "oneri_sic_gara"  # dati_pratica

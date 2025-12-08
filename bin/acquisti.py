@@ -119,10 +119,12 @@ import table as tb
 # Versione 5.10.2 11/2025:  Aggiunto numero pratica nei log
 # Versione 5.10.3 11/2025:  Ristrutturato codice per numero pratica nei log, usando
 #                           contesto del Formatter
+# Versione 5.10.4 12/2025:  Corretti bug: 1) mancata richiesta CIG nel form Ordini
+#                                         2) numero ordine errato nei log "storia"
 
 __author__ = "Luca Fini"
-__version__ = "5.10.3"
-__date__ = "27/11/2025"
+__version__ = "5.10.4"
+__date__ = "8/12/2025"
 
 __start__ = time.asctime(time.localtime())
 
@@ -1776,7 +1778,7 @@ def modificaordine():  # pylint: disable=R0914
             genera_documento(d_prat, doc)
             storia(
                 d_prat,
-                f'Generato/modificato ordine N. {d_prat.get(cs.NUMERO_DECISIONE, "")}',
+                f'Generato/modificato ordine N. {d_prat.get(cs.NUMERO_ORDINE, "")}',
             )
             salvapratica(d_prat)
             return pratica_common(d_prat)
