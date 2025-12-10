@@ -121,10 +121,12 @@ import table as tb
 #                           contesto del Formatter
 # Versione 5.10.4 12/2025:  Corretti bug: 1) mancata richiesta CIG nel form Ordini
 #                                         2) numero ordine errato nei log "storia"
+# Versione 5.10.5 12/2025:  Corretto bug nell'invio della obblig. giuridic. perfezionata
+#                           quando il file allegato è di tipo .p7m
 
 __author__ = "Luca Fini"
-__version__ = "5.10.4"
-__date__ = "8/12/2025"
+__version__ = "5.10.5"
+__date__ = "10/12/2025"
 
 __start__ = time.asctime(time.localtime())
 
@@ -620,7 +622,7 @@ def storia(d_prat: Pratica, text: str):
 
 
 def send_email(eaddr, text, subj, attach=None):
-    "invio mail a utente"
+    "invio mail a utente (o a webmaster in modo DEBUG)"
     sender = CONFIG.config[cs.EMAIL_UFFICIO]
     if DEBUG.local:
         recipients = [CONFIG.config[cs.EMAIL_WEBMASTER]]
@@ -896,6 +898,15 @@ def filename_allegato(tipo, origname, ext, d_prat):  # pylint: disable=R0913
         raise ILL_ATCH
     nprat = d_prat[cs.NUMERO_PRATICA].replace("/", "-")
     return f"{prefix}_{nprat}{ext}"
+
+
+def path_allegato(tipo, d_prat):
+    "recupera path completo e descrizione di allegato dalla directory della pratica"
+    prefix = cs.TAB_ALLEGATI[tipo][0]
+    fnames = [x for x in os.listdir(d_prat.basedir) if x.startswith(prefix)]
+    if fnames:
+        return os.path.join(d_prat.basedir, fnames[0]), cs.TAB_ALLEGATI[tipo][1]
+    return None
 
 
 def _rdo_validate(dati_pratica):
@@ -2312,8 +2323,12 @@ def invia_obblig():
         fk.flash("Devi specificare un indirizzo e-mail valido", category="error")
         return pratica_common(d_prat)
     subj = f"Obbligaz. giurid. perfez. per pratica N. {d_prat[cs.NUMERO_PRATICA]}"
-    att_name = attach = filename_allegato(cs.ALL_OBBLIG, "", ".pdf", d_prat)
-    attach = (os.path.join(d_prat.basedir, att_name), att_name)
+    attach = path_allegato(cs.ALL_OBBLIG, d_prat)
+    ACQ.logger.debug("file per %s: %s", cs.ALL_OBBLIG, str(attach))
+    if attach is None:
+        error = "allegato {cs.ALL_OBBLIG} inesistente"
+        ACQ.logger.error(error)
+        raise RuntimeError(error)
     if d_prat[cs.MOD_ACQUISTO] in (
         cs.TRATT_MEPA_40,
         cs.TRATT_MEPA_143,
