@@ -123,10 +123,12 @@ import table as tb
 #                                         2) numero ordine errato nei log "storia"
 # Versione 5.10.5 12/2025:  Corretto bug nell'invio della obblig. giuridic. perfezionata
 #                           quando il file allegato è di tipo .p7m
+# Versione 5.10.6 01/2026:  Corretto bug nella ricerca dell'ultime decisione generata
+#                           al cambio di anno
 
 __author__ = "Luca Fini"
-__version__ = "5.10.5"
-__date__ = "10/12/2025"
+__version__ = "5.10.6"
+__date__ = "9/1/2026"
 
 __start__ = time.asctime(time.localtime())
 

@@ -84,10 +84,12 @@ import send_email as sm
 # VERSION 5.10   26/10/2025 Aggiunto trucco per funzione mostra tabella stati
 # VERSION 5.11   24/11/2025 Aumentata dimensione file di log (da 1 Mb a 50 Mb)
 # VERSION 5.12   27/11/2025 Modificato contesto logger per aggiungere num. pratica
+# VERSION 5.13   9/1/2026   Corretto errore nella ricerca dell'ultima decisione al cambio
+#                           di anno
 
 __author__ = "Luca Fini"
-__version__ = "5.12"
-__date__ = "27/11/2025"
+__version__ = "5.13"
+__date__ = "9/1/2026"
 
 # pylint: disable=C0302, W0718
 
@@ -599,10 +601,13 @@ def find_all_decis(year=None):
     yys = f"{year}"
     dpath = os.path.join(cs.DATADIR, yys, cs.DECIS_FILE)
     dlist = []
-    with open(dpath, encoding="utf8") as f_in:
-        for line in f_in:
-            splt = line.split()
-            dlist.append((int(splt[0]), splt[1], splt[2]))
+    try:
+        with open(dpath, encoding="utf8") as f_in:
+            for line in f_in:
+                splt = line.split()
+                dlist.append((int(splt[0]), splt[1], splt[2]))
+    except FileNotFoundError:
+        pass
     return dlist
 
 
